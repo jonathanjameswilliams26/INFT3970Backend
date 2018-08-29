@@ -40,6 +40,7 @@ namespace INFT3970Backend
                 app.UseHsts();
             }
 
+            app.UseFileServer();
             app.UseHttpsRedirection();
             app.UseMvc();
         }

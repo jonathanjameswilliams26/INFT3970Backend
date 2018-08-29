@@ -28,18 +28,30 @@ namespace INFT3970Backend.Controllers
         }
 
         // POST api/values
-        [HttpPost]
+        /*[HttpPost]
         public Player Post([FromBody] Player player)
         {
             player.Nickname = "Accepted at POST";
             return player;
+        }*/
+
+
+        [HttpPost]
+        public void Post([FromBody] string value)
+        {
+            Console.WriteLine(value);
         }
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+
+
+
+        [HttpPut]
+        public void Put([FromBody] string value)
         {
+            Console.WriteLine(value);
         }
+
+
 
         // DELETE api/values/5
         [HttpDelete("{id}")]
