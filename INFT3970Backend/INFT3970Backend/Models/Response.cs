@@ -1,17 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace INFT3970Backend.Models
 {
+    public enum ResponseType
+    {
+        ERROR,  //0 = Error
+        SUCCESS //1 = Success
+    }
+
     public class Response<T>
     {
-        public T Data { get; set; }
-        public ResponseType Type { get; set; }
-        public string ErrorMessage { get; set; }
+        public T Data { get; set; }                 //The data / object being returned in the response if applicable
+        public ResponseType Type { get; set; }      //The type of response SUCCESS or ERROR
+        public string ErrorMessage { get; set; }    //The error message which outlines why the request failed
 
 
+
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="data">The data being returned in the response</param>
+        /// <param name="type">The type of response being returned</param>
+        /// <param name="errorMessage">The error message if the respose is an error</param>
         public Response(T data, ResponseType type, String errorMessage)
         {
             Data = data;
@@ -19,6 +30,15 @@ namespace INFT3970Backend.Models
             ErrorMessage = errorMessage;
         }
 
+
+
+
+        /// <summary>
+        /// Overloaded contructor
+        /// </summary>
+        /// <param name="data">The data being returned in the response</param>
+        /// <param name="type">An integer, 0 = ERROR, 1 = SUCCESS</param>
+        /// <param name="errorMessage">The error message if the type is success</param>
         public Response(T data, int type, string errorMessage)
         {
             Data = data;
@@ -26,6 +46,13 @@ namespace INFT3970Backend.Models
             ErrorMessage = errorMessage;
         }
 
+
+
+
+        /// <summary>
+        /// Sets the type of the response SUCCESS or ERROR depending on the int passed in
+        /// </summary>
+        /// <param name="type">The type of response 1 or 0</param>
         private void SetType(int type)
         {
             switch (type)
@@ -44,12 +71,4 @@ namespace INFT3970Backend.Models
             }
         }
     }
-
-    public enum ResponseType
-    {
-        ERROR,
-        SUCCESS
-    }
-
-
 }

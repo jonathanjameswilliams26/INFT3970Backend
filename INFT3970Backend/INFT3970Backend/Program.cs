@@ -17,7 +17,7 @@ namespace INFT3970Backend
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseUrls("https://localhost:5001", "http://10.0.0.1:5000", "https://10.0.0.1:5001")
+                .UseUrls("https://localhost:5001")
                 .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();
