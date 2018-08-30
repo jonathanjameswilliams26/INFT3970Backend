@@ -23,19 +23,7 @@ namespace INFT3970Backend.Models
 
         public Player()
         {
-            PlayerID = 100000;
-            Nickname = "Jono";
-            Phone = "0457558322";
-            Email = "test@gmail.com";
-            SelfieFilePath = "Photos";
-            NumKills = 0;
-            NumDeaths = 0;
-            NumPhotosTaken = 0;
-            IsHost = true;
-            IsVerified = true;
-            IsActive = true;
-            ConnectionID = Guid.NewGuid().ToString();
-            IsConnected = true;
+            
         }
     }
 }

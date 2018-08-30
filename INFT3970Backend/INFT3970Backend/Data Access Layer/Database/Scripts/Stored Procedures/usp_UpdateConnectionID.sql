@@ -1,0 +1,76 @@
+﻿USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 30/08/18
+-- Description:	Updates a Player's ConnectionID and sets them as CONNECTED to the SignalR Hub
+
+-- Returns: 1 = Successful, or 0 = An error occurred
+
+-- Possible Errors Returned:
+--		1. The playerID trying to update does not exist
+--		2. The new connectionID already exists inside the database
+--		3. When performing the update in the DB an error occurred
+
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_UpdateConnectionID] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@connectionID VARCHAR(255),
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	BEGIN TRY  
+		--Confirm the playerID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
+		BEGIN
+			SET @result = 0;
+			SET @errorMSG = 'The playerID you are trying to update does not exist';
+			RAISERROR('ERROR: playerID does not exist',16,1);
+		END;
+
+		--Confirm the new connectionID does not already exists
+		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
+		BEGIN
+			SET @result = 0;
+			SET @errorMSG = 'The connectionID you are trying to update already exists';
+			RAISERROR('ERROR: connectionID alread exists',16,1);
+		END;
+
+
+		--PlayerID exists and connectionID does not exists, make the update
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION
+			UPDATE tbl_Player
+			SET ConnectionID = @connectionID, IsConnected = 1
+			WHERE PlayerID = @playerID
+		COMMIT
+
+		SET @result = 1;
+		SET @errorMSG = '';
+
+	END TRY
+
+	--An error occurred in the data validation
+	BEGIN CATCH
+		
+		--An error occurred while trying to perform the update on the PLayer table
+		IF @@TRANCOUNT > 0
+		BEGIN
+			ROLLBACK;
+			SET @result = 0;
+			SET @errorMSG = 'The an error occurred while trying to save your changes in the database';
+		END
+
+	END CATCH
+END
+GO

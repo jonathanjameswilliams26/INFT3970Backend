@@ -11,11 +11,40 @@ Author:         Jonathan Williams - 3237808
 -----------------------------------------------------------------
 */
 
+--Drop the database if it exists
+DROP DATABASE udb_CamTag
+GO
 
 --Create the Database
 CREATE DATABASE udb_CamTag
 GO
+
+--Creating a login to use with the connection string
+CREATE LOGIN DataAccessLayerLogin WITH PASSWORD = 'test'
+GO
+
 USE udb_CamTag
+GO
+
+
+--Creating a user for the login
+CREATE USER DataAccessLayerUser FOR LOGIN DataAccessLayerLogin;
+GO
+
+--Creating a role which only has select, insert and update permission since the login used for the web app should only have those permissions
+--Adding the newly created user to the new role
+CREATE ROLE DataAccessLayerRole;
+EXEC sp_addrolemember @rolename = DataAccessLayerRole, @membername = DataAccessLayerUser;
+GO
+
+--Granting and deny specific permissions to user
+GRANT SELECT, UPDATE, INSERT to DataAccessLayerRole;
+GO
+
+GRANT EXECUTE TO DataAccessLayerRole;
+GO
+
+DENY DELETE, ALTER to DataAccessLayerRole;
 GO
 
 
@@ -23,21 +52,20 @@ GO
 CREATE TABLE tbl_Game
 (
 	GameID INT NOT NULL IDENTITY(100000, 1),
-	GameName VARCHAR(255) NOT NULL DEFAULT 'NewGame',
-	GameCode VARCHAR(5) NOT NULL DEFAULT 'ABC123',
+	GameCode VARCHAR(255) NOT NULL DEFAULT 'ABC123',
 	NumOfPlayers INT NOT NULL DEFAULT 0,
 	GameMode VARCHAR(255) DEFAULT 'CORE',
-	StartTime DATETIME2 NOT NULL DEFAULT GETDATE(),
-	EndTime DATETIME2 NOT NULL DEFAULT DATEADD(DAY, 1, GETDATE()),
+	StartTime DATETIME2 DEFAULT GETDATE(),
+	EndTime DATETIME2 DEFAULT DATEADD(DAY, 1, GETDATE()),
 	IsComplete BIT NOT NULL DEFAULT 0,
 	IsActive BIT NOT NULL DEFAULT 1,
 
 	PRIMARY KEY (GameID),
 
-	CHECK(LEN(GameCode) = 5),
+	CHECK(LEN(GameCode) = 6),
 	CHECK(NumOfPlayers >= 0),
 	CHECK(GameMode IN ('CORE')),
-	CHECK (StartTime > EndTime)
+	CHECK (StartTime < EndTime)
 );
 GO
 
@@ -84,9 +112,9 @@ CREATE TABLE tbl_Player
 	PRIMARY KEY (PlayerID),
 	FOREIGN KEY (GameID) REFERENCES tbl_Game(GameID),
 
-	CHECK(NumKills > 0),
-	CHECK(NumDeaths > 0),
-	CHECK(NumPhotosTaken > 0),
+	CHECK(NumKills >= 0),
+	CHECK(NumDeaths >= 0),
+	CHECK(NumPhotosTaken >= 0),
 	CONSTRAINT IsContactProvided CHECK 
 	(
 		dbo.udf_IsPlayerEmailAndPhoneValid(Phone, Email) = 1
@@ -166,3 +194,81 @@ CREATE TABLE tbl_Notification
 	CHECK(NotificationType IN ('VOTE', 'SUCCESS', 'FAIL'))
 );
 GO
+
+
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[usp_UpdateConnectionID] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@connectionID VARCHAR(255),
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	BEGIN TRY  
+		--Confirm the playerID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
+		BEGIN
+			SET @result = 0;
+			SET @errorMSG = 'The playerID you are trying to update does not exist';
+			RAISERROR('ERROR: playerID does not exist',16,1);
+		END;
+
+		--Confirm the new connectionID does not already exists
+		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
+		BEGIN
+			SET @result = 0;
+			SET @errorMSG = 'The connectionID you are trying to update already exists';
+			RAISERROR('ERROR: connectionID alread exists',16,1);
+		END;
+
+
+		--PlayerID exists and connectionID does not exists, make the update
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION
+			UPDATE tbl_Player
+			SET ConnectionID = @connectionID, IsConnected = 1
+			WHERE PlayerID = @playerID
+		COMMIT
+
+		SET @result = 1;
+		SET @errorMSG = '';
+
+	END TRY
+
+	--An error occurred in the data validation
+	BEGIN CATCH
+		
+		--An error occurred while trying to perform the update on the PLayer table
+		IF @@TRANCOUNT > 0
+		BEGIN
+			ROLLBACK;
+			SET @result = 0;
+			SET @errorMSG = 'The an error occurred while trying to save your changes in the database';
+		END
+
+	END CATCH
+END
+GO
+
+
+
+
+--Dummy Data
+INSERT INTO tbl_Game (GameCode, NumOfPlayers) VALUES ('tcf124', 3)
+GO
+
+INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Jono', '+61457558322', 'localhost', 100000)
+GO
+
+
+
