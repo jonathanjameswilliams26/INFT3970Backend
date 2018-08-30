@@ -5,8 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace INFT3970Backend
 {
@@ -14,19 +16,34 @@ namespace INFT3970Backend
     {
         public static void Main(string[] args)
         {
-            var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseUrls("https://localhost:5001")
-                .UseIISIntegration()
-                .UseStartup<Startup>()
-                .Build();
+            var isService = !(Debugger.IsAttached || args.Contains("--console"));
+            var builder = CreateWebHostBuilder(args.Where(arg => arg != "--console").ToArray());
 
-            host.Run();
+            if (isService)
+            {
+                var pathToExe = Process.GetCurrentProcess().MainModule.FileName;
+                var pathToContentRoot = Path.GetDirectoryName(pathToExe);
+                builder.UseContentRoot(pathToContentRoot);
+            }
+
+            var host = builder.Build();
+
+            if (isService)
+            {
+                host.RunAsService();
+            }
+            else
+            {
+                host.Run();
+            }
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((context, config) =>
+                {
+            // Configure the app here.
+        })
                 .UseStartup<Startup>();
     }
 }
