@@ -10,7 +10,7 @@ namespace INFT3970Backend.Data_Access_Layer
     public class DataAccessLayer
     {
         //The connection string to the database
-        protected const string ConnectionString = "Server=localhost;Database=udb_CamTag;Trusted_Connection=True;";
+        protected const string ConnectionString = @"Server=.\SQLEXPRESS;Database=udb_CamTag;Trusted_Connection=True;";
 
         //The error message returned when an exception is thrown when tryig to connect to the DB and run a stored procedure
         protected const string DatabaseErrorMSG = "An error occurred while trying to connect to the database.";
