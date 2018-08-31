@@ -30,6 +30,14 @@ namespace INFT3970Backend
             {
                 options.ForwardClientCertificate = false;
             });
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll",
+                    builder => builder.AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowAnyOrigin()
+                    .AllowCredentials());
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -38,12 +46,12 @@ namespace INFT3970Backend
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseCors("AllowAll");
             }
             else
             {
                 app.UseHsts();
             }
-
             app.UseFileServer();
             app.UseHttpsRedirection();
             app.UseMvc();
