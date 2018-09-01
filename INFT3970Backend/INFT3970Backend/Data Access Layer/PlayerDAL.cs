@@ -17,7 +17,11 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-
+        /// <summary>
+        /// Gets a list of all the players in the same game as the playerID passed in
+        /// </summary>
+        /// <param name="playerID"></param>
+        /// <returns>A list of players inside the game which the passed in playerID is in.</returns>
         public Response<List<Player>> GetGamePlayerList(int playerID)
         {
             StoredProcedure = "usp_GetGamePlayerList";
@@ -120,6 +124,64 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 return new Response<object>(null, ResponseType.ERROR, DatabaseErrorMSG);
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// Adds the player to the game.
+        /// </summary>
+        /// <param name="gameCode">The gamecode the player is attempting to join</param>
+        /// <param name="nickname">The nickname chosen by the player</param>
+        /// <param name="contact">The email or phone number entered by the player to receive notifications</param>
+        /// <param name="isPhone">Flag value which outlines if the contact passed in is a phone number or email. TRUE = phone number, FALSE = email</param>
+        /// <returns>
+        /// A Response which contains the playerID generated in the database once the player has joined the game.
+        /// Will return a playerID of -1 if an error occurred
+        /// </returns>
+        public Response<int> JoinGame(string gameCode, string nickname, string contact, bool isPhone, int verificationCode)
+        {
+            StoredProcedure = "usp_JoinGame";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameCode", gameCode);
+                        Command.Parameters.AddWithValue("@nickname", nickname);
+                        Command.Parameters.AddWithValue("@contact", contact);
+                        Command.Parameters.AddWithValue("@isPhone", isPhone);
+                        Command.Parameters.AddWithValue("@verificationCode", verificationCode);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@createdPlayerID", SqlDbType.Int);
+                        Command.Parameters["@createdPlayerID"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+
+                        //Format the results into a response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        int createdPlayerID = Convert.ToInt32(Command.Parameters["@createdPlayerID"].Value);
+                        return new Response<int>(createdPlayerID, Result, ErrorMSG);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<int>(-1, ResponseType.ERROR, DatabaseErrorMSG);
             }
         }
     }
