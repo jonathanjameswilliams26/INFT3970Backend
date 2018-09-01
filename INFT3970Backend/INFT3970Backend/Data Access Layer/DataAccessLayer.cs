@@ -19,6 +19,19 @@ namespace INFT3970Backend.Data_Access_Layer
         protected SqlConnection Connection { get; set; }    //The connection to the database using the connection string
         protected SqlCommand Command { get; set; }          //The Command being run EG the Stored Procedure + Connection
         protected SqlDataReader Reader { get; set; }        //The reader object produced by the Command when reading data from SELECT statements
-        protected string StoredProcedure{ get; set; }       //The StoredProcedure name being called
+        protected string StoredProcedure { get; set; }      //The StoredProcedure name being called
+        protected int Result { get; set; }                  //The result of the stored procedure execution 1 = successful, 0 = an error occurred
+        protected string ErrorMSG { get; set; }             //The error message returned by the stored procedure
+        protected int ErrorCode { get; set; }               //The error code return by the stored procedure
+        protected bool IsError                              //The flag which outlines if an error occurred while running the stored procedure
+        {
+            get
+            {
+                if (Result == 0)
+                    return true;
+                else
+                    return false;
+            }
+        }
     }
 }

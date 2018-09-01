@@ -263,11 +263,75 @@ GO
 
 
 
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[usp_GetGamePlayerList] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	BEGIN TRY
+		
+		--Confirm the playerID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
+		BEGIN
+			SET @result = 0;
+			SET @errorMSG = 'The playerID does not exist';
+			RAISERROR('',16,1);
+		END
+
+		--The playerID exists, get the GameID associated with that player
+		DECLARE @gameID INT;
+		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID;
+
+		--Get all the active players inside that game
+		SELECT *
+		FROM tbl_Player
+		WHERE GameID = @gameID
+
+		--Set the return variables
+		SET @result = 1;
+		SET @errorMSG = ''
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
+
+END
+GO
+
+
+
+
+
+
 --Dummy Data
 INSERT INTO tbl_Game (GameCode, NumOfPlayers) VALUES ('tcf124', 3)
 GO
 
 INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Jono', '+61457558322', 'localhost', 100000)
+GO
+INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Dylan', '+61485471258', 'localhost', 100000)
+GO
+INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Mathew', '+61454758125', 'localhost', 100000)
+GO
+INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Harry', '+61478542569', 'localhost', 100000)
+GO
+INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('David', '+61478585269', 'localhost', 100000)
+GO
+INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Sheridan', '+61478588547', 'localhost', 100000)
 GO
 
 

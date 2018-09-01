@@ -10,6 +10,21 @@ namespace INFT3970Backend.Business_Logic_Layer
     public class PlayerBL
     {
         /// <summary>
+        /// Get the list of all players currently inside a game.
+        /// </summary>
+        /// <param name="playerID">The player ID. This playerID can be used to find what game they are in and get all other players</param>
+        /// <returns>A list of all the players currently inside the game which the passed in playerID is in.</returns>
+        public Response<List<Player>> GetAllPlayersInGame(int playerID)
+        {
+            //Call the DataAccessLayer to get the list of players in the same game from the database
+            PlayerDAL playerDAL = new PlayerDAL();
+            return playerDAL.GetGamePlayerList(playerID);
+        }
+
+
+
+
+        /// <summary>
         /// Updates the players connection ID
         /// </summary>
         /// <param name="playerID">The PlayerID being updated</param>
