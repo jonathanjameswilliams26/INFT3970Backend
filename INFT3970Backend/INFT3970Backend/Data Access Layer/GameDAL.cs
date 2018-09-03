@@ -61,9 +61,8 @@ namespace INFT3970Backend.Data_Access_Layer
                 //
                 //
                 int Result = 1;
-                string Result2 = "1";
 
-                return new Response<string>(Result2, ResponseType.SUCCESS, ErrorMSG, Result);
+                return new Response<string>(gameCode, ResponseType.SUCCESS, ErrorMSG, Result);
             }
 
             //A database exception was thrown, return an error response
