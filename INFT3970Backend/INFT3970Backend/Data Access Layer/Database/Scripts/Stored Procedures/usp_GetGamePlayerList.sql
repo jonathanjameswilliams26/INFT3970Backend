@@ -26,12 +26,15 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Declaring the possible error codes returned
+	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+
 	BEGIN TRY
 		
 		--Confirm the playerID passed in exists
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_PLAYERIDDOESNOTEXIST;
 			SET @errorMSG = 'The playerID does not exist';
 			RAISERROR('',16,1);
 		END

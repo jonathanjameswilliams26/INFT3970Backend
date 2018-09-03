@@ -197,12 +197,6 @@ CREATE TABLE tbl_Notification
 GO
 
 
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 CREATE PROCEDURE [dbo].[usp_UpdateConnectionID] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
@@ -215,11 +209,17 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
+
+
 	BEGIN TRY  
 		--Confirm the playerID passed in exists
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_PLAYERIDDOESNOTEXIST;
 			SET @errorMSG = 'The playerID you are trying to update does not exist';
 			RAISERROR('ERROR: playerID does not exist',16,1);
 		END;
@@ -227,7 +227,7 @@ BEGIN
 		--Confirm the new connectionID does not already exists
 		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_ITEMALREADYEXISTS;
 			SET @errorMSG = 'The connectionID you are trying to update already exists';
 			RAISERROR('ERROR: connectionID alread exists',16,1);
 		END;
@@ -253,7 +253,7 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = 0;
+			SET @result = @EC_INSERTERROR;
 			SET @errorMSG = 'The an error occurred while trying to save your changes in the database';
 		END
 
@@ -264,64 +264,6 @@ GO
 
 
 
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[usp_GetGamePlayerList] 
-	-- Add the parameters for the stored procedure here
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	BEGIN TRY
-		
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @result = 0;
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('',16,1);
-		END
-
-		--The playerID exists, get the GameID associated with that player
-		DECLARE @gameID INT;
-		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID;
-
-		--Get all the active players inside that game
-		SELECT *
-		FROM tbl_Player
-		WHERE GameID = @gameID
-
-		--Set the return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-
-	END TRY
-
-	BEGIN CATCH
-
-	END CATCH
-
-END
-GO
-
-
-
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 CREATE PROCEDURE [dbo].[usp_JoinGame] 
 	-- Add the parameters for the stored procedure here
 	@gameCode VARCHAR(6),
@@ -338,6 +280,14 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_GAMEDOESNOTEXIST INT = 13;
+	DECLARE @EC_JOINGAME_GAMEALREADYCOMPLETE INT = 1004;
+	DECLARE @EC_JOINGAME_NICKNAMETAKEN INT = 1005;
+	DECLARE @EC_JOINGAME_PHONETAKEN INT = 1006;
+	DECLARE @EC_JOINGAME_EMAILTAKEN INT = 1007;
+
 	BEGIN TRY
 		
 		--Confirm the gameCode passed in exists
@@ -345,7 +295,7 @@ BEGIN
 		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_GAMEDOESNOTEXIST;
 			SET @errorMSG = 'The game code does not exist';
 			RAISERROR('',16,1);
 		END
@@ -355,16 +305,21 @@ BEGIN
 		SELECT @isGameAlreadyCompleted = isComplete FROM tbl_Game WHERE GameID = @gameIDToJoin
 		IF(@isGameAlreadyCompleted = 1)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_JOINGAME_GAMEALREADYCOMPLETE;
 			SET @errorMSG = 'The game you are trying to join is already completed.';
 			RAISERROR('',16,1);
 		END
 
 
+		--TODO: add the business logic to determine if the game can be joined at anytime?
+		--Check IsJoinableAnyTime
+		--Check the gameState == IN LOBBY
+
+
 		--Confirm the nickname entered is not already taken by a player in the game
 		IF EXISTS (SELECT * FROM tbl_Player WHERE GameID = @gameIDToJoin AND Nickname = @nickname AND IsActive = 1)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_JOINGAME_NICKNAMETAKEN;
 			SET @errorMSG = 'The nickname you entered is already taken. Please chose another';
 			RAISERROR('',16,1);
 		END
@@ -376,7 +331,7 @@ BEGIN
 			--Confirm the phone number is unique in the game
 			IF EXISTS(SELECT Phone FROM tbl_Player WHERE GameID = @gameIDToJoin AND Phone LIKE @contact AND IsActive = 1)
 			BEGIN
-				SET @result = 0;
+				SET @result = @EC_JOINGAME_PHONETAKEN;
 				SET @errorMSG = 'The phone number you entered is already taken by another player in the game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -386,7 +341,7 @@ BEGIN
 			--Confirm the email is unique in the game
 			IF EXISTS(SELECT Email FROM tbl_Player WHERE GameID = @gameIDToJoin AND Email LIKE @contact AND IsActive = 1)
 			BEGIN
-				SET @result = 0;
+				SET @result = @EC_JOINGAME_EMAILTAKEN;
 				SET @errorMSG = 'The email address you entered is already taken by another player in the game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -417,7 +372,7 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = 0;
+			SET @result = @EC_INSERTERROR;
 			SET @errorMSG = 'An error occurred while trying to add the player to the game'
 		END
 		SET @createdPlayerID = -1;
@@ -428,6 +383,51 @@ GO
 
 
 
+CREATE PROCEDURE [dbo].[usp_GetGamePlayerList] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declaring the possible error codes returned
+	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+
+	BEGIN TRY
+		
+		--Confirm the playerID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
+		BEGIN
+			SET @result = @EC_PLAYERIDDOESNOTEXIST;
+			SET @errorMSG = 'The playerID does not exist';
+			RAISERROR('',16,1);
+		END
+
+		--The playerID exists, get the GameID associated with that player
+		DECLARE @gameID INT;
+		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID;
+
+		--Get all the active players inside that game
+		SELECT *
+		FROM tbl_Player
+		WHERE GameID = @gameID
+
+		--Set the return variables
+		SET @result = 1;
+		SET @errorMSG = ''
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
+
+END
+GO
 
 
 

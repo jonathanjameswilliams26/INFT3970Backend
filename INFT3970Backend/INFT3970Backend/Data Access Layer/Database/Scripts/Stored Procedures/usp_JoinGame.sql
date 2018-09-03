@@ -20,6 +20,14 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_GAMEDOESNOTEXIST INT = 13;
+	DECLARE @EC_JOINGAME_GAMEALREADYCOMPLETE INT = 1004;
+	DECLARE @EC_JOINGAME_NICKNAMETAKEN INT = 1005;
+	DECLARE @EC_JOINGAME_PHONETAKEN INT = 1006;
+	DECLARE @EC_JOINGAME_EMAILTAKEN INT = 1007;
+
 	BEGIN TRY
 		
 		--Confirm the gameCode passed in exists
@@ -27,7 +35,7 @@ BEGIN
 		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_GAMEDOESNOTEXIST;
 			SET @errorMSG = 'The game code does not exist';
 			RAISERROR('',16,1);
 		END
@@ -37,16 +45,21 @@ BEGIN
 		SELECT @isGameAlreadyCompleted = isComplete FROM tbl_Game WHERE GameID = @gameIDToJoin
 		IF(@isGameAlreadyCompleted = 1)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_JOINGAME_GAMEALREADYCOMPLETE;
 			SET @errorMSG = 'The game you are trying to join is already completed.';
 			RAISERROR('',16,1);
 		END
 
 
+		--TODO: add the business logic to determine if the game can be joined at anytime?
+		--Check IsJoinableAnyTime
+		--Check the gameState == IN LOBBY
+
+
 		--Confirm the nickname entered is not already taken by a player in the game
 		IF EXISTS (SELECT * FROM tbl_Player WHERE GameID = @gameIDToJoin AND Nickname = @nickname AND IsActive = 1)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_JOINGAME_NICKNAMETAKEN;
 			SET @errorMSG = 'The nickname you entered is already taken. Please chose another';
 			RAISERROR('',16,1);
 		END
@@ -58,7 +71,7 @@ BEGIN
 			--Confirm the phone number is unique in the game
 			IF EXISTS(SELECT Phone FROM tbl_Player WHERE GameID = @gameIDToJoin AND Phone LIKE @contact AND IsActive = 1)
 			BEGIN
-				SET @result = 0;
+				SET @result = @EC_JOINGAME_PHONETAKEN;
 				SET @errorMSG = 'The phone number you entered is already taken by another player in the game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -68,7 +81,7 @@ BEGIN
 			--Confirm the email is unique in the game
 			IF EXISTS(SELECT Email FROM tbl_Player WHERE GameID = @gameIDToJoin AND Email LIKE @contact AND IsActive = 1)
 			BEGIN
-				SET @result = 0;
+				SET @result = @EC_JOINGAME_EMAILTAKEN;
 				SET @errorMSG = 'The email address you entered is already taken by another player in the game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -99,7 +112,7 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = 0;
+			SET @result = @EC_INSERTERROR;
 			SET @errorMSG = 'An error occurred while trying to add the player to the game'
 		END
 		SET @createdPlayerID = -1;

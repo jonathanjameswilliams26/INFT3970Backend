@@ -29,11 +29,17 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
+
+
 	BEGIN TRY  
 		--Confirm the playerID passed in exists
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_PLAYERIDDOESNOTEXIST;
 			SET @errorMSG = 'The playerID you are trying to update does not exist';
 			RAISERROR('ERROR: playerID does not exist',16,1);
 		END;
@@ -41,7 +47,7 @@ BEGIN
 		--Confirm the new connectionID does not already exists
 		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
 		BEGIN
-			SET @result = 0;
+			SET @result = @EC_ITEMALREADYEXISTS;
 			SET @errorMSG = 'The connectionID you are trying to update already exists';
 			RAISERROR('ERROR: connectionID alread exists',16,1);
 		END;
@@ -67,7 +73,7 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = 0;
+			SET @result = @EC_INSERTERROR;
 			SET @errorMSG = 'The an error occurred while trying to save your changes in the database';
 		END
 

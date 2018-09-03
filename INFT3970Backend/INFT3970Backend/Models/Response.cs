@@ -13,6 +13,7 @@ namespace INFT3970Backend.Models
         public T Data { get; set; }                 //The data / object being returned in the response if applicable
         public ResponseType Type { get; set; }      //The type of response SUCCESS or ERROR
         public string ErrorMessage { get; set; }    //The error message which outlines why the request failed
+        public int ErrorCode { get; set; }          //The error code. 1 = Success, Anything else = error
 
 
 
@@ -23,11 +24,12 @@ namespace INFT3970Backend.Models
         /// <param name="data">The data being returned in the response</param>
         /// <param name="type">The type of response being returned</param>
         /// <param name="errorMessage">The error message if the respose is an error</param>
-        public Response(T data, ResponseType type, String errorMessage)
+        public Response(T data, ResponseType type, String errorMessage, int errorCode)
         {
             Data = data;
             Type = type;
             ErrorMessage = errorMessage;
+            ErrorCode = errorCode;
         }
 
 
@@ -39,11 +41,12 @@ namespace INFT3970Backend.Models
         /// <param name="data">The data being returned in the response</param>
         /// <param name="type">An integer, 0 = ERROR, 1 = SUCCESS</param>
         /// <param name="errorMessage">The error message if the type is success</param>
-        public Response(T data, int type, string errorMessage)
+        public Response(T data, int type, string errorMessage, int errorCode)
         {
             Data = data;
             SetType(type);
             ErrorMessage = errorMessage;
+            ErrorCode = errorCode;
         }
 
 

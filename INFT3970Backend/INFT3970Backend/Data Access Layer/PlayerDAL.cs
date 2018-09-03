@@ -55,7 +55,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
                             //If an error occurred while trying to build the player list
                             if(player == null)
-                                return new Response<List<Player>>(null, ResponseType.ERROR, "An error occurred while trying to build the player list.");
+                                return new Response<List<Player>>(null, ResponseType.ERROR, "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
 
                             players.Add(player);
                         }
@@ -67,7 +67,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
 
                         //Format the results into a response object
-                        return new Response<List<Player>>(players, Result, ErrorMSG);
+                        return new Response<List<Player>>(players, Result, ErrorMSG, Result);
                     }
                 }
             }
@@ -75,7 +75,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<List<Player>>(null, ResponseType.ERROR, DatabaseErrorMSG);
+                return new Response<List<Player>>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -115,7 +115,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         //Format the results into a response object
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<object>(null, Result, ErrorMSG);
+                        return new Response<object>(null, Result, ErrorMSG, Result);
                     }
                 }
             }
@@ -123,7 +123,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<object>(null, ResponseType.ERROR, DatabaseErrorMSG);
+                return new Response<object>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -173,7 +173,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
                         int createdPlayerID = Convert.ToInt32(Command.Parameters["@createdPlayerID"].Value);
-                        return new Response<int>(createdPlayerID, Result, ErrorMSG);
+                        return new Response<int>(createdPlayerID, Result, ErrorMSG, Result);
                     }
                 }
             }
@@ -181,7 +181,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<int>(-1, ResponseType.ERROR, DatabaseErrorMSG);
+                return new Response<int>(-1, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }

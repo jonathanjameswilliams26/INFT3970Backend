@@ -27,7 +27,7 @@ namespace INFT3970Backend.Data_Access_Layer
         {
             get
             {
-                if (Result == 0)
+                if (Result != 1)
                     return true;
                 else
                     return false;

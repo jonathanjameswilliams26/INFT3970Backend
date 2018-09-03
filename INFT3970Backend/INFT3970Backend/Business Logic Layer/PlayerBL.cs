@@ -60,17 +60,17 @@ namespace INFT3970Backend.Business_Logic_Layer
             //Confirm the game code is 6 characters in length and only contains letters and numbers
             Regex gameCodeRegex = new Regex(@"^[a-zA-Z0-9]{6,6}$");
             if (!gameCodeRegex.IsMatch(gameCode))
-                return new Response<int>(-1, ResponseType.ERROR, "The game code is incorrect, it must be 6 characters long and only contain letters and numbers.");
+                return new Response<int>(-1, ResponseType.ERROR, "The game code is incorrect, it must be 6 characters long and only contain letters and numbers.", ErrorCodes.EC_JOINGAME_INVALIDGAMECODE);
 
             //Confirm the nickname is not empty
             if (String.IsNullOrEmpty(nickname))
-                return new Response<int>(-1, ResponseType.ERROR, "You must enter a nickname, your nickname cannot be blank.");
+                return new Response<int>(-1, ResponseType.ERROR, "You must enter a nickname, your nickname cannot be blank.", ErrorCodes.EC_JOINGAME_NICKNAMEBLANK);
 
             //Confirm the nickname is only numbers and letters (no spaces allowed)
             Regex nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
             bool march = nicknameRegex.IsMatch(nickname);
             if (!nicknameRegex.IsMatch(nickname))
-                return new Response<int>(-1, ResponseType.ERROR, "The nickname you entered is invalid, please only enter letters and numbers (no spaces).");
+                return new Response<int>(-1, ResponseType.ERROR, "The nickname you entered is invalid, please only enter letters and numbers (no spaces).", ErrorCodes.EC_JOINGAME_NICKNAMEINVALID);
 
             //Confirm the contact, check if it is an email or phone number
             bool isPhone = false;
@@ -87,7 +87,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
             //If the contact is not either a phone or email address return an error
             if (!isEmail && !isPhone)
-                return new Response<int>(-1, ResponseType.ERROR, "The contact information entered is invalid. Please enter a phone number or an email address.");
+                return new Response<int>(-1, ResponseType.ERROR, "The contact information entered is invalid. Please enter a phone number or an email address.", ErrorCodes.EC_JOINGAME_CONTACTINVALID);
 
             
             //If the contact is a phone number, reformat the number to use +61 since that is needed for twilio
@@ -95,33 +95,61 @@ namespace INFT3970Backend.Business_Logic_Layer
                 contact = "+61" + contact.Substring(1);
 
 
-            //Generate a verification code for the player to verify their contact details (5 digit verification code)
-            Random rand = new Random();
-            int verificationCode = rand.Next(10000, 99999);
-
 
             //Call the data access layer to add the player to the database
+            int verificationCode = GenerateVerificationCode();
             PlayerDAL playerDAL = new PlayerDAL();
             Response<int> response = playerDAL.JoinGame(gameCode, nickname, contact, isPhone, verificationCode);
 
             //If the response was successful, send the verification code to the player
             if(response.Type == ResponseType.SUCCESS)
             {
-                bool didSend = false;
-                //if (isPhone)
-                    //didSend = new TextMessageSender(contact).SendVerificationCode(verificationCode);
-                //else
-                    didSend = new EmailSender().SendVerificationEmail(verificationCode, contact);
+                bool didSend = SendVerificationCode(verificationCode, contact, isPhone);
 
                 //If the message did not send correctly then update the response to now be an error
                 if (!didSend)
                 {
                     response.Type = ResponseType.ERROR;
                     response.ErrorMessage = "An error occurred while trying to send your verification code.";
+                    response.ErrorCode = ErrorCodes.EC_VERIFICATIONCODESENDERROR;
                 }
             }
-
             return response;
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Generates a 5 digit verification code
+        /// </summary>
+        /// <returns></returns>
+        private int GenerateVerificationCode()
+        {
+            //Generate a verification code for the player to verify their contact details (5 digit verification code)
+            Random rand = new Random();
+            return rand.Next(10000, 99999);
+        }
+
+
+
+
+
+        /// <summary>
+        /// Sends a verification code to the email address or phone number. Returns TRUE if sent successfully, FALSE otherwise
+        /// </summary>
+        /// <param name="code">The verification code to send</param>
+        /// <param name="sendTo">The email or phone number to send to</param>
+        /// <param name="isPhone">A flag outlining if the value is a phone number</param>
+        /// <returns></returns>
+        private bool SendVerificationCode(int code, string sendTo, bool isPhone)
+        {
+            if (isPhone)
+                return new TextMessageSender(sendTo).SendVerificationCode(code);
+            else
+                return new EmailSender().SendVerificationEmail(code, sendTo);
         }
     }
 }
