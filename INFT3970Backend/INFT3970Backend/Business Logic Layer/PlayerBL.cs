@@ -105,12 +105,12 @@ namespace INFT3970Backend.Business_Logic_Layer
             Response<int> response = playerDAL.JoinGame(gameCode, nickname, contact, isPhone, verificationCode);
 
             //If the response was successful, send the verification code to the player
-            /*if(response.Type == ResponseType.SUCCESS)
+            if(response.Type == ResponseType.SUCCESS)
             {
                 bool didSend = false;
-                if (isPhone)
-                    didSend = new TextMessageSender(contact).SendVerificationCode(verificationCode);
-                else
+                //if (isPhone)
+                    //didSend = new TextMessageSender(contact).SendVerificationCode(verificationCode);
+                //else
                     didSend = new EmailSender().SendVerificationEmail(verificationCode, contact);
 
                 //If the message did not send correctly then update the response to now be an error
@@ -119,7 +119,7 @@ namespace INFT3970Backend.Business_Logic_Layer
                     response.Type = ResponseType.ERROR;
                     response.ErrorMessage = "An error occurred while trying to send your verification code.";
                 }
-            }*/
+            }
 
             return response;
         }

@@ -7,16 +7,6 @@ namespace INFT3970Backend.Hubs
 {
     public class ApplicationHub : Hub
     {
-        public async Task SendMessage(string user, string message)
-        {
-            await UpdateGameLobbyPlayerList(100000);
-        }
-
-        public async Task UpdateGameLobbyPlayerList(int playerID)
-        {
-            await Clients.All.SendAsync("UpdateGameLobbyList");
-        }
-
         public override Task OnConnectedAsync()
         {
             int playerID = int.Parse(Context.GetHttpContext().Request.Query["playerID"]);

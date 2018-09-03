@@ -31,7 +31,6 @@ namespace INFT3970Backend.Hubs
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
                 }
             }
-
         }
     }
 }
