@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNet.Signalr" Version="2.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Twilio" Version="5.16.3" />
     <PackageReference Include="Twilio.AspNet.Mvc" Version="5.9.7" />

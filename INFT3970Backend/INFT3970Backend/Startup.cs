@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using INFT3970Backend.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace INFT3970Backend
 {
@@ -38,6 +33,8 @@ namespace INFT3970Backend
                     .AllowAnyOrigin()
                     .AllowCredentials());
             });
+
+            services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -55,6 +52,10 @@ namespace INFT3970Backend
             app.UseFileServer();
             app.UseHttpsRedirection();
             app.UseMvc();
+            app.UseSignalR(routes =>
+            {
+                routes.MapHub<ApplicationHub>("/app");
+            });
         }
     }
 }

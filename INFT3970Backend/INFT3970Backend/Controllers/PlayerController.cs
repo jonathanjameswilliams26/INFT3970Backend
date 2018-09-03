@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models;
 using INFT3970Backend.Business_Logic_Layer;
+using Microsoft.AspNetCore.SignalR;
+using INFT3970Backend.Hubs;
 
 namespace INFT3970Backend.Controllers
 {
@@ -14,6 +16,12 @@ namespace INFT3970Backend.Controllers
     [ApiController]
     public class PlayerController : ControllerBase
     {
+        //The application hub context, used to be able to invokve client methods from anywhere in the code
+        private readonly IHubContext<ApplicationHub> _hubContext;
+        public PlayerController(IHubContext<ApplicationHub> hubContext)
+        {
+            _hubContext = hubContext;
+        }
 
 
         /// <summary>
@@ -79,7 +87,17 @@ namespace INFT3970Backend.Controllers
 
             //Call the business logic layer to validate the form data and create a new player
             PlayerBL playerBL = new PlayerBL();
-            return playerBL.JoinGame(gameCode, nickname, contact);
+            Response<int> response = playerBL.JoinGame(gameCode, nickname, contact);
+
+            //Call the Hub interface to update any connected clients
+            if(response.Type == ResponseType.SUCCESS)
+            {
+                HubInterface hubInterface = new HubInterface(_hubContext);
+                hubInterface.UpdateLobbyList(response.Data);
+            }
+            
+           
+            return response;
         }
 
     }

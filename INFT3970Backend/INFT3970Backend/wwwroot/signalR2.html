@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Game Lobby</h1>
+
+        PlayerID...<input type="text" id="playerID" />
+        <input type="button" id="connect" value="Connect To Lobby" />
+
+        <h2>Joined Players</h2>
+        <div class="row">
+            <div class="col-6">&nbsp;</div>
+            <div class="col-6">
+                <ul id="lobby"></ul>
+            </div>
+        </div>
+    </div>
+    <script src="/lib/signalr/signalr.js"></script>
+    <script src="/js/chat2.js"></script>
+</body>
+</html>
