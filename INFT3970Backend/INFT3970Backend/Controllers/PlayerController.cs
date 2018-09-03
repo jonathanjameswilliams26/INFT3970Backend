@@ -43,6 +43,9 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
         /// <summary>
         /// POST: api/Player/SetConnectionID - Sets the connection ID of the playerID passed in
         /// </summary>
@@ -76,7 +79,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>Response including the playerID generated in the database. If an error occurs then a negative PlayerID is returned in the response</returns>
         [HttpPost]
         [Route("api/player/joinGame")]
-        public Response<int> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact)
+        public ActionResult<Response<int>> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact)
         {
             //Example request:
             //Use POSTMAN and POST 'Form-Data' using the following values
@@ -86,19 +89,26 @@ namespace INFT3970Backend.Controllers
             //contact           enter an email or phone (NOTE: if using a phone it will send a text message to my number cause the twilio trial can only send to one number)
 
             //Call the business logic layer to validate the form data and create a new player
-            PlayerBL playerBL = new PlayerBL();
-            Response<int> response = playerBL.JoinGame(gameCode, nickname, contact);
-
-            //Call the Hub interface to update any connected clients
-            if(response.Type == ResponseType.SUCCESS)
-            {
-                HubInterface hubInterface = new HubInterface(_hubContext);
-                hubInterface.UpdateLobbyList(response.Data);
-            }
-            
-           
-            return response;
+            return new PlayerBL().JoinGame(gameCode, nickname, contact);
         }
 
+
+
+
+
+
+
+        /// <summary>
+        /// Verifies a player by checking the verification code they have entered is correct. Returns a Response indicating success or failure.
+        /// </summary>
+        /// <param name="verificationCode">The verification code received by the user via phone or email.</param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/player/verify")]
+        public Response<object> VerifyPlayer([FromForm] string verificationCode, [FromHeader] int playerID)
+        {
+            //Call the business logic to verify the player and return a SUCCESS or ERROR response
+            return new PlayerBL().VerifyPlayer(verificationCode, playerID, _hubContext);
+        }
     }
 }

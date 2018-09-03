@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Models;
 using INFT3970Backend.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {
@@ -57,14 +58,14 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <returns></returns>
         public Response<int> JoinGame(string gameCode, string nickname, string contact)
         {
+            //Confirm the input parameters are not empty or null
+            if (String.IsNullOrWhiteSpace(nickname) || String.IsNullOrWhiteSpace(gameCode) || String.IsNullOrWhiteSpace(contact))
+                return new Response<int>(-1, ResponseType.ERROR, "Missing request data, nickname, contact or gamecode is empty or null.", ErrorCodes.EC_MISSINGORBLANKDATA);
+
             //Confirm the game code is 6 characters in length and only contains letters and numbers
             Regex gameCodeRegex = new Regex(@"^[a-zA-Z0-9]{6,6}$");
             if (!gameCodeRegex.IsMatch(gameCode))
                 return new Response<int>(-1, ResponseType.ERROR, "The game code is incorrect, it must be 6 characters long and only contain letters and numbers.", ErrorCodes.EC_JOINGAME_INVALIDGAMECODE);
-
-            //Confirm the nickname is not empty
-            if (String.IsNullOrEmpty(nickname))
-                return new Response<int>(-1, ResponseType.ERROR, "You must enter a nickname, your nickname cannot be blank.", ErrorCodes.EC_JOINGAME_NICKNAMEBLANK);
 
             //Confirm the nickname is only numbers and letters (no spaces allowed)
             Regex nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
@@ -94,8 +95,6 @@ namespace INFT3970Backend.Business_Logic_Layer
             if(isPhone)
                 contact = "+61" + contact.Substring(1);
 
-
-
             //Call the data access layer to add the player to the database
             int verificationCode = GenerateVerificationCode();
             PlayerDAL playerDAL = new PlayerDAL();
@@ -114,6 +113,59 @@ namespace INFT3970Backend.Business_Logic_Layer
                     response.ErrorCode = ErrorCodes.EC_VERIFICATIONCODESENDERROR;
                 }
             }
+            return response;
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Validates a players received verification code. If the player successfully enters their verification code
+        /// their player record will be verified, meaning they have confirmed their email address or phone number is correct
+        /// and has access to it throughout the game.
+        /// </summary>
+        /// <param name="verificationCode">The code received and entered by the player</param>
+        /// <param name="playerID">The playerID trying to verify</param>
+        /// <param name="hubContext">
+        /// The context of the application hub which is used to send live updates via SignalR.
+        /// This parameter will be used to updated all connected clients in the game that a new player has successfully joined.
+        /// </param>
+        /// <returns></returns>
+        public Response<object> VerifyPlayer(string verificationCode, int playerID, IHubContext<ApplicationHub> hubContext)
+        {
+            //Confirm the verification code is not empty or null, and confirm the playerID is a valid INT, must be greater than 100000
+            if (String.IsNullOrWhiteSpace(verificationCode) || playerID < 10000)
+                return new Response<object>(null, ResponseType.ERROR, "Missing request data, verification code is empty or null or playerID was not valid.", ErrorCodes.EC_MISSINGORBLANKDATA);
+
+
+            //Confirm the verification code is a valid verification code, will always be an integer from 10000 - 99999
+            int code = 0;
+            try
+            {
+                //Confirm the code is within the valid range
+                code = int.Parse(verificationCode);
+                if (code < 10000 || code > 99999)
+                    throw new Exception();
+            }
+            catch
+            {
+                return new Response<object>(null, ResponseType.ERROR, "The verification code is invalid. Must be an INT between 10000 and 99999.", ErrorCodes.EC_VERIFYPLAYER_CODEINVALID);
+            }
+
+            //Call the data access layer to confirm the verification code is correct.
+            PlayerDAL playerDAL = new PlayerDAL();
+            Response<object> response = playerDAL.ValidateVerificationCode(code, playerID);
+
+            //If the player was successfully verified, updated all the clients about a joined player.
+            if(response.Type == ResponseType.SUCCESS)
+            {
+                HubInterface hubInterface = new HubInterface(hubContext);
+                hubInterface.UpdatePlayerJoined(playerID);
+            }
+
             return response;
         }
 

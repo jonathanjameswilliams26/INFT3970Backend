@@ -17,7 +17,7 @@ namespace INFT3970Backend.Hubs
             _hubContext = hubContext;
         }
 
-        public async void UpdateLobbyList(int playerID)
+        public async void UpdatePlayerJoined(int playerID)
         {
             //Get all the players currently in the game
             PlayerBL playerBL = new PlayerBL();

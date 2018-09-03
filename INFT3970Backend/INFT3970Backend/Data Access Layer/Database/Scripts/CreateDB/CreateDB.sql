@@ -383,6 +383,23 @@ GO
 
 
 
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 1/09/18
+-- Description:	Gets all the players in a game, takes in a playerID and users that playerID to find all other players in the game
+
+-- Returns: 1 = Successful, or 0 = An error occurred
+
+-- Possible Errors Returned:
+--		1. The playerID trying to update does not exist
+
+-- =============================================
 CREATE PROCEDURE [dbo].[usp_GetGamePlayerList] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
@@ -411,10 +428,10 @@ BEGIN
 		DECLARE @gameID INT;
 		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID;
 
-		--Get all the active players inside that game
+		--Get all the active and verified players inside that game
 		SELECT *
 		FROM tbl_Player
-		WHERE GameID = @gameID
+		WHERE GameID = @gameID AND IsActive = 1 AND isVerified = 1
 
 		--Set the return variables
 		SET @result = 1;

@@ -43,10 +43,10 @@ BEGIN
 		DECLARE @gameID INT;
 		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID;
 
-		--Get all the active players inside that game
+		--Get all the active and verified players inside that game
 		SELECT *
 		FROM tbl_Player
-		WHERE GameID = @gameID
+		WHERE GameID = @gameID AND IsActive = 1 AND isVerified = 1
 
 		--Set the return variables
 		SET @result = 1;

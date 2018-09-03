@@ -15,10 +15,10 @@ namespace INFT3970Backend.Models
         public const int EC_PLAYERIDDOESNOTEXIST = 12;
         public const int EC_GAMEDOESNOTEXIST = 13;
         public const int EC_ITEMALREADYEXISTS = 14;
+        public const int EC_MISSINGORBLANKDATA = 15;
 
         //PlayerController - Join Game Error Codes
         public const int EC_JOINGAME_INVALIDGAMECODE = 1000;
-        public const int EC_JOINGAME_NICKNAMEBLANK = 1001;
         public const int EC_JOINGAME_NICKNAMEINVALID = 1002;
         public const int EC_JOINGAME_CONTACTINVALID = 1003;
         public const int EC_JOINGAME_GAMEALREADYCOMPLETE = 1004;
@@ -26,5 +26,9 @@ namespace INFT3970Backend.Models
         public const int EC_JOINGAME_PHONETAKEN = 1006;
         public const int EC_JOINGAME_EMAILTAKEN = 1007;
 
+
+        //PlayerController - Verify Player / Verify verification code Error Codes
+        public const int EC_VERIFYPLAYER_CODEINVALID = 2000;
+        public const int EC_VERIFYPLAYER_CODEINCORRECT = 2001;
     }
 }

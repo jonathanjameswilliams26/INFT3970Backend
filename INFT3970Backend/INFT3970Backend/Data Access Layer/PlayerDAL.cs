@@ -184,5 +184,55 @@ namespace INFT3970Backend.Data_Access_Layer
                 return new Response<int>(-1, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
+
+
+
+
+
+
+        /// <summary>
+        /// Confirms the validation code entered by the player matches what is stored against their player record.
+        /// If the player successfully enters the validation code their player record will be set to "Verified"
+        /// </summary>
+        /// <param name="verificationCode">The verification code to confirm is correct</param>
+        /// <param name="playerID">The ID of the player to verify.</param>
+        /// <returns></returns>
+        public Response<object> ValidateVerificationCode(int verificationCode, int playerID)
+        {
+            StoredProcedure = "usp_ValidateVerificationCode";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@verificationCode", verificationCode);
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+
+                        //Format the results into a response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        return new Response<object>(null, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<object>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
     }
 }
