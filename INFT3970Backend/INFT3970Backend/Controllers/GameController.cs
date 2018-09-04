@@ -38,16 +38,20 @@ namespace INFT3970Backend.Controllers
             //various settings??
 
             GameBL gameBL = new GameBL();
-            Response<string> response = gameBL.CreateGame();
-            string gameCode = response.Data;
+            Response<string> responseA = gameBL.CreateGame();
+            string gameCode = responseA.Data;
 
-
-            //Call the business logic layer to validate the form data and create a new host player
-            PlayerBL playerBL = new PlayerBL();
-            Response<int> response2 = playerBL.JoinGame(gameCode, nickname, contact);
-
-
-            return response2;
+            if (responseA.ErrorCode == ErrorCodes.EC_DATABASECONNECTERROR)
+            {
+                return new Response<int>(-1, ResponseType.ERROR, "An error occurred while trying to connect to the database.", ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+            else
+            {
+                //Call the business logic layer to validate the form data and create a new host player
+                PlayerBL playerBL = new PlayerBL();
+                Response<int> responseB = playerBL.JoinGame(gameCode, nickname, contact);           
+                return responseB;
+            }
         }
     }
 
