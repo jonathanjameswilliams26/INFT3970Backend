@@ -110,5 +110,24 @@ namespace INFT3970Backend.Controllers
             //Call the business logic to verify the player and return a SUCCESS or ERROR response
             return new PlayerBL().VerifyPlayer(verificationCode, playerID, _hubContext);
         }
+
+
+
+
+
+
+        /// <summary>
+        /// Generates a new verification code for the player, updates the verification code in the database
+        /// and resends the new code to the player's contact information (Email or Phone).
+        /// </summary>
+        /// <param name="playerID">The playerID who's verification code is being updated</param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/player/resend")]
+        public Response<object> ResendVerificationCode([FromHeader] int playerID)
+        {
+            //Call the business logic layer
+            return new PlayerBL().ResendVerificationCode(playerID);
+        }
     }
 }

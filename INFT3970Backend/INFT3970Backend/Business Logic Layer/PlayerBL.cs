@@ -174,6 +174,53 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
+
+
+
+
+        /// <summary>
+        /// Regenerates a verification code, updates the player record to store the new code and sends the new code to the
+        /// players contact (Email or Phone). Returns a response with NULL data, use Response.Type to determine error or success.
+        /// </summary>
+        /// <param name="playerID">The player who's verification code is being updated.</param>
+        /// <returns></returns>
+        public Response<object> ResendVerificationCode(int playerID)
+        {
+            //Generate a new verification code to send
+            int code = GenerateVerificationCode();
+
+            //Call the Data Access Layer to update the verification code for the player and get the contact information for the player
+            Response<string> response = new PlayerDAL().UpdateVerificationCode(playerID, code);
+
+            //If the response is successful send the verification code
+            bool didSend = false;
+            if (response.Type == ResponseType.SUCCESS)
+            {
+                //The contact information returned from the data access is an email address
+                if (response.Data.Contains("@"))
+                    didSend = SendVerificationCode(code, response.Data, false);
+
+                //Otherwise, the contact information returned is a phone number
+                else
+                    didSend = SendVerificationCode(code, response.Data, true);
+            }
+            //Otherwise, an error occurred while updating the validation code, return the error obtained from the database
+            else
+                return new Response<object>(null, ResponseType.ERROR, response.ErrorMessage, response.ErrorCode);
+
+
+            //Confirm the verification code sent, return a success response or error message
+            if (didSend)
+                return new Response<object>(null, ResponseType.SUCCESS, null, 1);
+            else
+                return new Response<object>(null, ResponseType.ERROR, "An error occurred while trying to resend the verification code.", ErrorCodes.EC_VERIFICATIONCODESENDERROR);
+        }
+
+
+
+
+
+
         /// <summary>
         /// Generates a 5 digit verification code
         /// </summary>

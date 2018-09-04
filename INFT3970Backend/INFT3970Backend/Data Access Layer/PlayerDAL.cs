@@ -234,5 +234,70 @@ namespace INFT3970Backend.Data_Access_Layer
                 return new Response<object>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Updates the Player's verification code.
+        /// Returns a Response with string data, where the data is the contact (phone or email) of the playerID in
+        /// order to resend the verification code.
+        /// </summary>
+        /// <param name="playerID">The playerID who's verification code is being updated</param>
+        /// <param name="verificationCode">The new verification code</param>
+        /// <returns></returns>
+        public Response<string> UpdateVerificationCode(int playerID, int verificationCode)
+        {
+            StoredProcedure = "usp_UpdateVerificationCode";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@verificationCode", verificationCode);
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@phone", SqlDbType.VarChar, 255);
+                        Command.Parameters["@phone"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@email", SqlDbType.VarChar, 255);
+                        Command.Parameters["@email"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+
+                        //Format the results into a response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        string phone = Convert.ToString(Command.Parameters["@phone"].Value);
+                        string email = Convert.ToString(Command.Parameters["@email"].Value);
+
+                        //Return the phone or email address to send the new verification to.
+                        if (!String.IsNullOrWhiteSpace(phone))
+                            return new Response<string>(phone, Result, ErrorMSG, Result);
+                        else if (!String.IsNullOrWhiteSpace(email))
+                            return new Response<string>(email, Result, ErrorMSG, Result);
+                        else
+                            return new Response<string>(null, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<string>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
     }
 }
