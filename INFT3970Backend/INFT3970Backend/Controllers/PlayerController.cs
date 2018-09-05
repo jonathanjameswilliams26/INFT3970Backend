@@ -89,7 +89,7 @@ namespace INFT3970Backend.Controllers
             //contact           enter an email or phone (NOTE: if using a phone it will send a text message to my number cause the twilio trial can only send to one number)
 
             //Call the business logic layer to validate the form data and create a new player
-            return new PlayerBL().JoinGame(gameCode, nickname, contact);
+            return new PlayerBL().JoinGame(gameCode, nickname, contact, false);
         }
 
 

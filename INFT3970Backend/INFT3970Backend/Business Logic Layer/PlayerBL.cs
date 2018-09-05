@@ -55,8 +55,9 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="gameCode">The game the player is trying to join.</param>
         /// <param name="nickname">The players nickname in the game</param>
         /// <param name="contact">The players contact either phone or email where the player will be contacted throughout the game.</param>
+        /// <param name="isHost">A flag which outlines if the player joining the game is the host of the game.</param>
         /// <returns></returns>
-        public Response<int> JoinGame(string gameCode, string nickname, string contact)
+        public Response<int> JoinGame(string gameCode, string nickname, string contact, bool isHost)
         {
             //Confirm the input parameters are not empty or null
             if (String.IsNullOrWhiteSpace(nickname) || String.IsNullOrWhiteSpace(gameCode) || String.IsNullOrWhiteSpace(contact))
@@ -98,7 +99,7 @@ namespace INFT3970Backend.Business_Logic_Layer
             //Call the data access layer to add the player to the database
             int verificationCode = GenerateVerificationCode();
             PlayerDAL playerDAL = new PlayerDAL();
-            Response<int> response = playerDAL.JoinGame(gameCode, nickname, contact, isPhone, verificationCode);
+            Response<int> response = playerDAL.JoinGame(gameCode, nickname, contact, isPhone, verificationCode, isHost);
 
             //If the response was successful, send the verification code to the player
             if(response.Type == ResponseType.SUCCESS)
