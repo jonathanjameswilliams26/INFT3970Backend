@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;
+using System;
 
 namespace INFT3970Backend.Hubs
 {
@@ -13,6 +14,14 @@ namespace INFT3970Backend.Hubs
             PlayerDAL playerDAL = new PlayerDAL();
             Response<object> response = playerDAL.UpdateConnectionID(playerID, Context.ConnectionId);
             return base.OnConnectedAsync();
+        }
+
+
+        public override Task OnDisconnectedAsync(Exception exception)
+        {
+            PlayerDAL playerDAL = new PlayerDAL();
+            playerDAL.RemoveConnectionID(Context.ConnectionId);
+            return base.OnDisconnectedAsync(exception);
         }
     }
 }

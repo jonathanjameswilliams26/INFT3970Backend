@@ -300,5 +300,38 @@ namespace INFT3970Backend.Data_Access_Layer
                 return new Response<string>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
+
+
+
+
+
+
+        public void RemoveConnectionID(string connectionID)
+        {
+            StoredProcedure = "usp_RemoveConnectionID";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@connectionID", connectionID);
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            //A database exception was thrown
+            catch
+            {
+                //Do nothing
+            }
+        }
     }
 }

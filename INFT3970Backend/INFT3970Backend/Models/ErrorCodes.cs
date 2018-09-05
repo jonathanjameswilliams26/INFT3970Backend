@@ -10,7 +10,6 @@ namespace INFT3970Backend.Models
         //General / Global Error Codes
         public const int EC_DATABASECONNECTERROR = 0;
         public const int EC_INSERTERROR = 2;
-        public const int EC_VERIFICATIONCODESENDERROR = 10;
         public const int EC_BUILDMODELERROR = 11;
         public const int EC_PLAYERIDDOESNOTEXIST = 12;
         public const int EC_GAMEDOESNOTEXIST = 13;
