@@ -1,9 +1,6 @@
 ﻿using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Models;
 using System;
-using System.IO;
-using System.Text.RegularExpressions;
-using SixLabors.ImageSharp;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {
@@ -45,7 +42,10 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
-
+        /// <summary>
+        /// Deactivates the game created by the host player because an unexpected error occurred while the host player tried to join the game
+        /// </summary>
+        /// <param name="gameCode">The game code to deactivate</param>
         public void DeactivateGameAfterHostJoinError(string gameCode)
         {
             new GameDAL().DeactivateGameAfterHostJoinError(gameCode);
@@ -53,25 +53,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
         
 
-        public void SavePhoto(string imgUrl)
-        {
-            var base64Data = imgUrl.Replace("data:image/jpeg;base64,", "");
-            var binData = Convert.FromBase64String(base64Data);
-
-            var directory = Directory.GetCurrentDirectory() + "\\GameImages\\" + DateTime.Now.Ticks + ".jpg";
-
-            using (var stream = new MemoryStream(binData))
-            {
-                using (var image = Image.Load(stream))
-                {
-                    image.Save(directory);
-                }
-            }
-        }
-
-
-
-
+       
         /// <summary>
         /// Generates the game code for the game which players use to join the game.
         /// </summary>

@@ -7,6 +7,7 @@ using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Models;
 using INFT3970Backend.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Hangfire;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {
@@ -103,17 +104,8 @@ namespace INFT3970Backend.Business_Logic_Layer
 
             //If the response was successful, send the verification code to the player
             if(response.Type == ResponseType.SUCCESS)
-            {
-                bool didSend = SendVerificationCode(verificationCode, contact, isPhone);
+                BackgroundJob.Enqueue<PlayerBL>(x => x.SendVerificationCode(verificationCode, contact, isPhone));
 
-                //If the message did not send correctly then update the response to now be an error
-                if (!didSend)
-                {
-                    response.Type = ResponseType.ERROR;
-                    response.ErrorMessage = "An error occurred while trying to send your verification code.";
-                    response.ErrorCode = ErrorCodes.EC_VERIFICATIONCODESENDERROR;
-                }
-            }
             return response;
         }
 
@@ -194,27 +186,21 @@ namespace INFT3970Backend.Business_Logic_Layer
             Response<string> response = new PlayerDAL().UpdateVerificationCode(playerID, code);
 
             //If the response is successful send the verification code
-            bool didSend = false;
             if (response.Type == ResponseType.SUCCESS)
             {
                 //The contact information returned from the data access is an email address
                 if (response.Data.Contains("@"))
-                    didSend = SendVerificationCode(code, response.Data, false);
+                    BackgroundJob.Enqueue<PlayerBL>(x => SendVerificationCode(code, response.Data, false));
 
                 //Otherwise, the contact information returned is a phone number
                 else
-                    didSend = SendVerificationCode(code, response.Data, true);
+                    BackgroundJob.Enqueue<PlayerBL>(x => SendVerificationCode(code, response.Data, true));
+
+                return new Response<object>(null, ResponseType.SUCCESS, null, 1);
             }
             //Otherwise, an error occurred while updating the validation code, return the error obtained from the database
             else
                 return new Response<object>(null, ResponseType.ERROR, response.ErrorMessage, response.ErrorCode);
-
-
-            //Confirm the verification code sent, return a success response or error message
-            if (didSend)
-                return new Response<object>(null, ResponseType.SUCCESS, null, 1);
-            else
-                return new Response<object>(null, ResponseType.ERROR, "An error occurred while trying to resend the verification code.", ErrorCodes.EC_VERIFICATIONCODESENDERROR);
         }
 
 
@@ -244,7 +230,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="sendTo">The email or phone number to send to</param>
         /// <param name="isPhone">A flag outlining if the value is a phone number</param>
         /// <returns></returns>
-        private bool SendVerificationCode(int code, string sendTo, bool isPhone)
+        public bool SendVerificationCode(int code, string sendTo, bool isPhone)
         {
             if (isPhone)
                 return new TextMessageSender(sendTo).SendVerificationCode(code);

@@ -1,21 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Hangfire;
+using INFT3970Backend.Business_Logic_Layer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace INFT3970Backend.Controllers
 {
-    [Route("api/[controller]")]
+    
     [ApiController]
     public class PhotoController : ControllerBase
     {
         // GET: api/Photo
-        [HttpGet]
-        public IEnumerable<string> Get()
+        [HttpPost]
+        [Route("api/photo/upload")]
+        public ActionResult Upload([FromForm] string imgUrl)
         {
-            return new string[] { "value1", "value2" };
+            PhotoBL photoBL = new PhotoBL();
+            photoBL.SavePhoto(imgUrl);
+            return Ok();
         }
     }
 }

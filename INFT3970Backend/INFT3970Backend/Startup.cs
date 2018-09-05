@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using INFT3970Backend.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Hangfire;
 
 namespace INFT3970Backend
 {
@@ -35,6 +36,11 @@ namespace INFT3970Backend
             });
 
             services.AddSignalR();
+
+            services.AddHangfire(configuration =>
+            {
+                configuration.UseSqlServerStorage(@"Server=.\SQLEXPRESS;Database=Hangfire;Trusted_Connection=True;");
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -56,6 +62,8 @@ namespace INFT3970Backend
             {
                 routes.MapHub<ApplicationHub>("/app");
             });
+            app.UseHangfireServer();
+            app.UseHangfireDashboard();
         }
     }
 }

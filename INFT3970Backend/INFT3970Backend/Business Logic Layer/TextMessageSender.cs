@@ -57,6 +57,29 @@ namespace INFT3970Backend.Business_Logic_Layer
         }
 
 
+        public bool Send(string messageText, string sendTo)
+        {
+            try
+            {
+                TwilioClient.Init(AccountSID, AuthToken);
+
+                //Defaulting SendTo to send to Jono's phone number because the trial account can only send to this number
+                SendTo = "+61457558322";
+
+                var message = MessageResource.Create(
+                body: messageText,
+                from: new PhoneNumber(TwilioNumber),
+                to: new PhoneNumber(SendTo)
+                );
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
         public bool SendVerificationCode(int verificationCode)
         {
             Message = "Your CamTag verification code is: " + verificationCode;

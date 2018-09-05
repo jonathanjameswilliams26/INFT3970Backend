@@ -90,6 +90,34 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
+        public bool SendEmail(string sendTo, string subject, string body, bool isHTML)
+        {
+            bool isSuccessful = false;
+
+            //Try and send the email to the destination email using the subject and body.
+            //If any exception occurs return false
+            try
+            {
+                Mail.IsBodyHtml = isHTML;
+                Mail.From = Address;
+                Mail.To.Add(new MailAddress(sendTo));
+                Mail.Subject = subject;
+                Mail.Body = body;
+                SmtpClient.Send(Mail);
+                isSuccessful = true;
+            }
+            catch
+            {
+                isSuccessful = false;
+            }
+
+            return isSuccessful;
+        }
+
+
+
+
+
         public bool SendVerificationEmail(int verificationCode, string sendTo)
         {
             bool isSuccessful = false;

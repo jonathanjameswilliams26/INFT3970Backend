@@ -38,7 +38,7 @@ namespace INFT3970Backend.Controllers
                 PlayerBL playerBL = new PlayerBL();
                 Response<int> joinGameResponse = playerBL.JoinGame(createGameResponse.Data, nickname, contact, true);
 
-                //If joining the game was sucessful we must deactivate the game that was just created
+                //If joining the game was not sucessful we must deactivate the game that was just created
                 if (joinGameResponse.Type == ResponseType.ERROR)
                     gameBL.DeactivateGameAfterHostJoinError(createGameResponse.Data);
 
@@ -48,17 +48,6 @@ namespace INFT3970Backend.Controllers
             //Otherwise, return the error response when trying to create the game
             else
                 return new Response<int>(-1, ResponseType.ERROR, createGameResponse.ErrorMessage, createGameResponse.ErrorCode);
-        }
-
-
-
-        [HttpPost]
-        [Route("api/game/photo")]
-        public ActionResult NewPhoto([FromForm] string imgUrl)
-        {
-            GameBL gameBL = new GameBL();
-            gameBL.SavePhoto(imgUrl);
-            return Ok();
         }
     }
 }
