@@ -11,10 +11,10 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// RESPONSE DATA = The lobby code of the new game created in the DB, or negative INT if error.
         /// </summary>
         /// <returns></returns>
-        public Response<string> CreateGame()
+        public Response<Game> CreateGame()
         {
             GameDAL gameDAL = new GameDAL();
-            Response<string> response = null;
+            Response<Game> response = null;
 
             bool doRun = true;
             while (doRun)
@@ -23,7 +23,7 @@ namespace INFT3970Backend.Business_Logic_Layer
                 response = gameDAL.CreateGame(GenerateCode());
 
                 //If the response is successful the game was successfully created
-                if (response.Type == ResponseType.SUCCESS)
+                if (response.Type == "ERROR")
                     doRun = false;
 
                 //If the response contains an error code of ITEMALREADYEXISTS then the game code is not unique,
@@ -46,9 +46,9 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// Deactivates the game created by the host player because an unexpected error occurred while the host player tried to join the game
         /// </summary>
         /// <param name="gameCode">The game code to deactivate</param>
-        public void DeactivateGameAfterHostJoinError(string gameCode)
+        public void DeactivateGameAfterHostJoinError(int gameID)
         {
-            new GameDAL().DeactivateGameAfterHostJoinError(gameCode);
+            new GameDAL().DeactivateGameAfterHostJoinError(gameID);
         }
 
         

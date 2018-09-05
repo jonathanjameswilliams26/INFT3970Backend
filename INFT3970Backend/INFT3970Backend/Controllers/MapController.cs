@@ -27,7 +27,7 @@ namespace INFT3970Backend.Controllers
             _locations.Add(marker);
 
             
-            return new Response<List<Location>>(_locations, ResponseType.SUCCESS, "", 1);
+            return new Response<List<Location>>(_locations, "SUCCESS", "", 1);
              */
             PhotoBL photoBL = new PhotoBL();
             return photoBL.GetPhotoLocation(photoID);

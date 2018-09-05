@@ -40,7 +40,7 @@ namespace INFT3970Backend.Data_Access_Layer
                             ModelFactory factory = new ModelFactory(Reader);
                             Photo photo = factory.PhotoFactory();
                             if (photo == null)
-                                return new Response<List<Photo>>(null, ResponseType.ERROR, "An error occurred while trying to build the photo list.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<List<Photo>>(null, "ERROR", "An error occurred while trying to build the photo list.", ErrorCodes.EC_BUILDMODELERROR);
 
                             photos.Add(photo);
                         }
@@ -60,7 +60,7 @@ namespace INFT3970Backend.Data_Access_Layer
             }
             catch
             {
-                return new Response<List<Photo>>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<List<Photo>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
             
          

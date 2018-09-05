@@ -19,9 +19,10 @@ namespace INFT3970Backend.Data_Access_Layer
         /// Will return gameCode if gameCode does not exist and is added to the database.
         /// Will return a game code of NULL is an error occurs
         /// </returns>
-        public Response<string> CreateGame(string gameCode)
+        public Response<Game> CreateGame(string gameCode)
         {
             StoredProcedure = "usp_CreateGame";
+            Game game = null;
             try
             {
                 //Create the connection and command for the stored procedure
@@ -39,18 +40,19 @@ namespace INFT3970Backend.Data_Access_Layer
 
                         //Perform the procedure and get the result
                         Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Reader = Command.ExecuteReader();
+                        while (Reader.Read())
+                        {
+                            game = new ModelFactory(Reader).GameFactory();
+                            if (game == null)
+                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the Game model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close();
 
                         //Format the results into a response object
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        Response<string> response = new Response<string>(null, Result, ErrorMSG, Result);
-
-                        //If the response is successful, set the data to be the correct game code
-                        if (response.Type == ResponseType.SUCCESS)
-                            response.Data = gameCode;
-
-                        return response;
+                        return new Response<Game>(game, Result, ErrorMSG, Result);
                     }
                 }
             }
@@ -58,7 +60,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<string>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<Game>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -73,7 +75,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// error such as invalid contact details or the contact details are already taken by another player in an active playing game.
         /// </summary>
         /// <param name="gameCode">The game code being deactivated</param>
-        public void DeactivateGameAfterHostJoinError(string gameCode)
+        public void DeactivateGameAfterHostJoinError(int gameID)
         {
             StoredProcedure = "usp_DeactivateGameAfterHostJoinError";
             try
@@ -85,7 +87,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameCode", gameCode);
+                        Command.Parameters.AddWithValue("@gameID", gameID);
 
                         //Perform the procedure and get the result
                         Connection.Open();
@@ -98,6 +100,46 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 //Do nothing
+            }
+        }
+
+
+
+
+
+        public Game GetGameByID(int gameID)
+        {
+            StoredProcedure = "usp_GetGameByID";
+            Game game = new Game();
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameID", gameID);
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+                        while(Reader.Read())
+                        {
+                            game = new ModelFactory(Reader).GameFactory();
+                        }
+                        Reader.Close();
+
+                        return game;
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return null;
             }
         }
     }

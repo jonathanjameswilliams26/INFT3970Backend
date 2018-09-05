@@ -12,7 +12,7 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_DeactivateGameAfterHostJoinError] 
 	-- Add the parameters for the stored procedure here
-	@gameCode VARCHAR(6)
+	@gameID INT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
@@ -21,7 +21,7 @@ BEGIN
 
 	UPDATE tbl_Game
 	SET IsActive = 0
-	WHERE GameCode = @gameCode
+	WHERE GameID = @gameID
 
 END
 GO

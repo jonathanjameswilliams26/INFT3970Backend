@@ -45,8 +45,8 @@ BEGIN
 
 		--Get all the active and verified players inside that game
 		SELECT *
-		FROM tbl_Player
-		WHERE GameID = @gameID AND IsActive = 1 AND isVerified = 1
+		FROM vw_PlayerGame
+		WHERE GameID = @gameID AND PlayerIsActive = 1 AND isVerified = 1
 
 		--Set the return variables
 		SET @result = 1;

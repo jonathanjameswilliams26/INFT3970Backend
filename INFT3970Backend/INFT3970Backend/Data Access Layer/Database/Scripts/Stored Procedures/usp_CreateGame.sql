@@ -42,14 +42,20 @@ BEGIN
 		END;
 
 		--Game code does not exist, create the new game
+		DECLARE @createdGameID INT;
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
 			INSERT INTO tbl_Game (GameCode) VALUES (@gameCode);
+			SET @createdGameID = SCOPE_IDENTITY();
 		COMMIT
 
+		--Set the success return variables
 		SET @result = 1;
 		SET @errorMSG = '';
 
+
+		--Read the new game record
+		SELECT * FROM tbl_Game WHERE GameID = @createdGameID
 	END TRY
 
 	--An error occurred in the data validation

@@ -63,11 +63,12 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-        public Player PlayerFactory()
+        public Player PlayerFactory(bool doGetGame)
         {
             try
             {
                 Player player = new Player();
+                Game game = null;
                 player.PlayerID = GetInt("PlayerID");
                 player.Nickname = SafeGetString("Nickname");
                 player.Phone = SafeGetString("Phone");
@@ -80,7 +81,23 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.IsVerified = GetBool("IsVerified");
                 player.ConnectionID = SafeGetString("ConnectionID");
                 player.IsConnected = GetBool("IsConnected");
-                player.IsActive = GetBool("IsActive");
+                player.IsActive = GetBool("PlayerIsActive");
+
+                //Build the Game object for the player
+                if(doGetGame)
+                {
+                    game = new Game();
+                    game.GameID = GetInt("GameID");
+                    game.GameCode = SafeGetString("GameCode");
+                    game.NumOfPlayers = GetInt("NumOfPlayers");
+                    game.GameMode = SafeGetString("GameMode");
+                    game.StartTime = GetDateTime("StartTime");
+                    game.EndTime = GetDateTime("EndTime");
+                    game.GameState = SafeGetString("GameState");
+                    game.IsJoinableAtAnytime = GetBool("IsJoinableAtAnytime");
+                    game.IsActive = GetBool("GameIsActive");
+                    player.Game = game;
+                }
                 return player;
             }
             catch
@@ -109,6 +126,29 @@ namespace INFT3970Backend.Data_Access_Layer
                 photo.PhotoOfPlayerID = GetInt("PhotoOfPlayerID");
 
                 return photo;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+        public Game GameFactory()
+        {
+            try
+            {
+                Game game = new Game();
+                game.GameID = GetInt("GameID");
+                game.GameCode = SafeGetString("GameCode");
+                game.NumOfPlayers = GetInt("NumOfPlayers");
+                game.GameMode = SafeGetString("GameMode");
+                game.StartTime = GetDateTime("StartTime");
+                game.EndTime = GetDateTime("EndTime");
+                game.GameState = SafeGetString("GameState");
+                game.IsJoinableAtAnytime = GetBool("IsJoinableAtAnytime");
+                game.IsActive = GetBool("IsActive");
+                return game;
             }
             catch
             {

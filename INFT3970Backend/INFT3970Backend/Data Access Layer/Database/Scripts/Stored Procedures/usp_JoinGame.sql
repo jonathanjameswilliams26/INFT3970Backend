@@ -30,8 +30,7 @@ CREATE PROCEDURE [dbo].[usp_JoinGame]
 	@verificationCode INT,
 	@isHost BIT,
 	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT,
-	@createdPlayerID INT OUTPUT
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
@@ -49,6 +48,8 @@ BEGIN
 
 	BEGIN TRY
 		
+		DECLARE @createdPlayerID INT;
+
 		--Confirm the gameCode passed in exists and is active
 		DECLARE @gameIDToJoin INT;
 		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND IsActive = 1
@@ -139,6 +140,9 @@ BEGIN
 		SET @result = 1;
 		SET @errorMSG = ''
 
+		--Read the player record
+		SELECT * FROM vw_PlayerGame WHERE PlayerID = @createdPlayerID
+
 	END TRY
 
 	BEGIN CATCH
@@ -148,7 +152,6 @@ BEGIN
 			SET @result = @EC_INSERTERROR;
 			SET @errorMSG = 'An error occurred while trying to add the player to the game'
 		END
-		SET @createdPlayerID = -1;
 	END CATCH
 END
 GO

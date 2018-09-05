@@ -1,14 +1,9 @@
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 1/09/18
--- Description:	Gets all the players in a game, takes in a playerID and users that playerID to find all other players in the game
-
--- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The playerID trying to update does not exist
-
--- =============================================
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 CREATE PROCEDURE [dbo].[usp_GetPlayerPhotoLocation] 
 	-- Add the parameters for the stored procedure here
 	@photoID INT, 

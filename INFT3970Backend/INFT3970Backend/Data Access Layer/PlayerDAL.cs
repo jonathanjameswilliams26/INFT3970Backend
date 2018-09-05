@@ -51,11 +51,11 @@ namespace INFT3970Backend.Data_Access_Layer
                         {
                             //Call the ModelFactory to build the model from the data
                             ModelFactory factory = new ModelFactory(Reader);
-                            Player player = factory.PlayerFactory();
+                            Player player = factory.PlayerFactory(false);
 
                             //If an error occurred while trying to build the player list
                             if(player == null)
-                                return new Response<List<Player>>(null, ResponseType.ERROR, "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<List<Player>>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
 
                             players.Add(player);
                         }
@@ -75,7 +75,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<List<Player>>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<List<Player>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -123,7 +123,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<object>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -141,9 +141,10 @@ namespace INFT3970Backend.Data_Access_Layer
         /// A Response which contains the playerID generated in the database once the player has joined the game.
         /// Will return a playerID of -1 if an error occurred
         /// </returns>
-        public Response<int> JoinGame(string gameCode, string nickname, string contact, bool isPhone, int verificationCode, bool isHost)
+        public Response<Player> JoinGame(string gameCode, string nickname, string contact, bool isPhone, int verificationCode, bool isHost)
         {
             StoredProcedure = "usp_JoinGame";
+            Player player = null;
             try
             {
                 //Create the connection and command for the stored procedure
@@ -163,18 +164,22 @@ namespace INFT3970Backend.Data_Access_Layer
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
                         Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@createdPlayerID", SqlDbType.Int);
-                        Command.Parameters["@createdPlayerID"].Direction = ParameterDirection.Output;
 
                         //Perform the procedure and get the result
                         Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Reader = Command.ExecuteReader();
+                        while(Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).PlayerFactory(true);
+                            if (player == null)
+                                return new Response<Player>(null, "ERROR", "An error occurred while trying to build the player model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close();
 
                         //Format the results into a response object
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        int createdPlayerID = Convert.ToInt32(Command.Parameters["@createdPlayerID"].Value);
-                        return new Response<int>(createdPlayerID, Result, ErrorMSG, Result);
+                        return new Response<Player>(player, Result, ErrorMSG, Result);
                     }
                 }
             }
@@ -182,7 +187,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<int>(-1, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<Player>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -232,7 +237,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<object>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -297,7 +302,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<string>(null, ResponseType.ERROR, DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<string>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 

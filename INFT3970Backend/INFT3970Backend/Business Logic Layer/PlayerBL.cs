@@ -58,22 +58,22 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="contact">The players contact either phone or email where the player will be contacted throughout the game.</param>
         /// <param name="isHost">A flag which outlines if the player joining the game is the host of the game.</param>
         /// <returns></returns>
-        public Response<int> JoinGame(string gameCode, string nickname, string contact, bool isHost)
+        public Response<Player> JoinGame(string gameCode, string nickname, string contact, bool isHost)
         {
             //Confirm the input parameters are not empty or null
             if (String.IsNullOrWhiteSpace(nickname) || String.IsNullOrWhiteSpace(gameCode) || String.IsNullOrWhiteSpace(contact))
-                return new Response<int>(-1, ResponseType.ERROR, "Missing request data, nickname, contact or gamecode is empty or null.", ErrorCodes.EC_MISSINGORBLANKDATA);
+                return new Response<Player>(null, "ERROR", "Missing request data, nickname, contact or gamecode is empty or null.", ErrorCodes.EC_MISSINGORBLANKDATA);
 
             //Confirm the game code is 6 characters in length and only contains letters and numbers
             Regex gameCodeRegex = new Regex(@"^[a-zA-Z0-9]{6,6}$");
             if (!gameCodeRegex.IsMatch(gameCode))
-                return new Response<int>(-1, ResponseType.ERROR, "The game code is incorrect, it must be 6 characters long and only contain letters and numbers.", ErrorCodes.EC_JOINGAME_INVALIDGAMECODE);
+                return new Response<Player>(null, "ERROR", "The game code is incorrect, it must be 6 characters long and only contain letters and numbers.", ErrorCodes.EC_JOINGAME_INVALIDGAMECODE);
 
             //Confirm the nickname is only numbers and letters (no spaces allowed)
             Regex nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
             bool march = nicknameRegex.IsMatch(nickname);
             if (!nicknameRegex.IsMatch(nickname))
-                return new Response<int>(-1, ResponseType.ERROR, "The nickname you entered is invalid, please only enter letters and numbers (no spaces).", ErrorCodes.EC_JOINGAME_NICKNAMEINVALID);
+                return new Response<Player>(null, "ERROR", "The nickname you entered is invalid, please only enter letters and numbers (no spaces).", ErrorCodes.EC_JOINGAME_NICKNAMEINVALID);
 
             //Confirm the contact, check if it is an email or phone number
             bool isPhone = false;
@@ -90,7 +90,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
             //If the contact is not either a phone or email address return an error
             if (!isEmail && !isPhone)
-                return new Response<int>(-1, ResponseType.ERROR, "The contact information entered is invalid. Please enter a phone number or an email address.", ErrorCodes.EC_JOINGAME_CONTACTINVALID);
+                return new Response<Player>(null, "ERROR", "The contact information entered is invalid. Please enter a phone number or an email address.", ErrorCodes.EC_JOINGAME_CONTACTINVALID);
 
             
             //If the contact is a phone number, reformat the number to use +61 since that is needed for twilio
@@ -100,10 +100,10 @@ namespace INFT3970Backend.Business_Logic_Layer
             //Call the data access layer to add the player to the database
             int verificationCode = GenerateVerificationCode();
             PlayerDAL playerDAL = new PlayerDAL();
-            Response<int> response = playerDAL.JoinGame(gameCode, nickname, contact, isPhone, verificationCode, isHost);
+            Response<Player> response = playerDAL.JoinGame(gameCode, nickname, contact, isPhone, verificationCode, isHost);
 
             //If the response was successful, send the verification code to the player
-            if(response.Type == ResponseType.SUCCESS)
+            if(response.Type == "SUCCESS")
                 BackgroundJob.Enqueue<PlayerBL>(x => x.SendVerificationCode(verificationCode, contact, isPhone));
 
             return response;
@@ -131,7 +131,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         {
             //Confirm the verification code is not empty or null, and confirm the playerID is a valid INT, must be greater than 100000
             if (String.IsNullOrWhiteSpace(verificationCode) || playerID < 10000)
-                return new Response<object>(null, ResponseType.ERROR, "Missing request data, verification code is empty or null or playerID was not valid.", ErrorCodes.EC_MISSINGORBLANKDATA);
+                return new Response<object>(null, "ERROR", "Missing request data, verification code is empty or null or playerID was not valid.", ErrorCodes.EC_MISSINGORBLANKDATA);
 
 
             //Confirm the verification code is a valid verification code, will always be an integer from 10000 - 99999
@@ -145,7 +145,7 @@ namespace INFT3970Backend.Business_Logic_Layer
             }
             catch
             {
-                return new Response<object>(null, ResponseType.ERROR, "The verification code is invalid. Must be an INT between 10000 and 99999.", ErrorCodes.EC_VERIFYPLAYER_CODEINVALID);
+                return new Response<object>(null, "ERROR", "The verification code is invalid. Must be an INT between 10000 and 99999.", ErrorCodes.EC_VERIFYPLAYER_CODEINVALID);
             }
 
             //Call the data access layer to confirm the verification code is correct.
@@ -153,7 +153,7 @@ namespace INFT3970Backend.Business_Logic_Layer
             Response<object> response = playerDAL.ValidateVerificationCode(code, playerID);
 
             //If the player was successfully verified, updated all the clients about a joined player.
-            if(response.Type == ResponseType.SUCCESS)
+            if(response.Type == "SUCCESS")
             {
                 HubInterface hubInterface = new HubInterface(hubContext);
                 hubInterface.UpdatePlayerJoined(playerID);
@@ -186,7 +186,7 @@ namespace INFT3970Backend.Business_Logic_Layer
             Response<string> response = new PlayerDAL().UpdateVerificationCode(playerID, code);
 
             //If the response is successful send the verification code
-            if (response.Type == ResponseType.SUCCESS)
+            if (response.Type == "SUCCESS")
             {
                 //The contact information returned from the data access is an email address
                 if (response.Data.Contains("@"))
@@ -196,11 +196,11 @@ namespace INFT3970Backend.Business_Logic_Layer
                 else
                     BackgroundJob.Enqueue<PlayerBL>(x => SendVerificationCode(code, response.Data, true));
 
-                return new Response<object>(null, ResponseType.SUCCESS, null, 1);
+                return new Response<object>(null, "SUCCESS", null, 1);
             }
             //Otherwise, an error occurred while updating the validation code, return the error obtained from the database
             else
-                return new Response<object>(null, ResponseType.ERROR, response.ErrorMessage, response.ErrorCode);
+                return new Response<object>(null, "ERROR", response.ErrorMessage, response.ErrorCode);
         }
 
 

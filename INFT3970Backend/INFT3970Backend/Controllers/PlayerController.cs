@@ -79,7 +79,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>Response including the playerID generated in the database. If an error occurs then a negative PlayerID is returned in the response</returns>
         [HttpPost]
         [Route("api/player/joinGame")]
-        public ActionResult<Response<int>> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact)
+        public ActionResult<Response<Player>> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact)
         {
             //Example request:
             //Use POSTMAN and POST 'Form-Data' using the following values
