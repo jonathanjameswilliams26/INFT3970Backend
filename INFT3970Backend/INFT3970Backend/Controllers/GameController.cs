@@ -11,14 +11,6 @@ namespace INFT3970Backend.Controllers
     [ApiController]
     public class GameController : ControllerBase
     {
-        // GET: api/Game
-        /*[HttpGet]
-        public ActionResult<Response<Game>> Get()
-        {
-            return Ok();
-        }*/
-
-
 
         /// <summary>
         /// POST: api/player/createGame - Creates a new game and joins a player to their created game, creating a new Player record and returning the created PlayerID
@@ -27,7 +19,7 @@ namespace INFT3970Backend.Controllers
         /// <param name="contact">The players contact info, either phone or email</param>
         /// <returns>Response including the playerID and gameCode generated in the database. If an error occurs then a negative PlayerID is returned in the response</returns>
         [HttpPost]
-        [Route("api/player/createGame")]
+        [Route("api/game/createGame")]
         public Response<int> CreateGame([FromForm] string nickname, [FromForm] string contact) //settings?
         {
             //Example request:
@@ -57,11 +49,16 @@ namespace INFT3970Backend.Controllers
             else
                 return new Response<int>(-1, ResponseType.ERROR, createGameResponse.ErrorMessage, createGameResponse.ErrorCode);
         }
+
+
+
+        [HttpPost]
+        [Route("api/game/photo")]
+        public ActionResult NewPhoto([FromForm] string imgUrl)
+        {
+            GameBL gameBL = new GameBL();
+            gameBL.SavePhoto(imgUrl);
+            return Ok();
+        }
     }
-
-
-
-
-
-
 }

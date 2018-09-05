@@ -1,10 +1,9 @@
 ﻿using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using SixLabors.ImageSharp;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {
@@ -53,6 +52,23 @@ namespace INFT3970Backend.Business_Logic_Layer
         }
 
         
+
+        public void SavePhoto(string imgUrl)
+        {
+            var base64Data = imgUrl.Replace("data:image/jpeg;base64,", "");
+            var binData = Convert.FromBase64String(base64Data);
+
+            var directory = Directory.GetCurrentDirectory() + "\\GameImages\\" + DateTime.Now.Ticks + ".jpg";
+
+            using (var stream = new MemoryStream(binData))
+            {
+                using (var image = Image.Load(stream))
+                {
+                    image.Save(directory);
+                }
+            }
+        }
+
 
 
 
