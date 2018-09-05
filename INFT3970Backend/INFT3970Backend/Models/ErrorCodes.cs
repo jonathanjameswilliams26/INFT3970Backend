@@ -25,6 +25,7 @@ namespace INFT3970Backend.Models
         public const int EC_JOINGAME_NICKNAMETAKEN = 1005;
         public const int EC_JOINGAME_PHONETAKEN = 1006;
         public const int EC_JOINGAME_EMAILTAKEN = 1007;
+        public const int EC_JOINGAME_UNABLETOJOIN = 1008;
 
 
         //PlayerController - Verify Player / Verify verification code Error Codes

@@ -141,7 +141,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// A Response which contains the playerID generated in the database once the player has joined the game.
         /// Will return a playerID of -1 if an error occurred
         /// </returns>
-        public Response<int> JoinGame(string gameCode, string nickname, string contact, bool isPhone, int verificationCode)
+        public Response<int> JoinGame(string gameCode, string nickname, string contact, bool isPhone, int verificationCode, bool isHost)
         {
             StoredProcedure = "usp_JoinGame";
             try
@@ -158,6 +158,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         Command.Parameters.AddWithValue("@contact", contact);
                         Command.Parameters.AddWithValue("@isPhone", isPhone);
                         Command.Parameters.AddWithValue("@verificationCode", verificationCode);
+                        Command.Parameters.AddWithValue("@isHost", isHost);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
