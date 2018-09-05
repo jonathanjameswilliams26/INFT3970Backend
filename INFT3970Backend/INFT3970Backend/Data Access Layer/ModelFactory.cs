@@ -49,6 +49,16 @@ namespace INFT3970Backend.Data_Access_Layer
             return string.Empty;
         }
 
+        private double GetDouble(string colName)
+        {
+            return Reader.GetDouble(GetColIndex(colName));
+        }
+
+        private DateTime GetDateTime(string colName)
+        {
+            return Reader.GetDateTime(GetColIndex(colName));
+        }
+
 
 
 
@@ -78,5 +88,34 @@ namespace INFT3970Backend.Data_Access_Layer
                 return null;
             }
         }
+
+        public Photo PhotoFactory()
+        {
+            try
+            {
+                Photo photo = new Photo();
+                photo.PhotoID = GetInt("PhotoID");
+                photo.Lat = GetDouble("Lat");        
+                photo.Long = GetDouble("Long");
+                photo.FilePath = SafeGetString("FilePath");
+                photo.TimeTaken = GetDateTime("TimeTaken");
+                photo.VotingFinishTime = GetDateTime("VotingFinishTime");
+                photo.NumYesVotes = GetInt("NumYesVotes");
+                photo.NumNoVotes = GetInt("NumNoVotes");
+                photo.IsVotingComplete = GetBool("IsVotingComplete");
+                photo.IsActive = GetBool("IsActive");
+                photo.GameID = GetInt("GameID");
+                photo.TakenByPlayerID = GetInt("TakenByPlayerID");
+                photo.PhotoOfPlayerID = GetInt("PhotoOfPlayerID");
+
+                return photo;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }
+    
+
