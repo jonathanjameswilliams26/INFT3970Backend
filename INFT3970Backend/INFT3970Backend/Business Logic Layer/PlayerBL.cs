@@ -36,11 +36,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="playerID">The PlayerID being updated</param>
         /// <param name="connectionID">The new ConnectionID</param>
         /// <returns></returns>
-        public Response<object> UpdateConnectionID(int playerID, string connectionID)
+        public void UpdateConnectionID(int playerID, string connectionID)
         {
             //Call the Data Access Layer to update the playerID's connectionID in the Database
             PlayerDAL playerDAL = new PlayerDAL();
-            return playerDAL.UpdateConnectionID(playerID, connectionID);
+            playerDAL.UpdateConnectionID(playerID, connectionID);
         }
 
 

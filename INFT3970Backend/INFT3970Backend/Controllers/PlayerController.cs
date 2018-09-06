@@ -51,20 +51,21 @@ namespace INFT3970Backend.Controllers
         /// </summary>
         /// <param name="PlayerIDAndConnectionID">Key Value pair of JSON body data representing the PlayerID and their connectionID to the hub</param>
         /// <returns>Response with NULL data, outlining if the database update was SUCCESSFUL or ERROR</returns>
-        [HttpPost]
-        [Route("api/player/setConnectionID")]
-        public ActionResult<Response<object>> SetConnectionID([FromBody] KeyValuePair<int, string> PlayerIDAndConnectionID)
-        {
-            // Example Request (JSON)
-            /*
-             *  {
-                    "key": 1234,
-                    "value": "connectionIDValue"
-                }
-             */
-            PlayerBL playerBL = new PlayerBL();
-            return playerBL.UpdateConnectionID(PlayerIDAndConnectionID.Key, PlayerIDAndConnectionID.Value);
-        }
+        ///*[HttpPost]
+        //[Route("api/player/setConnectionID")]
+        //public ActionResult<Response<object>> SetConnectionID([FromBody] KeyValuePair<int, string> PlayerIDAndConnectionID)
+        //{
+        //    // Example Request (JSON)
+        //    /*
+        //     *  {
+        //            "key": 1234,
+        //            "value": "connectionIDValue"
+        //        }
+        //     */
+        //    PlayerBL playerBL = new PlayerBL();
+        //    return playerBL.UpdateConnectionID(PlayerIDAndConnectionID.Key, PlayerIDAndConnectionID.Value);
+        //}
+    
 
 
 
