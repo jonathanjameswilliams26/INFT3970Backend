@@ -187,7 +187,6 @@ CREATE TABLE tbl_Notification
 	NotificationID INT NOT NULL IDENTITY(100000, 1),
 	MessageText VARCHAR(255) NOT NULL DEFAULT 'Notification',
 	NotificationType VARCHAR(255) NOT NULL DEFAULT 'VOTE',
-	Link VARCHAR(255),
 	IsRead BIT NOT NULL DEFAULT 0,
 	IsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
@@ -197,7 +196,7 @@ CREATE TABLE tbl_Notification
 	FOREIGN KEY (GameID) REFERENCES tbl_Game(GameID),
 	FOREIGN KEY (PlayerID) REFERENCES tbl_Player(PlayerID),
 
-	CHECK(NotificationType IN ('VOTE', 'SUCCESS', 'FAIL'))
+	CHECK(NotificationType IN ('VOTE', 'SUCCESS', 'FAIL', 'JOIN', 'LEAVE', 'TAGGED'))
 );
 GO
 
@@ -943,12 +942,12 @@ GO
 
 
 --Dummy Data
-/*INSERT INTO tbl_Game (GameCode, NumOfPlayers) VALUES ('tcf124', 3)
+INSERT INTO tbl_Game (GameCode, NumOfPlayers) VALUES ('tcf124', 3)
 GO
 
 INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Jono', '+61457558322', 'localhost', 100000)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Dylan', '+61485471258', 'localhost', 100000)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Dylan', '+6145620441', 'localhost', 100000)
 GO
 INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Mathew', '+61454758125', 'localhost', 100000)
 GO
@@ -958,6 +957,4 @@ INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('David'
 GO
 INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID) VALUES ('Sheridan', '+61478588547', 'localhost', 100000)
 GO
-
-*/
 

@@ -146,5 +146,44 @@ namespace INFT3970Backend.Data_Access_Layer
                 return null;
             }
         }
+
+        // if type = "JOIN" then add this notification for all players within the gameID.
+        public void CreateNotification(string msgTxt, string type, int gameID, int playerID)
+        {
+            StoredProcedure = "usp_CreateNotification";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@msgTxt", msgTxt);
+                        Command.Parameters.AddWithValue("@type", type);
+                        Command.Parameters.AddWithValue("@gameID", gameID);
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                
+            }
+        }
+
+
+        //returns all UNREAD notifications for specific player
+        /*public Response<Notification> GetNotifications(intPlayerID)
+        {
+
+        }*/
     }
 }

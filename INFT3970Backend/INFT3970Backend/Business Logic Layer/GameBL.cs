@@ -77,5 +77,12 @@ namespace INFT3970Backend.Business_Logic_Layer
 
             return gameCode;
         }
+
+
+        public void CreateNotification(string msgTxt, string type, int gameID, int playerID)
+        {
+            GameDAL gameDAL = new GameDAL();
+            gameDAL.CreateNotification(msgTxt, type, gameID, playerID);
+        }
     }
 }
