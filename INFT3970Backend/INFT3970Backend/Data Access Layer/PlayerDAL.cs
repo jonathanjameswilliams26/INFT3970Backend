@@ -22,7 +22,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID"></param>
         /// <returns>A list of Player objects inside the game which the passed in playerID is in.</returns>
-        public Response<List<Player>> GetGamePlayerList(int playerID)
+        public Response<List<Player>> GetGamePlayerList(int playerID, bool doGetGameDetails)
         {
             StoredProcedure = "usp_GetGamePlayerList";
             List<Player> players = new List<Player>();
@@ -51,7 +51,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         {
                             //Call the ModelFactory to build the model from the data
                             ModelFactory factory = new ModelFactory(Reader);
-                            Player player = factory.PlayerFactory(false);
+                            Player player = factory.PlayerFactory(doGetGameDetails);
 
                             //If an error occurred while trying to build the player list
                             if(player == null)

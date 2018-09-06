@@ -39,7 +39,7 @@ BEGIN
 		-- The playerID and photoID exist get the location of the photo
 		SELECT *
 		FROM tbl_Photo
-		WHERE GameID = @gameID AND IsActive = 1 AND IsVotingComplete = 1
+		WHERE GameID = @gameID AND IsActive = 1 AND IsVotingComplete = 1 AND PhotoID = @photoID
 
 		--Set the return variables
 		SET @result = 1;
@@ -55,13 +55,3 @@ BEGIN
 
 END
 GO
-
-DECLARE @errorID INT;
-DECLARE @errorMessage VARCHAR(255);
-
-EXEC usp_GetPlayerPhotoLocation 1000002, @errorID out, @errorMessage out 
-
-
---Dummy data
-INSERT INTO tbl_Photo (Lat, Long, FilePath, IsVotingComplete, GameID, TakenByPlayerID, PhotoOfPlayerID) VALUES (-24.2, 130.0, 'localhost', 1, 100000, 100001, 100002);
-

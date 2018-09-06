@@ -531,7 +531,7 @@ BEGIN
 		-- The playerID and photoID exist get the location of the photo
 		SELECT *
 		FROM tbl_Photo
-		WHERE GameID = @gameID AND IsActive = 1 AND IsVotingComplete = 1
+		WHERE GameID = @gameID AND IsActive = 1 AND IsVotingComplete = 1 AND PhotoID = @photoID
 
 		--Set the return variables
 		SET @result = 1;

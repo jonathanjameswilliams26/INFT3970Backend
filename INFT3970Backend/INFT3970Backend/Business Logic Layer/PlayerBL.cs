@@ -22,7 +22,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         {
             //Call the DataAccessLayer to get the list of players in the same game from the database
             PlayerDAL playerDAL = new PlayerDAL();
-            return playerDAL.GetGamePlayerList(playerID);
+            return playerDAL.GetGamePlayerList(playerID, false);
         }
 
 
