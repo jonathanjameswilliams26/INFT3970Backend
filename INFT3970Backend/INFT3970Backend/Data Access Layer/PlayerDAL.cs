@@ -21,7 +21,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// Gets a list of all the players in the same game as the playerID passed in
         /// </summary>
         /// <param name="playerID"></param>
-        /// <returns>A list of players inside the game which the passed in playerID is in.</returns>
+        /// <returns>A list of Player objects inside the game which the passed in playerID is in.</returns>
         public Response<List<Player>> GetGamePlayerList(int playerID)
         {
             StoredProcedure = "usp_GetGamePlayerList";
@@ -84,12 +84,12 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Updates the specified playerID's connectionID inside the database
+        /// Updates the specified playerID's connectionID inside the database.
+        /// Sets the ConnectionID to the ID passed in and sets IsConnected = TRUE
         /// </summary>
         /// <param name="playerID">The player being updated</param>
         /// <param name="connectionID">The new connectionID</param>
-        /// <returns></returns>
-        public Response<object> UpdateConnectionID(int playerID, string connectionID)
+        public void UpdateConnectionID(int playerID, string connectionID)
         {
             StoredProcedure = "usp_UpdateConnectionID";
             try
@@ -103,27 +103,18 @@ namespace INFT3970Backend.Data_Access_Layer
                         Command.CommandType = CommandType.StoredProcedure;
                         Command.Parameters.AddWithValue("@playerID", playerID);
                         Command.Parameters.AddWithValue("@connectionID", connectionID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar,255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
 
                         //Perform the procedure and get the result
                         Connection.Open();
                         Command.ExecuteNonQuery();
-                        
-                        //Format the results into a response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<object>(null, Result, ErrorMSG, Result);
                     }
                 }
             }
 
-            //A database exception was thrown, return an error response
+            //A database exception was thrown
             catch
             {
-                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                //Do nothing
             }
         }
 
@@ -131,16 +122,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Adds the player to the game.
+        /// Adds the player to the game matching the gamecode passed in.
+        /// Returns the created Player object. NULL data if error occurred.
         /// </summary>
         /// <param name="gameCode">The gamecode the player is attempting to join</param>
         /// <param name="nickname">The nickname chosen by the player</param>
         /// <param name="contact">The email or phone number entered by the player to receive notifications</param>
         /// <param name="isPhone">Flag value which outlines if the contact passed in is a phone number or email. TRUE = phone number, FALSE = email</param>
-        /// <returns>
-        /// A Response which contains the playerID generated in the database once the player has joined the game.
-        /// Will return a playerID of -1 if an error occurred
-        /// </returns>
+        /// <returns>The created Player object or NULL data if error occurred.</returns>
         public Response<Player> JoinGame(string gameCode, string nickname, string contact, bool isPhone, int verificationCode, bool isHost)
         {
             StoredProcedure = "usp_JoinGame";
@@ -254,7 +243,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID">The playerID who's verification code is being updated</param>
         /// <param name="verificationCode">The new verification code</param>
-        /// <returns></returns>
+        /// <returns>The email or phone number to send the new verification code to. NULL data if error.</returns>
         public Response<string> UpdateVerificationCode(int playerID, int verificationCode)
         {
             StoredProcedure = "usp_UpdateVerificationCode";
@@ -310,7 +299,11 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-
+        /// <summary>
+        /// Removes the ConnectionID from the Player record when the player disconnects from the application hub.
+        /// Sets the player's ConnectionID to NULL and IsConnected to FALSE.
+        /// </summary>
+        /// <param name="connectionID">The connectionID to remove.</param>
         public void RemoveConnectionID(string connectionID)
         {
             StoredProcedure = "usp_RemoveConnectionID";

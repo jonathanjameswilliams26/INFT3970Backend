@@ -11,14 +11,10 @@ namespace INFT3970Backend.Data_Access_Layer
     public class GameDAL : DataAccessLayer
     {
         /// <summary>
-        /// Creates a new game using the game code passed in. Will return the gamecode upon successful execution.
+        /// Creates a new game using the game code passed in. Returns the create Game object. NULL if error.
         /// </summary>
         /// <param name="gameCode">The gamecode of the new game</param>
-        /// <returns>
-        /// A Response which contains the gameCode of the new game.
-        /// Will return gameCode if gameCode does not exist and is added to the database.
-        /// Will return a game code of NULL is an error occurs
-        /// </returns>
+        /// <returns>Returns the created Game object. NULL data if error</returns>
         public Response<Game> CreateGame(string gameCode)
         {
             StoredProcedure = "usp_CreateGame";
@@ -107,6 +103,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
+        /// <summary>
+        /// Gets the Game object matching the specified GameID
+        /// </summary>
+        /// <param name="gameID">The gameID of the game</param>
+        /// <returns>Game object matching the specified ID. NULL if game does not exist or error occurred.</returns>
         public Game GetGameByID(int gameID)
         {
             StoredProcedure = "usp_GetGameByID";

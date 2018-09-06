@@ -14,7 +14,7 @@ namespace INFT3970Backend.Business_Logic_Layer
     public class PlayerBL
     {
         /// <summary>
-        /// Get the list of all players currently inside a game. RESPONSE DATA = List of Player objects, or NULL if error
+        /// Get the list of all players currently inside a game. Returns a List of Player objects. NULL if error.
         /// </summary>
         /// <param name="playerID">The player ID. This playerID can be used to find what game they are in and get all other players</param>
         /// <returns>A list of all the players currently inside the game which the passed in playerID is in.</returns>
@@ -31,7 +31,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
         /// <summary>
-        /// Updates the players connection ID. RESPONSE DATA = NULL
+        /// Updates the players connection ID. Returns NULL data.
         /// </summary>
         /// <param name="playerID">The PlayerID being updated</param>
         /// <param name="connectionID">The new ConnectionID</param>
@@ -50,14 +50,15 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
         /// <summary>
-        /// Joins a new player to a game matching the game code passed in. Stores their player details and sends them a verification code once they have joined the game.
-        /// RESPONSE DATA = The PlayerID created in the DB, or negative INT if error.
+        /// Joins a new player to a game matching the game code passed in. Stores their player details 
+        /// and sends them a verification code once they have joined the game.
+        /// Returns the created Player object. NULL data if error occurred.
         /// </summary>
         /// <param name="gameCode">The game the player is trying to join.</param>
         /// <param name="nickname">The players nickname in the game</param>
         /// <param name="contact">The players contact either phone or email where the player will be contacted throughout the game.</param>
         /// <param name="isHost">A flag which outlines if the player joining the game is the host of the game.</param>
-        /// <returns></returns>
+        /// <returns>Returns the created Player object. NULL data if error occurred.</returns>
         public Response<Player> JoinGame(string gameCode, string nickname, string contact, bool isHost)
         {
             //Confirm the input parameters are not empty or null
@@ -116,9 +117,9 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
         /// <summary>
-        /// Validates a players received verification code. If the player successfully enters their verification code
-        /// their player record will be verified, meaning they have confirmed their email address or phone number is correct
-        /// and has access to it throughout the game.
+        /// Validates a players received verification code. If the player successfully enters their 
+        /// verification code their player record will be verified, meaning they have confirmed their 
+        /// email address or phone number is correct and has access to it throughout the game.
         /// </summary>
         /// <param name="verificationCode">The code received and entered by the player</param>
         /// <param name="playerID">The playerID trying to verify</param>
@@ -172,11 +173,12 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
         /// <summary>
-        /// Regenerates a verification code, updates the player record to store the new code and sends the new code to the
-        /// players contact (Email or Phone). Returns a response with NULL data, use Response.Type to determine error or success.
+        /// Regenerates a verification code, updates the player record to store the new code and sends 
+        /// the new code to the players contact (Email or Phone). Returns a response with NULL data, 
+        /// use Response.Type to determine error or success.
         /// </summary>
         /// <param name="playerID">The player who's verification code is being updated.</param>
-        /// <returns></returns>
+        /// <returns>NULL data, use Response.Type to confirm SUCCESS or ERROR</returns>
         public Response<object> ResendVerificationCode(int playerID)
         {
             //Generate a new verification code to send

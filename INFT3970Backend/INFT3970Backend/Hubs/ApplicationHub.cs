@@ -8,15 +8,29 @@ namespace INFT3970Backend.Hubs
 {
     public class ApplicationHub : Hub
     {
+
+        /// <summary>
+        /// Method when a CamTag client connects to the application hub.
+        /// Updates the clients connectionID and sets IsConnected = TRUE
+        /// </summary>
+        /// <returns></returns>
         public override Task OnConnectedAsync()
         {
             int playerID = int.Parse(Context.GetHttpContext().Request.Query["playerID"]);
             PlayerDAL playerDAL = new PlayerDAL();
-            Response<object> response = playerDAL.UpdateConnectionID(playerID, Context.ConnectionId);
+            playerDAL.UpdateConnectionID(playerID, Context.ConnectionId);
             return base.OnConnectedAsync();
         }
 
 
+
+
+        /// <summary>
+        /// Method when a CamTag client disconnects from the application hub.
+        /// Updates the clients connectionID = NULL and sets IsConnected = FALSE
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <returns></returns>
         public override Task OnDisconnectedAsync(Exception exception)
         {
             PlayerDAL playerDAL = new PlayerDAL();

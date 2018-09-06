@@ -13,11 +13,12 @@ namespace INFT3970Backend.Controllers
     {
 
         /// <summary>
-        /// POST: api/player/createGame - Creates a new game and joins a player to their created game, creating a new Player record and returning the generated gamecode created PlayerID
+        /// POST: api/player/createGame - Creates a new game and joins a player to their created game, 
+        /// creating a new Player record and returning the created Player object with the created Game data/object also
         /// </summary>
         /// <param name="nickname">The players nickname in the game</param>
         /// <param name="contact">The players contact info, either phone or email</param>
-        /// <returns>Response including the playerID and gameCode generated in the database. If an error occurs then an empty gamecode and negative PlayerID is returned in the response</returns>
+        /// <returns>Response including the created Player object, including Game data. NULL data if error occurred.</returns>
         [HttpPost]
         [Route("api/game/createGame")]
         public ActionResult<Response<Player>> CreateGame([FromForm] string nickname, [FromForm] string contact) //settings?

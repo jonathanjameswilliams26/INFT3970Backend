@@ -8,9 +8,9 @@ namespace INFT3970Backend.Business_Logic_Layer
     {
         /// <summary>
         /// Creates a new game with a randomly generated lobby code.
-        /// RESPONSE DATA = The lobby code of the new game created in the DB, or negative INT if error.
+        /// Returns the created Game object. NULL data if successful.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Returns the created Game object. NULL data if successful.</returns>
         public Response<Game> CreateGame()
         {
             GameDAL gameDAL = new GameDAL();

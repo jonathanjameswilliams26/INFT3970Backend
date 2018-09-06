@@ -20,35 +20,24 @@ GO
 CREATE PROCEDURE [dbo].[usp_UpdateConnectionID] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
-	@connectionID VARCHAR(255),
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
+	@connectionID VARCHAR(255)
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
-
 
 	BEGIN TRY  
 		--Confirm the playerID passed in exists
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
 		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID you are trying to update does not exist';
 			RAISERROR('ERROR: playerID does not exist',16,1);
 		END;
 
 		--Confirm the new connectionID does not already exists
 		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
 		BEGIN
-			SET @result = @EC_ITEMALREADYEXISTS;
-			SET @errorMSG = 'The connectionID you are trying to update already exists';
 			RAISERROR('ERROR: connectionID alread exists',16,1);
 		END;
 
@@ -60,10 +49,6 @@ BEGIN
 			SET ConnectionID = @connectionID, IsConnected = 1
 			WHERE PlayerID = @playerID
 		COMMIT
-
-		SET @result = 1;
-		SET @errorMSG = '';
-
 	END TRY
 
 	--An error occurred in the data validation
@@ -73,8 +58,6 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'The an error occurred while trying to save your changes in the database';
 		END
 
 	END CATCH

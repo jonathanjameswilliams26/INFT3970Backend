@@ -50,7 +50,7 @@ namespace INFT3970Backend.Controllers
         /// POST: api/Player/SetConnectionID - Sets the connection ID of the playerID passed in
         /// </summary>
         /// <param name="PlayerIDAndConnectionID">Key Value pair of JSON body data representing the PlayerID and their connectionID to the hub</param>
-        /// <returns>Response Object outlining if the database update was SUCCESSFUL or ERROR</returns>
+        /// <returns>Response with NULL data, outlining if the database update was SUCCESSFUL or ERROR</returns>
         [HttpPost]
         [Route("api/player/setConnectionID")]
         public ActionResult<Response<object>> SetConnectionID([FromBody] KeyValuePair<int, string> PlayerIDAndConnectionID)
@@ -71,12 +71,13 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// POST: api/player/joinGame - Joins a player to a game matching the gameCode value, creating a new Player record and returning the created PlayerID
+        /// POST: api/player/joinGame - Joins a player to a game matching the gameCode value, 
+        /// creating a new Player record and returning the created Player object.
         /// </summary>
         /// <param name="gameCode">The gamecode the player is trying to join</param>
         /// <param name="nickname">The players nickname in the game</param>
         /// <param name="contact">The players contact info, either phone or email</param>
-        /// <returns>Response including the playerID generated in the database. If an error occurs then a negative PlayerID is returned in the response</returns>
+        /// <returns>Response including the created Player object. NULL data if an error occurred.</returns>
         [HttpPost]
         [Route("api/player/joinGame")]
         public ActionResult<Response<Player>> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact)
@@ -99,10 +100,11 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// Verifies a player by checking the verification code they have entered is correct. Returns a Response indicating success or failure.
+        /// Verifies a player by checking the verification code they have entered is correct. 
+        /// Returns a Response indicating success or failure.
         /// </summary>
         /// <param name="verificationCode">The verification code received by the user via phone or email.</param>
-        /// <returns></returns>
+        /// <returns>Response with NULL data, outlining if the database update was SUCCESSFUL or ERROR</returns>
         [HttpPost]
         [Route("api/player/verify")]
         public Response<object> VerifyPlayer([FromForm] string verificationCode, [FromHeader] int playerID)
@@ -121,7 +123,7 @@ namespace INFT3970Backend.Controllers
         /// and resends the new code to the player's contact information (Email or Phone).
         /// </summary>
         /// <param name="playerID">The playerID who's verification code is being updated</param>
-        /// <returns></returns>
+        /// <returns>Response with NULL data, outlining if the database update was SUCCESSFUL or ERROR</returns>
         [HttpPost]
         [Route("api/player/resend")]
         public Response<object> ResendVerificationCode([FromHeader] int playerID)
