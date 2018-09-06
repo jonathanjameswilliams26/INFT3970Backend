@@ -132,5 +132,25 @@ namespace INFT3970Backend.Controllers
             //Call the business logic layer
             return new PlayerBL().ResendVerificationCode(playerID);
         }
+
+
+
+
+        /// <summary>
+        /// GET: api/player/getAllPlayersInGame/{playerID} - 
+        /// Gets a list of all the players inside a game. Takes in a playerID and uses that ID to find the GameID and then get all players inside that Game
+        /// </summary>
+        /// <param name="playerID">The playerID used to determine which game the player is in and get all players in that game</param>
+        /// <returns>A list of players inside the same GameID as the PlayerID passed in</returns>
+        [HttpGet]
+        [Route("api/player/getNotifications/{playerID:int},{all:bool}")]
+        public Response<List<Notification>> GetNotificationList(int playerID, bool all)
+        {
+            //Example request
+            //https://localhost:5000/api/player/getNotifications/100000,false
+
+            PlayerBL playerBL = new PlayerBL();
+            return playerBL.GetNotificationList(playerID, all);
+        }
     }
 }

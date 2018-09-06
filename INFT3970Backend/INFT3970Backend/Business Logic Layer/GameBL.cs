@@ -79,6 +79,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         }
 
 
+
+        /// <summary>
+        /// Creates a notification of a type, assigned to particular playerID within a gameID
+        /// </summary>
+        /// <returns>void</returns>
         public void CreateNotification(string msgTxt, string type, int gameID, int playerID)
         {
             GameDAL gameDAL = new GameDAL();

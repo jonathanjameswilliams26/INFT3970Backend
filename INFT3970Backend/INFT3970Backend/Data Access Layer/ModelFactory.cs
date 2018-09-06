@@ -60,7 +60,25 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
-
+        public Notification NotificationFactory()
+        {
+            try
+            {
+                Notification notification = new Notification();
+                notification.NotificationID = GetInt("NotificationID");
+                notification.MessageText = SafeGetString("MessageText");
+                notification.Type = SafeGetString("NotificationType");
+                notification.IsRead = GetBool("IsRead");
+                notification.IsActive = GetBool("IsActive");
+                notification.GameID = GetInt("GameID");
+                notification.PlayerID = GetInt("PlayerID");
+                return notification;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
 
         public Player PlayerFactory(bool doGetGame)

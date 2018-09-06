@@ -54,3 +54,30 @@ connection.on("UpdateGameLobbyList", function () {
         }
     });
 });
+
+
+
+//Hub Client Function
+//Updates the list of notifications a player has
+connection.on("UpdateNotifications", function () {
+    //Clear the users list
+    document.getElementById("lobby").innerHTML = "";
+
+    //Make a call to the API to 
+    $.ajax({
+        type: "GET",
+        url: "https://localhost:5000/api/player/getNotifications/" + playerID,
+        //dataType: "application/json",
+        success: function (result) {
+            console.log(result);
+
+            //Get the player data from the result
+            var playerData = result.data;
+            for (var i = 0; i < playerData.length; i++) {
+                var li = document.createElement("li");
+                li.textContent = notifData.MessageText
+                document.getElementById("lobby").appendChild(li);
+            }
+        }
+    });
+});

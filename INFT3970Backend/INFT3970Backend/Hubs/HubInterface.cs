@@ -50,10 +50,13 @@ namespace INFT3970Backend.Hubs
             //Get the player who joined
             Player joinedPlayer = GetJoinedPlayerFromList(playerID, response.Data);
 
-            //Create notifications of new player joining
+            //Create notifications of new player joining, if the game has started
             GameBL gameBL = new GameBL();
-            string gameJoin = joinedPlayer.Nickname + "has joined the game";
-            gameBL.CreateNotification(gameJoin, "JOIN", joinedPlayer.Game.GameID, joinedPlayer.PlayerID);
+            if (game.GameState == "PLAYING")
+            {
+                string gameJoin = "'" + joinedPlayer.Nickname + "' has joined the game.";
+                gameBL.CreateNotification(gameJoin, "JOIN", game.GameID, joinedPlayer.PlayerID);
+            }
 
             //Loop through each of the players and update any player currently connected to the hub
             foreach (var player in response.Data)
@@ -69,7 +72,7 @@ namespace INFT3970Backend.Hubs
                     if(game.GameState == "STARTING")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
-                    //TODO: If the game state is PLAYING - Send a notification to the players in the game.
+                    //If the game state is PLAYING - Send a notification to the players in the game.
                     if(game.GameState == "PLAYING")
                     {                
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");

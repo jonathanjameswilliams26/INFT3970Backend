@@ -239,5 +239,22 @@ namespace INFT3970Backend.Business_Logic_Layer
             else
                 return new EmailSender().SendVerificationEmail(code, sendTo);
         }
+
+
+
+
+
+
+        /// <summary>
+        /// Gets all notifications for the player
+        /// </summary>
+        /// <param name="playerID">The PlayerID of the notifications</param>
+        /// <returns></returns>
+        public Response<List<Notification>> GetNotificationList(int playerID, bool all)
+        {
+            //Call the Data Access Layer to return all notifications for the player.
+            PlayerDAL playerDAL = new PlayerDAL();
+            return playerDAL.GetNotificationList(playerID, all);
+        }
     }
 }

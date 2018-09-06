@@ -147,6 +147,16 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
+
+
+        /// <summary>
+        /// Creates a notification of a type, assigned to particular playerID within a gameID
+        /// </summary>
+        /// <param name="msgTxt">The message content of the notif</param>
+        /// <param name="type">The type of the notif // VOTE, SUCCESS, FAIL, JOIN, LEAVE, TAGGED </param>
+        /// <param name="gameID">The gameID of the game</param>
+        /// <param name="playerID">The playerID to which the notification is addressed</param>
+        /// <returns>Game object matching the specified ID. NULL if game does not exist or error occurred.</returns>
         // if type = "JOIN" then add this notification for all players within the gameID.
         public void CreateNotification(string msgTxt, string type, int gameID, int playerID)
         {
@@ -164,6 +174,8 @@ namespace INFT3970Backend.Data_Access_Layer
                         Command.Parameters.AddWithValue("@type", type);
                         Command.Parameters.AddWithValue("@gameID", gameID);
                         Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
 
                         //Perform the procedure and get the result
                         Connection.Open();
@@ -175,12 +187,12 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                
+                var s = Convert.ToString(Command.Parameters["@errorMSG"].Value);
             }
         }
 
 
-        //returns all UNREAD notifications for specific player
+        //returns all UNREAD notifications for specific player with IsConnected
         /*public Response<Notification> GetNotifications(intPlayerID)
         {
 
