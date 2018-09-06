@@ -187,15 +187,8 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                var s = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                
             }
         }
-
-
-        //returns all UNREAD notifications for specific player with IsConnected
-        /*public Response<Notification> GetNotifications(intPlayerID)
-        {
-
-        }*/
     }
 }

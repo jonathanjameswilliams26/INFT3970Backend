@@ -399,5 +399,53 @@ namespace INFT3970Backend.Data_Access_Layer
                 return new Response<List<Notification>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
+
+
+
+
+        /// <summary>
+        /// Leaves a player from their active game
+        /// </summary>
+        /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
+        /// <returns>A response status.</returns>
+        public Response<int> LeaveGame(int playerID)
+        {
+            StoredProcedure = "usp_LeaveGame";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+
+                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
+                        //The data reader will be closed after the last row of the results have been read.
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+
+                        //Format the results into a response object
+                        return new Response<int>(1, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<int>(-1, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
     }
 }

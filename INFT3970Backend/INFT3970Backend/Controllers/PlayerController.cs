@@ -137,11 +137,12 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// GET: api/player/getAllPlayersInGame/{playerID} - 
-        /// Gets a list of all the players inside a game. Takes in a playerID and uses that ID to find the GameID and then get all players inside that Game
+        /// GET: api/player/getNotifications/{playerID},{all} - 
+        /// Gets a list of all the notifications associated with a particular player
         /// </summary>
-        /// <param name="playerID">The playerID used to determine which game the player is in and get all players in that game</param>
-        /// <returns>A list of players inside the same GameID as the PlayerID passed in</returns>
+        /// <param name="playerID">The playerID used to determine which player the notifications are for</param>
+        /// <param name="all"> all is a boolean used to determine if all notifications should be fetched or just unread</param>
+        /// <returns>A list of notifications for a player</returns>
         [HttpGet]
         [Route("api/player/getNotifications/{playerID:int},{all:bool}")]
         public Response<List<Notification>> GetNotificationList(int playerID, bool all)
@@ -151,6 +152,26 @@ namespace INFT3970Backend.Controllers
 
             PlayerBL playerBL = new PlayerBL();
             return playerBL.GetNotificationList(playerID, all);
+        }
+
+
+
+
+        /// <summary>
+        /// GET: api/player/leaveGame/{playerID} - 
+        /// Leaves a player from their active game
+        /// </summary>
+        /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
+        /// <returns>A response status.</returns>
+        [HttpGet]
+        [Route("api/player/leaveGame/{playerID:int}}")]
+        public Response<int> LeaveGame(int playerID)
+        {
+            //Example request
+            //https://localhost:5000/api/player/leaveGame/100000
+
+            PlayerBL playerBL = new PlayerBL();
+            return playerBL.LeaveGame(playerID);
         }
     }
 }

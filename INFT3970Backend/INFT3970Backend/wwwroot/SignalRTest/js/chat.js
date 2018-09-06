@@ -66,7 +66,7 @@ connection.on("UpdateNotifications", function () {
     //Make a call to the API to 
     $.ajax({
         type: "GET",
-        url: "https://localhost:5000/api/player/getNotifications/" + playerID,
+        url: "https://localhost:5000/api/player/getNotifications/" + playerID,all
         //dataType: "application/json",
         success: function (result) {
             console.log(result);

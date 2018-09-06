@@ -249,12 +249,25 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// Gets all notifications for the player
         /// </summary>
         /// <param name="playerID">The PlayerID of the notifications</param>
-        /// <returns></returns>
+        /// <returns>A list of all player notifications</returns>
         public Response<List<Notification>> GetNotificationList(int playerID, bool all)
         {
             //Call the Data Access Layer to return all notifications for the player.
             PlayerDAL playerDAL = new PlayerDAL();
             return playerDAL.GetNotificationList(playerID, all);
+        }
+
+
+        /// <summary>
+        /// Leaves a player from their active game
+        /// </summary>
+        /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
+        /// <returns>A response status.</returns>
+        public Response<int> LeaveGame(int playerID)
+        {
+            //Call the Data Access Layer to remove a player from the game.
+            PlayerDAL playerDAL = new PlayerDAL();
+            return playerDAL.LeaveGame(playerID);
         }
     }
 }
