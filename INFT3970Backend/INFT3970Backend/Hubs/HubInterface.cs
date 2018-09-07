@@ -146,5 +146,13 @@ namespace INFT3970Backend.Hubs
             else
                 return null;
         }
+
+
+
+
+        public void UpdatePhotoUploaded(Photo uploadedPhoto)
+        {
+
+        }
     }
 }

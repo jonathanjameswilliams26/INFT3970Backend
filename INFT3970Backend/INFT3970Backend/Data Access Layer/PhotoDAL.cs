@@ -53,17 +53,65 @@ namespace INFT3970Backend.Data_Access_Layer
                         return new Response<List<Photo>>(photos, Result, ErrorMSG, Result);
 
 
-                    }
-
-                    
+                    } 
                 }
             }
             catch
             {
                 return new Response<List<Photo>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
-            
-         
+        }
+
+
+
+        public Response<Photo> SavePhoto(string dataURL, int takenByID, int photoOfID)
+        {
+            StoredProcedure = "usp_SavePhoto";
+            Photo photo = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@dataURL", dataURL);
+                        Command.Parameters.AddWithValue("@takenByID", takenByID);
+                        Command.Parameters.AddWithValue("@photoOfID", photoOfID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+
+                        while (Reader.Read())
+                        {
+                            ModelFactory factory = new ModelFactory(Reader);
+                            photo = factory.PhotoFactory();
+                            if (photo == null)
+                                return new Response<Photo>(null, "ERROR", "An error occurred while trying to build the photo model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close(); 
+                        
+                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
+                        //The data reader will be closed after the last row of the results have been read.
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+
+                        //Format the results into a response object
+                        return new Response<Photo>(photo, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+            catch
+            {
+                return new Response<Photo>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
         }
     
     }

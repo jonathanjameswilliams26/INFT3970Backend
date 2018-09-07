@@ -144,7 +144,7 @@ namespace INFT3970Backend.Controllers
         /// <param name="all"> all is a boolean used to determine if all notifications should be fetched or just unread</param>
         /// <returns>A list of notifications for a player</returns>
         [HttpGet]
-        [Route("api/player/getNotifications/{playerID:int},{all:bool}")]
+        [Route("api/player/getNotifications/{playerID:int}/{all:bool}")]
         public Response<List<Notification>> GetNotificationList(int playerID, bool all)
         {
             //Example request
@@ -164,7 +164,7 @@ namespace INFT3970Backend.Controllers
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
         /// <returns>A response status.</returns>
         [HttpGet]
-        [Route("api/player/leaveGame/{playerID:int}}")]
+        [Route("api/player/leaveGame/{playerID:int}")]
         public Response<int> LeaveGame(int playerID)
         {
             //Example request

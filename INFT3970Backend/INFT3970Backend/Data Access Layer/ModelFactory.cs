@@ -69,7 +69,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 notification.MessageText = SafeGetString("MessageText");
                 notification.Type = SafeGetString("NotificationType");
                 notification.IsRead = GetBool("IsRead");
-                notification.IsActive = GetBool("IsActive");
+                notification.IsActive = GetBool("NotificationIsActive");
                 notification.GameID = GetInt("GameID");
                 notification.PlayerID = GetInt("PlayerID");
                 return notification;
@@ -91,7 +91,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.Nickname = SafeGetString("Nickname");
                 player.Phone = SafeGetString("Phone");
                 player.Email = SafeGetString("Email");
-                player.SelfieFilePath = SafeGetString("SelfieFilePath");
+                player.SelfieFilePath = SafeGetString("SelfieDataURL");
                 player.NumKills = GetInt("NumKills");
                 player.NumDeaths = GetInt("NumDeaths");
                 player.NumPhotosTaken = GetInt("NumPhotosTaken");
@@ -104,17 +104,9 @@ namespace INFT3970Backend.Data_Access_Layer
                 //Build the Game object for the player
                 if(doGetGame)
                 {
-                    game = new Game();
-                    game.GameID = GetInt("GameID");
-                    game.GameCode = SafeGetString("GameCode");
-                    game.NumOfPlayers = GetInt("NumOfPlayers");
-                    game.GameMode = SafeGetString("GameMode");
-                    game.StartTime = GetDateTime("StartTime");
-                    game.EndTime = GetDateTime("EndTime");
-                    game.GameState = SafeGetString("GameState");
-                    game.IsJoinableAtAnytime = GetBool("IsJoinableAtAnytime");
-                    game.IsActive = GetBool("GameIsActive");
+                    game = GameFactory();
                     player.Game = game;
+                    
                 }
                 return player;
             }
@@ -132,13 +124,13 @@ namespace INFT3970Backend.Data_Access_Layer
                 photo.PhotoID = GetInt("PhotoID");
                 photo.Lat = GetDouble("Lat");        
                 photo.Long = GetDouble("Long");
-                photo.FilePath = SafeGetString("FilePath");
+                photo.FilePath = SafeGetString("PhotoDataURL");
                 photo.TimeTaken = GetDateTime("TimeTaken");
                 photo.VotingFinishTime = GetDateTime("VotingFinishTime");
                 photo.NumYesVotes = GetInt("NumYesVotes");
                 photo.NumNoVotes = GetInt("NumNoVotes");
                 photo.IsVotingComplete = GetBool("IsVotingComplete");
-                photo.IsActive = GetBool("IsActive");
+                photo.IsActive = GetBool("PhotoIsActive");
                 photo.GameID = GetInt("GameID");
                 photo.TakenByPlayerID = GetInt("TakenByPlayerID");
                 photo.PhotoOfPlayerID = GetInt("PhotoOfPlayerID");
@@ -165,7 +157,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 game.EndTime = GetDateTime("EndTime");
                 game.GameState = SafeGetString("GameState");
                 game.IsJoinableAtAnytime = GetBool("IsJoinableAtAnytime");
-                game.IsActive = GetBool("IsActive");
+                game.IsActive = GetBool("GameIsActive");
                 return game;
             }
             catch

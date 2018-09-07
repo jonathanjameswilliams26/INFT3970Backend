@@ -62,7 +62,7 @@ CREATE TABLE tbl_Game
 	EndTime DATETIME2 DEFAULT DATEADD(DAY, 1, GETDATE()),
 	GameState VARCHAR(255) NOT NULL DEFAULT 'STARTING',
 	IsJoinableAtAnytime BIT NOT NULL DEFAULT 0,
-	IsActive BIT NOT NULL DEFAULT 1,
+	GameIsActive BIT NOT NULL DEFAULT 1,
 
 	PRIMARY KEY (GameID),
 
@@ -103,7 +103,7 @@ CREATE TABLE tbl_Player
 	Nickname VARCHAR(255) NOT NULL DEFAULT 'Player',
 	Phone VARCHAR(12),
 	Email VARCHAR(255),
-	SelfieFilePath VARCHAR(255) NOT NULL,
+	SelfieDataURL VARCHAR(MAX) NOT NULL,
 	NumKills INT NOT NULL DEFAULT 0,
 	NumDeaths INT NOT NULL DEFAULT 0,
 	NumPhotosTaken INT NOT NULL DEFAULT 0,
@@ -112,7 +112,8 @@ CREATE TABLE tbl_Player
 	VerificationCode INT,
 	ConnectionID VARCHAR(255) DEFAULT NULL,
 	IsConnected BIT NOT NULL DEFAULT 0,
-	IsActive BIT NOT NULL DEFAULT 1,
+	HasLeftGame BIT NOT NULL DEFAULT 0,
+	PlayerIsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
 
 	PRIMARY KEY (PlayerID),
@@ -138,13 +139,13 @@ CREATE TABLE tbl_Photo
 	PhotoID INT NOT NULL IDENTITY(100000, 1),
 	Lat FLOAT,
 	Long FLOAT,
-	FilePath VARCHAR(255) NOT NULL,
+	PhotoDataURL VARCHAR(MAX) NOT NULL,
 	TimeTaken DATETIME2 NOT NULL DEFAULT GETDATE(),
 	VotingFinishTime DATETIME2 NOT NULL DEFAULT DATEADD(MINUTE, 15, GETDATE()),
 	NumYesVotes INT NOT NULL DEFAULT 0,
 	NumNoVotes INT NOT NULL DEFAULT 0,
 	IsVotingComplete BIT NOT NULL DEFAULT 0,
-	IsActive BIT NOT NULL DEFAULT 1,
+	PhotoIsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
 	TakenByPlayerID INT NOT NULL,
 	PhotoOfPlayerID INT NOT NULL,
@@ -167,8 +168,8 @@ GO
 CREATE TABLE tbl_PlayerVotePhoto
 (
 	VoteID INT NOT NULL IDENTITY(100000, 1),
-	IsPhotoSuccessful BIT NOT NULL DEFAULT 0,
-	IsActive BIT NOT NULL DEFAULT 1,
+	IsPhotoSuccessful BIT DEFAULT NULL,
+	PlayerVotePhotoIsActive BIT NOT NULL DEFAULT 1,
 	PhotoID INT NOT NULL,
 	PlayerID INT NOT NULL,
 
@@ -188,7 +189,7 @@ CREATE TABLE tbl_Notification
 	MessageText VARCHAR(255) NOT NULL DEFAULT 'Notification',
 	NotificationType VARCHAR(255) NOT NULL DEFAULT 'VOTE',
 	IsRead BIT NOT NULL DEFAULT 0,
-	IsActive BIT NOT NULL DEFAULT 1,
+	NotificationIsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
 	PlayerID INT NOT NULL,
 
@@ -220,26 +221,28 @@ SELECT
 	EndTime,
 	GameState,
 	IsJoinableAtAnytime,
-	g.IsActive AS GameIsActive,
+	GameIsActive,
 	PlayerID,
 	Nickname,
 	Phone,
 	Email,
-	SelfieFilePath,
+	SelfieDataURL,
 	NumKills,
 	NumDeaths,
 	NumPhotosTaken,
 	IsHost,
 	IsVerified,
 	VerificationCode,
+	IsConnected,
 	ConnectionID,
-	p.IsActive AS PlayerIsActive
+	HasLeftGame,
+	PlayerIsActive
 FROM tbl_Game g
 		INNER JOIN tbl_Player p ON (g.GameID = p.GameID)
 WHERE
 	GameState NOT LIKE 'COMPLETE'
-	AND g.IsActive = 1
-	AND p.IsActive = 1
+	AND GameIsActive = 1
+	AND PlayerIsActive = 1
 GO
 
 
@@ -262,13 +265,13 @@ SELECT
 	Nickname,
 	Phone,
 	Email,
-	SelfieFilePath,
+	SelfieDataURL,
 	NumKills,
 	NumDeaths,
 	NumPhotosTaken,
 	IsHost,
 	IsVerified,
-	p.IsActive AS PlayerIsActive,
+	PlayerIsActive,
 	ConnectionID,
 	IsConnected,
 	g.GameID,
@@ -279,7 +282,7 @@ SELECT
 	EndTime,
 	GameState,
 	IsJoinableAtAnytime,
-	g.IsActive AS GameIsActive
+	GameIsActive
 
 FROM tbl_Player p
 	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
@@ -390,7 +393,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	UPDATE tbl_Game
-	SET IsActive = 0
+	SET GameIsActive = 0
 	WHERE GameID = @gameID
 
 END
@@ -530,7 +533,7 @@ BEGIN
 		-- The playerID and photoID exist get the location of the photo
 		SELECT *
 		FROM tbl_Photo
-		WHERE GameID = @gameID AND IsActive = 1 AND IsVotingComplete = 1 AND PhotoID = @photoID
+		WHERE GameID = @gameID AND PhotoIsActive = 1 AND IsVotingComplete = 1 AND PhotoID = @photoID
 
 		--Set the return variables
 		SET @result = 1;
@@ -602,7 +605,7 @@ BEGIN
 
 		--Confirm the gameCode passed in exists and is active
 		DECLARE @gameIDToJoin INT;
-		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND IsActive = 1
+		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
 			SET @result = @EC_GAMEDOESNOTEXIST;
@@ -636,7 +639,7 @@ BEGIN
 
 
 		--Confirm the nickname entered is not already taken by a player in the game
-		IF EXISTS (SELECT * FROM tbl_Player WHERE GameID = @gameIDToJoin AND Nickname = @nickname AND IsActive = 1)
+		IF EXISTS (SELECT * FROM tbl_Player WHERE GameID = @gameIDToJoin AND Nickname = @nickname AND PlayerIsActive = 1)
 		BEGIN
 			SET @result = @EC_JOINGAME_NICKNAMETAKEN;
 			SET @errorMSG = 'The nickname you entered is already taken. Please chose another';
@@ -671,11 +674,11 @@ BEGIN
 		BEGIN TRANSACTION
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieFilePath, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieFilePath, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
@@ -1000,14 +1003,14 @@ BEGIN
 				FETCH NEXT FROM idCursor INTO @notifPlayerID
 				WHILE @notifPlayerID != @playerID --@@FETCH_STATUS = 0 --iterate through all players and give them a notif
 				BEGIN
-					INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, IsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
+					INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
 					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
 				END
 				CLOSE idCursor -- close down cursor
 				DEALLOCATE idCursor
 			END
 			ELSE    --else if notif is not of a type required to send to all, just create singular
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, IsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @playerID)
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @playerID)
 
 		COMMIT
 	END TRY
@@ -1032,19 +1035,19 @@ GO
 INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 6, 'STARTING')
 GO
 
-INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID, IsVerified) VALUES ('Jono', '+61457558322', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Jono', '+61457558322', 'localhost', 100000, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID, IsVerified) VALUES ('Dylan', '+6145620441', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Dylan', '+6145620441', 'localhost', 100000, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID, IsVerified) VALUES ('Mathew', '+61454758125', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Mathew', '+61454758125', 'localhost', 100000, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID, IsVerified) VALUES ('Harry', '+61478542569', 'localhost', 100000, 0)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Harry', '+61478542569', 'localhost', 100000, 0)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID, IsVerified) VALUES ('David', '+61478585269', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('David', '+61478585269', 'localhost', 100000, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieFilePath, GameID, IsVerified) VALUES ('Sheridan', '+61478588547', 'localhost', 100000, 0)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Sheridan', '+61478588547', 'localhost', 100000, 0)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, IsActive, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 1, 1, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 1, 1, 100000, 100000)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, IsActive, GameID, PlayerID) VALUES ('test.', 'JOIN', 0, 1, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('test.', 'JOIN', 0, 1, 100000, 100000)
 

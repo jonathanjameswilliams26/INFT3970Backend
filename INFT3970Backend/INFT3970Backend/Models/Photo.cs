@@ -21,6 +21,7 @@ namespace INFT3970Backend.Models
         public int TakenByPlayerID { get; set; }
         public int PhotoOfPlayerID { get; set; }
 
+
         public Photo() { }
     }
 }

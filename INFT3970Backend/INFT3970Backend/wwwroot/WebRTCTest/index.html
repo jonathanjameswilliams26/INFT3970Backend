@@ -17,8 +17,10 @@
           Take Photo
       </button>
 
-      <form action="https://localhost:5000/api/photo/upload" method="post">
+      <form action="http://localhost:5000/api/photo/upload" method="post">
           <input type="text" id="imgUrl" name="imgUrl" />
+          <input type="text" id="takenByID" name="takenByID" />
+          <input type="text" id="photoOfID" name="photoOfID" />
           <input type="submit" value="Submit">
       </form>
       <select id="photo-filter" class="select">
