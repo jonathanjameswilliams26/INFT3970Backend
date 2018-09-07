@@ -137,7 +137,7 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// GET: api/player/getNotifications/{playerID},{all} - 
+        /// GET: api/player/getNotifications/{playerID}/{all} - 
         /// Gets a list of all the notifications associated with a particular player
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player the notifications are for</param>
@@ -148,7 +148,7 @@ namespace INFT3970Backend.Controllers
         public Response<List<Notification>> GetNotificationList(int playerID, bool all)
         {
             //Example request
-            //https://localhost:5000/api/player/getNotifications/100000,false
+            //https://localhost:5000/api/player/getNotifications/100000/false
 
             PlayerBL playerBL = new PlayerBL();
             return playerBL.GetNotificationList(playerID, all);
