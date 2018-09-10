@@ -99,7 +99,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         public void CreateTaggedNotification(int takenByID, int photoOfID)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateLeaveNotification(takenByID, photoOfID);
+            gameDAL.CreateTaggedNotification(takenByID, photoOfID);
         }
     }
 }
