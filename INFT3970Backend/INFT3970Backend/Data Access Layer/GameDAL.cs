@@ -150,17 +150,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Creates a notification of a type, assigned to particular playerID within a gameID
+        /// Creates a notification of type JOIN, sent to all players notifying.
         /// </summary>
-        /// <param name="msgTxt">The message content of the notif</param>
-        /// <param name="type">The type of the notif // VOTE, SUCCESS, FAIL, JOIN, LEAVE, TAGGED </param>
         /// <param name="gameID">The gameID of the game</param>
-        /// <param name="playerID">The playerID to which the notification is addressed</param>
-        /// <returns>Game object matching the specified ID. NULL if game does not exist or error occurred.</returns>
-        // if type = "JOIN" then add this notification for all players within the gameID.
-        public void CreateNotification(string msgTxt, string type, int gameID, int playerID)
+        /// <param name="playerID">The playerID of who joined the game.</param>
+        /// <returns>void</returns>
+        public void CreateJoinNotification(int gameID, int playerID)
         {
-            StoredProcedure = "usp_CreateNotification";
+            StoredProcedure = "usp_CreateJoinNotification";
             try
             {
                 //Create the connection and command for the stored procedure
@@ -170,8 +167,6 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@msgTxt", msgTxt);
-                        Command.Parameters.AddWithValue("@type", type);
                         Command.Parameters.AddWithValue("@gameID", gameID);
                         Command.Parameters.AddWithValue("@playerID", playerID);
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -188,6 +183,85 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// Creates a notification of type LEAVE, sent to all players notifying.
+        /// </summary>
+        /// <param name="gameID">The gameID of the game</param>
+        /// <param name="playerID">The playerID of who left the game.</param>
+        /// <returns>void</returns>
+        public void CreateLeaveNotification(int gameID, int playerID)
+        {
+            StoredProcedure = "usp_CreateLeaveNotification";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameID", gameID);
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+
+            }
+        }
+
+
+
+        /// <summary>
+        /// Creates a notification of type LEAVE, sent to all players notifying.
+        /// </summary>
+        /// <param name="gameID">The gameID of the game</param>
+        /// <param name="playerID">The playerID of who left the game.</param>
+        /// <returns>void</returns>
+        public void CreateTaggedNotification(int takenByID, int photoOfID)
+        {
+            StoredProcedure = "usp_CreateTaggedNotification";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@takenByID", takenByID);
+                        Command.Parameters.AddWithValue("@photoOfID", photoOfID);
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+
             }
         }
     }

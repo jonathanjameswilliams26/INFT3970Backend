@@ -34,7 +34,13 @@ namespace INFT3970Backend.Controllers
             int id1 = int.Parse(takenByID);
             int id2 = int.Parse(photoOfID);
             PhotoBL photoBL = new PhotoBL();
-            return photoBL.SavePhoto(imgUrl, id1, id2, _hubContext);
+            var result = photoBL.SavePhoto(imgUrl, id1, id2, _hubContext);
+            if (result != null)
+            {
+                GameBL gameBL = new GameBL();
+                gameBL.CreateTaggedNotification(id1, id2);
+            }
+            return result;
         }
     }
 }
