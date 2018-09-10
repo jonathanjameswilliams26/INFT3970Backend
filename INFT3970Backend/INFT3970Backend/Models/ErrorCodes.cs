@@ -15,6 +15,8 @@ namespace INFT3970Backend.Models
         public const int EC_GAMEDOESNOTEXIST = 13;
         public const int EC_ITEMALREADYEXISTS = 14;
         public const int EC_MISSINGORBLANKDATA = 15;
+        public const int EC_GAMEALREADYCOMPLETE = 16;
+        public const int EC_DATAINVALID = 17;
 
         //PlayerController - Join Game Error Codes
         public const int EC_JOINGAME_INVALIDGAMECODE = 1000;
@@ -30,5 +32,9 @@ namespace INFT3970Backend.Models
         //PlayerController - Verify Player / Verify verification code Error Codes
         public const int EC_VERIFYPLAYER_CODEINVALID = 2000;
         public const int EC_VERIFYPLAYER_CODEINCORRECT = 2001;
+
+
+        //PhotoController - Upload Photo
+        public const int EC_UPLOADPHOTO_DATAURLINVALID = 3000;
     }
 }

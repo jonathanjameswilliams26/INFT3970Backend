@@ -93,7 +93,6 @@ namespace INFT3970Backend.Business_Logic_Layer
             if (!isEmail && !isPhone)
                 return new Response<Player>(null, "ERROR", "The contact information entered is invalid. Please enter a phone number or an email address.", ErrorCodes.EC_JOINGAME_CONTACTINVALID);
 
-            
             //If the contact is a phone number, reformat the number to use +61 since that is needed for twilio
             if(isPhone)
                 contact = "+61" + contact.Substring(1);
@@ -105,7 +104,15 @@ namespace INFT3970Backend.Business_Logic_Layer
 
             //If the response was successful, send the verification code to the player
             if(response.Type == "SUCCESS")
-                BackgroundJob.Enqueue<PlayerBL>(x => x.SendVerificationCode(verificationCode, contact, isPhone));
+            {
+                //Send the verification code to the players email
+                if(isEmail)
+                    EmailSender.SendInBackground(contact, "CamTag Verification Code", "Your CamTag verification code is: " + verificationCode, false);
+
+                //otherwise, send the verification code to the players phone number
+                else
+                    TextMessageSender.SendInBackground("Your CamTag verification code is: " + verificationCode, contact);
+            }
 
             return response;
         }
@@ -192,11 +199,12 @@ namespace INFT3970Backend.Business_Logic_Layer
             {
                 //The contact information returned from the data access is an email address
                 if (response.Data.Contains("@"))
-                    BackgroundJob.Enqueue<PlayerBL>(x => SendVerificationCode(code, response.Data, false));
+                    EmailSender.SendInBackground(response.Data, "CamTag Verification Code", "Your CamTag verification code is: " + code, false);
+
 
                 //Otherwise, the contact information returned is a phone number
                 else
-                    BackgroundJob.Enqueue<PlayerBL>(x => SendVerificationCode(code, response.Data, true));
+                    TextMessageSender.SendInBackground("Your CamTag verification code is: " + code, response.Data);
 
                 return new Response<object>(null, "SUCCESS", null, 1);
             }
@@ -220,27 +228,6 @@ namespace INFT3970Backend.Business_Logic_Layer
             Random rand = new Random();
             return rand.Next(10000, 99999);
         }
-
-
-
-
-
-        /// <summary>
-        /// Sends a verification code to the email address or phone number. Returns TRUE if sent successfully, FALSE otherwise
-        /// </summary>
-        /// <param name="code">The verification code to send</param>
-        /// <param name="sendTo">The email or phone number to send to</param>
-        /// <param name="isPhone">A flag outlining if the value is a phone number</param>
-        /// <returns></returns>
-        public bool SendVerificationCode(int code, string sendTo, bool isPhone)
-        {
-            if (isPhone)
-                return new TextMessageSender(sendTo).SendVerificationCode(code);
-            else
-                return new EmailSender().SendVerificationEmail(code, sendTo);
-        }
-
-
 
 
 

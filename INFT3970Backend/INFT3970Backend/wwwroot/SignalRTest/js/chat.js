@@ -66,7 +66,7 @@ connection.on("UpdateNotifications", function () {
     //Make a call to the API to 
     $.ajax({
         type: "GET",
-        url: "https://localhost:5000/api/player/getNotifications/" + playerID,all
+        url: "https://localhost:5000/api/player/getNotifications/" + playerID + "/" + all,
         //dataType: "application/json",
         success: function (result) {
             console.log(result);
@@ -75,7 +75,7 @@ connection.on("UpdateNotifications", function () {
             var playerData = result.data;
             for (var i = 0; i < playerData.length; i++) {
                 var li = document.createElement("li");
-                li.textContent = notifData.MessageText
+                li.textContent = notifData.MessageText;
                 document.getElementById("lobby").appendChild(li);
             }
         }

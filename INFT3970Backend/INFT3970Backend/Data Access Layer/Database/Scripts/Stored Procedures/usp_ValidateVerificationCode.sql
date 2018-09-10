@@ -48,6 +48,14 @@ BEGIN
 			UPDATE tbl_Player
 			SET IsVerified = 1
 			WHERE PlayerID = @playerID
+
+			--Update the player count in the game which the player belongs to
+			DECLARE @gameID INT
+			SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID
+
+			UPDATE tbl_Game
+			SET NumOfPlayers = NumOfPlayers + 1
+			WHERE GameID = @gameID
 		COMMIT
 
 		--Set the success return variables

@@ -12,7 +12,7 @@ GO
 -- Returns: 1 = Successful, or 0 = An error occurred
 
 -- Possible Errors Returned:
---		1. The playerID trying to update does not exist
+--		1. The playerID passed in does not exist
 
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_GetGamePlayerList] 

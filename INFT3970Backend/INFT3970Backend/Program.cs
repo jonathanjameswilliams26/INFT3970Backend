@@ -19,7 +19,7 @@ namespace INFT3970Backend
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()
-                .UseUrls("http://localhost:5000/")
+                .UseUrls("https://localhost:5000/", "https://10.0.0.1:5000/")
                 .Build();
 
             host.Run();

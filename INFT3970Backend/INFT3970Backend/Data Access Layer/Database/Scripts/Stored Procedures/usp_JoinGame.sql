@@ -14,7 +14,7 @@ GO
 -- Possible Errors Returned:
 --		1. EC_INSERTERROR - An error occurred while trying to insert the game record
 --		2. @EC_GAMEDOESNOTEXIST - The game code passed in does not exist in the database or is not an active game.
---		3. @EC_JOINGAME_GAMEALREADYCOMPLETE - The game code passed in trying to join is already completed
+--		3. @EC_GAMEALREADYCOMPLETE - The game code passed in trying to join is already completed
 --		4. @EC_JOINGAME_NICKNAMETAKEN - The nickname passed is already taken in the game
 --		5. @EC_JOINGAME_PHONETAKEN - The phone number is already taken in another active game
 --		6. @EC_JOINGAME_EMAILTAKEN - The email is already taken in another active game
@@ -40,7 +40,7 @@ BEGIN
 	--Declaring the possible error codes returned
 	DECLARE @EC_INSERTERROR INT = 2;
 	DECLARE @EC_GAMEDOESNOTEXIST INT = 13;
-	DECLARE @EC_JOINGAME_GAMEALREADYCOMPLETE INT = 1004;
+	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
 	DECLARE @EC_JOINGAME_NICKNAMETAKEN INT = 1005;
 	DECLARE @EC_JOINGAME_PHONETAKEN INT = 1006;
 	DECLARE @EC_JOINGAME_EMAILTAKEN INT = 1007;
@@ -52,7 +52,7 @@ BEGIN
 
 		--Confirm the gameCode passed in exists and is active
 		DECLARE @gameIDToJoin INT;
-		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND IsActive = 1
+		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
 			SET @result = @EC_GAMEDOESNOTEXIST;
@@ -65,7 +65,7 @@ BEGIN
 		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameIDToJoin
 		IF(@gameState LIKE 'COMPLETED')
 		BEGIN
-			SET @result = @EC_JOINGAME_GAMEALREADYCOMPLETE;
+			SET @result = @EC_GAMEALREADYCOMPLETE;
 			SET @errorMSG = 'The game you are trying to join is already completed.';
 			RAISERROR('',16,1);
 		END
@@ -86,7 +86,7 @@ BEGIN
 
 
 		--Confirm the nickname entered is not already taken by a player in the game
-		IF EXISTS (SELECT * FROM tbl_Player WHERE GameID = @gameIDToJoin AND Nickname = @nickname AND IsActive = 1)
+		IF EXISTS (SELECT * FROM tbl_Player WHERE GameID = @gameIDToJoin AND Nickname = @nickname AND PlayerIsActive = 1)
 		BEGIN
 			SET @result = @EC_JOINGAME_NICKNAMETAKEN;
 			SET @errorMSG = 'The nickname you entered is already taken. Please chose another';
@@ -121,19 +121,14 @@ BEGIN
 		BEGIN TRANSACTION
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieFilePath, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieFilePath, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
-
-			--Update the game player count
-			UPDATE tbl_Game
-			SET NumOfPlayers = NumOfPlayers + 1
-			WHERE GameID = @gameIDToJoin
 		COMMIT
 
 		--Set the return variables

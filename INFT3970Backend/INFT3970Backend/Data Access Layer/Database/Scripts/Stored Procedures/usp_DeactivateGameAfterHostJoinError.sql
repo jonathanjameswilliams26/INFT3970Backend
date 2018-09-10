@@ -20,7 +20,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	UPDATE tbl_Game
-	SET IsActive = 0
+	SET GameIsActive = 0
 	WHERE GameID = @gameID
 
 END

@@ -66,17 +66,15 @@ namespace INFT3970Backend.Hubs
                     continue;
 
                 //The player is connected to the hub, send live updates
-                if(!String.IsNullOrEmpty(player.ConnectionID))
+                if(player.IsConnected)
                 {
                     //If the game state is STARTING then the players are in the Lobby, update the lobby list
                     if(game.GameState == "STARTING")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
                     //If the game state is PLAYING - Send a notification to the players in the game.
-                    if(game.GameState == "PLAYING")
-                    {                
+                    if(game.GameState == "PLAYING")            
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
-                    }
                 }
 
                 //Otherwise, the player is not connected to the Hub, send a notification via the contact information
@@ -85,37 +83,16 @@ namespace INFT3970Backend.Hubs
                     //Don't send a notification when the game is in a STARTING state (in lobby)
                     //Send a notification when a new player joins when the game is currently playing.
                     if (game.GameState == "PLAYING")
-                        SendToContactPlayerJoinNotification(player, joinedPlayer);
+                    {
+                        //If the Player has an email address send the notification the email
+                        if (!string.IsNullOrWhiteSpace(player.Email))
+                            EmailSender.SendInBackground(player.Email, "New Player Joined Your Game", joinedPlayer.Nickname + " has joined your game of CamTag.", false);
+
+                        //otherwise, send to the players phone
+                        else
+                            TextMessageSender.SendInBackground(joinedPlayer.Nickname + " has joined your game of CamTag.", player.Phone);
+                    }
                 }
-            }
-        }
-
-
-
-
-        /// <summary>
-        /// Sends a "Player Joined" notification to the sendToPlayer's contact details.
-        /// Will send an email if avaliable, otherwise, will send a text message.
-        /// The message will consist of "{joinedPlayer Nickname} joined your game of CamTag".
-        /// </summary>
-        /// <param name="sendToPlayer"></param>
-        /// <param name="joinedPlayer"></param>
-        private void SendToContactPlayerJoinNotification(Player sendToPlayer, Player joinedPlayer)
-        {
-            //If the sendToPlayer has an email address send the notification the email
-            if(!string.IsNullOrWhiteSpace(sendToPlayer.Email))
-            {
-                BackgroundJob.Enqueue<EmailSender>(x => 
-                    x.SendEmail(sendToPlayer.Email, 
-                                "New Player Joined", 
-                                joinedPlayer.Nickname + " joined your game of CamTag.", 
-                                false));
-            }
-            //Othrwise, send it to their phone number
-            else
-            {
-                BackgroundJob.Enqueue<TextMessageSender>(x =>
-                    x.Send(joinedPlayer.Nickname + " joined your game of CamTag.", sendToPlayer.Phone));
             }
         }
 
@@ -150,9 +127,114 @@ namespace INFT3970Backend.Hubs
 
 
 
+
+
+        /// <summary>
+        /// Updates all the clients either via IN-GAME notifications or notificiations via text/email that
+        /// a new photo has been uploaded to their game of CamTag and is ready to be voted on.
+        /// </summary>
+        /// <param name="uploadedPhoto">The photo model which has been uploaded.</param>
         public void UpdatePhotoUploaded(Photo uploadedPhoto)
         {
+            //Get the list of players currently in the game
+            PlayerDAL playerDAL = new PlayerDAL();
+            string test = playerDAL.ToString();
+            Response<List<Player>> response = playerDAL.GetGamePlayerList(uploadedPhoto.TakenByPlayerID, false);
 
+            //If an error occurred while trying to get the list of players exit the method
+            if (response.Type == "ERROR")
+                return;
+
+            //If the list of players is empty exit the method
+            if (response.Data.Count == 0)
+                return;
+
+
+            //Loop through all the players in the game and send a Hub method or send a notification to their contact details.
+            foreach(Player player in response.Data)
+            {
+                //If the playerID = the playerID who took the photo or is the playerID who the photo is of, skip this
+                //iteration because they will not be voting on the photo and will not receive a notification
+                if (player.PlayerID == uploadedPhoto.TakenByPlayerID || player.PlayerID == uploadedPhoto.PhotoOfPlayerID)
+                    continue;
+
+                //The player is connected to the Hub, call a live update method
+                if(player.IsConnected)
+                {
+                    //TODO: Send out live update to client
+                }
+
+                //Otherwise, the player is not currently in the WebApp, send a notification to their contact details.
+                else
+                {
+                    //If the sendToPlayer has an email address send the notification the email
+                    if (!string.IsNullOrWhiteSpace(player.Email))
+                        EmailSender.SendInBackground(player.Email, "New Photo Submitted", "A new photo has been uploaded in your game of CamTag. Click the link to cast your vote. LINK HERE...", false);
+
+                    //otherwise, send to the players phone
+                    else
+                        TextMessageSender.SendInBackground("A new photo has been uploaded in your game of CamTag. Click the link to cast your vote. LINK HERE...", player.Phone);
+                }
+            }
+        }
+
+
+
+
+
+
+
+        public async void UpdatePhotoVotingCompleted(Photo photo)
+        {
+            //Generate the messages to be send
+            string takenByMsgTxt = "";
+            string photoOfMsgTxt = "";
+
+            //If the yes votes are greater than the no votes the the photo is successful
+            if(photo.NumYesVotes > photo.NumNoVotes)
+            {
+                takenByMsgTxt = "You have successfully tagged " + photo.PhotoOfPlayer.Nickname + ".";
+                photoOfMsgTxt = "You have been tagged by " + photo.TakenByPlayer.Nickname + ".";
+            }
+            //Otherwise, the photo was not successful
+            else
+            {
+                takenByMsgTxt = "You did not successfully tag " + photo.PhotoOfPlayer.Nickname + " because other players voted \"No\" on the photo you submitted.";
+                photoOfMsgTxt = photo.TakenByPlayer.Nickname + " failed to tag you.";
+            }
+
+
+            //TODO: Add notifications to DB
+
+
+            //If the TakenByPlayer is connected to the Hub send out a live notification update
+            if (photo.TakenByPlayer.IsConnected)
+            {
+                //TODO: Call live update hub method
+            }
+            //Otherwise, send a text message or email notification
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(photo.TakenByPlayer.Email))
+                    EmailSender.SendInBackground(photo.TakenByPlayer.Email, "Voting Complete", takenByMsgTxt, false);
+                else
+                    TextMessageSender.SendInBackground(takenByMsgTxt, photo.TakenByPlayer.Phone);
+            }
+
+
+            //If the PhotoOfPlayer is connected to the Hub send out a live notification update
+            if (photo.TakenByPlayer.IsConnected)
+            {
+                //TODO: Call live update hub method
+            }
+            //Otherwise, send a text message or email notification
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(photo.PhotoOfPlayer.Email))
+                    EmailSender.SendInBackground(photo.PhotoOfPlayer.Email, "Voting Complete", photoOfMsgTxt, false);
+                else
+                    TextMessageSender.SendInBackground(photoOfMsgTxt, photo.PhotoOfPlayer.Phone);
+            }
         }
     }
 }

@@ -10,7 +10,7 @@ namespace INFT3970Backend.Models
         public int PhotoID { get; set; }
         public double Lat { get; set; }
         public double Long { get; set; }
-        public string FilePath { get; set; }
+        public string PhotoDataURL { get; set; }
         public DateTime? TimeTaken { get; set; }
         public DateTime? VotingFinishTime{get; set;}
         public int NumYesVotes { get; set; }
@@ -20,6 +20,9 @@ namespace INFT3970Backend.Models
         public int GameID { get; set; }
         public int TakenByPlayerID { get; set; }
         public int PhotoOfPlayerID { get; set; }
+        public Game Game { get; set; }
+        public Player TakenByPlayer { get; set; }
+        public Player PhotoOfPlayer { get; set; }
 
 
         public Photo() { }

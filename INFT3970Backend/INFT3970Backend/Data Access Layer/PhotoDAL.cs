@@ -38,7 +38,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         while (Reader.Read())
                         {
                             ModelFactory factory = new ModelFactory(Reader);
-                            Photo photo = factory.PhotoFactory();
+                            Photo photo = factory.PhotoFactory(false, false, false);
                             if (photo == null)
                                 return new Response<List<Photo>>(null, "ERROR", "An error occurred while trying to build the photo list.", ErrorCodes.EC_BUILDMODELERROR);
 
@@ -64,7 +64,13 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-        public Response<Photo> SavePhoto(string dataURL, int takenByID, int photoOfID)
+
+        /// <summary>
+        /// Saves a photo to the database, creates all PlayerVotePhoto records and returns the created Photo record in the DB.
+        /// </summary>
+        /// <param name="photo">The photo object to save to the database.</param>
+        /// <returns></returns>
+        public Response<Photo> SavePhoto(Photo photoToSave)
         {
             StoredProcedure = "usp_SavePhoto";
             Photo photo = null;
@@ -77,9 +83,11 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@dataURL", dataURL);
-                        Command.Parameters.AddWithValue("@takenByID", takenByID);
-                        Command.Parameters.AddWithValue("@photoOfID", photoOfID);
+                        Command.Parameters.AddWithValue("@dataURL", photoToSave.PhotoDataURL);
+                        Command.Parameters.AddWithValue("@takenByID", photoToSave.TakenByPlayerID);
+                        Command.Parameters.AddWithValue("@photoOfID", photoToSave.PhotoOfPlayerID);
+                        Command.Parameters.AddWithValue("@lat", photoToSave.Lat);
+                        Command.Parameters.AddWithValue("@long", photoToSave.Long);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -92,12 +100,98 @@ namespace INFT3970Backend.Data_Access_Layer
                         while (Reader.Read())
                         {
                             ModelFactory factory = new ModelFactory(Reader);
-                            photo = factory.PhotoFactory();
+                            photo = factory.PhotoFactory(false, false, false);
                             if (photo == null)
                                 return new Response<Photo>(null, "ERROR", "An error occurred while trying to build the photo model.", ErrorCodes.EC_BUILDMODELERROR);
                         }
                         Reader.Close(); 
                         
+                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
+                        //The data reader will be closed after the last row of the results have been read.
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+
+                        //Format the results into a response object
+                        return new Response<Photo>(photo, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+            catch
+            {
+                return new Response<Photo>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
+
+
+
+        public Photo GetPhotoByID(int id)
+        {
+            StoredProcedure = "usp_GetPhotoByID";
+            Photo photo = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@photoID", id);
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+
+                        while (Reader.Read())
+                        {
+                            ModelFactory factory = new ModelFactory(Reader);
+                            photo = factory.PhotoFactory(true, true, true);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        return photo;
+                    }
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+        public Response<Photo> VotingTimeExpired(int photoID)
+        {
+            StoredProcedure = "usp_VotingTimeExpired";
+            Photo photo = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@photoID", photoID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+
+                        while (Reader.Read())
+                        {
+                            ModelFactory factory = new ModelFactory(Reader);
+                            photo = factory.PhotoFactory(true, true, true);
+                        }
+                        Reader.Close();
+
                         //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
                         //The data reader will be closed after the last row of the results have been read.
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);

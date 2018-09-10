@@ -1,0 +1,75 @@
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 11/09/18
+-- Description:	When the voting time expires on a photo the 
+--				photo is automiatically marked as successful.
+--				Updating the photo and all the votes because the time has now expired.
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_VotingTimeExpired] 
+	-- Add the parameters for the stored procedure here
+	@photoID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+
+	BEGIN TRY
+		
+		--Confirm the photo is actual expired
+		DECLARE @voteFinish DATETIME2;
+		SELECT @voteFinish = VotingFinishTime FROM tbl_Photo WHERE PhotoID = @photoID
+		IF(GETDATE() < @voteFinish)
+		BEGIN
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to update the photo record.'
+			RAISERROR('',16,1);
+		END
+
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION
+			--Update the photo to completed
+			UPDATE tbl_Photo
+			SET IsVotingComplete = 1
+			WHERE PhotoID = @photoID
+
+			--Since the voting time has expired the photo is an automatic success photo, set all the votes to successful
+			UPDATE tbl_PlayerVotePhoto
+			SET IsPhotoSuccessful = 1
+			WHERE PhotoID = @photoID
+
+			--Update the counts of the votes
+			DECLARE @countYesVotes INT;
+			SELECT @countYesVotes = COUNT(*) FROM tbl_PlayerVotePhoto WHERE IsPhotoSuccessful = 1 AND PhotoID = @photoID
+			UPDATE tbl_Photo
+			SET NumYesVotes = @countYesVotes, NumNoVotes = 0
+			WHERE PhotoID = @photoID
+		COMMIT
+
+		SELECT * FROM vw_PhotoGameAndPlayers WHERE PhotoID = @photoID
+		SET @result = 1;
+		SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+		IF(@@TRANCOUNT > 0)
+		BEGIN
+			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to update the photo record.'
+		END
+	END CATCH
+END
+GO

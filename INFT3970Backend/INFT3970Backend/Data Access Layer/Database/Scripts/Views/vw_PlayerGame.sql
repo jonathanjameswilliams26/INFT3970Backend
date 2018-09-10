@@ -16,13 +16,13 @@ SELECT
 	Nickname,
 	Phone,
 	Email,
-	SelfieFilePath,
+	SelfieDataURL,
 	NumKills,
 	NumDeaths,
 	NumPhotosTaken,
 	IsHost,
 	IsVerified,
-	p.IsActive AS PlayerIsActive,
+	PlayerIsActive,
 	ConnectionID,
 	IsConnected,
 	g.GameID,
@@ -33,7 +33,7 @@ SELECT
 	EndTime,
 	GameState,
 	IsJoinableAtAnytime,
-	g.IsActive AS GameIsActive
+	GameIsActive
 
 FROM tbl_Player p
 	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)

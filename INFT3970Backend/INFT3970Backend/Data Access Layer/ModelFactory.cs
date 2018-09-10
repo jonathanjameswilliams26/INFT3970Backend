@@ -116,15 +116,17 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
-        public Photo PhotoFactory()
+
+        public Photo PhotoFactory(bool doGetGame, bool doGetPlayerWhoTookPhoto, bool doGetPlayerWhoPhotoIsOf)
         {
             try
             {
+                //Build the Photo Object
                 Photo photo = new Photo();
                 photo.PhotoID = GetInt("PhotoID");
                 photo.Lat = GetDouble("Lat");        
                 photo.Long = GetDouble("Long");
-                photo.FilePath = SafeGetString("PhotoDataURL");
+                photo.PhotoDataURL = SafeGetString("PhotoDataURL");
                 photo.TimeTaken = GetDateTime("TimeTaken");
                 photo.VotingFinishTime = GetDateTime("VotingFinishTime");
                 photo.NumYesVotes = GetInt("NumYesVotes");
@@ -134,6 +136,53 @@ namespace INFT3970Backend.Data_Access_Layer
                 photo.GameID = GetInt("GameID");
                 photo.TakenByPlayerID = GetInt("TakenByPlayerID");
                 photo.PhotoOfPlayerID = GetInt("PhotoOfPlayerID");
+
+                //Build the game object if you need to get the game
+                if (doGetGame)
+                    photo.Game = GameFactory();
+
+                //Build the taken by player object
+                if(doGetPlayerWhoTookPhoto)
+                {
+                    Player player = new Player();
+                    player.PlayerID = photo.TakenByPlayerID;
+                    player.Nickname = SafeGetString("TakenByPlayerNickname");
+                    player.Phone = SafeGetString("TakenByPlayerPhone");
+                    player.Email = SafeGetString("TakenByPlayerEmail");
+                    player.SelfieFilePath = SafeGetString("TakenByPlayerSelfieDataURL");
+                    player.NumKills = GetInt("TakenByPlayerNumKills");
+                    player.NumDeaths = GetInt("TakenByPlayerNumDeaths");
+                    player.NumPhotosTaken = GetInt("TakenByPlayerNumPhotosTaken");
+                    player.IsHost = GetBool("TakenByPlayerIsHost");
+                    player.IsVerified = GetBool("TakenByPlayerIsVerified");
+                    player.ConnectionID = SafeGetString("TakenByPlayerConnectionID");
+                    player.IsConnected = GetBool("TakenByPlayerIsConnected");
+                    player.IsActive = GetBool("TakenByPlayerIsActive");
+                    player.Game = photo.Game;
+                    photo.TakenByPlayer = player;
+                }
+
+
+                //Build the photo of player object
+                if (doGetPlayerWhoTookPhoto)
+                {
+                    Player player = new Player();
+                    player.PlayerID = photo.PhotoOfPlayerID;
+                    player.Nickname = SafeGetString("PhotoOfPlayerNickname");
+                    player.Phone = SafeGetString("PhotoOfPlayerPhone");
+                    player.Email = SafeGetString("PhotoOfPlayerEmail");
+                    player.SelfieFilePath = SafeGetString("PhotoOfPlayerSelfieDataURL");
+                    player.NumKills = GetInt("PhotoOfPlayerNumKills");
+                    player.NumDeaths = GetInt("PhotoOfPlayerNumDeaths");
+                    player.NumPhotosTaken = GetInt("PhotoOfPlayerNumPhotosTaken");
+                    player.IsHost = GetBool("PhotoOfPlayerIsHost");
+                    player.IsVerified = GetBool("PhotoOfPlayerIsVerified");
+                    player.ConnectionID = SafeGetString("PhotoOfPlayerConnectionID");
+                    player.IsConnected = GetBool("PhotoOfPlayerIsConnected");
+                    player.IsActive = GetBool("PhotoOfPlayerIsActive");
+                    player.Game = photo.Game;
+                    photo.PhotoOfPlayer = player;
+                }
 
                 return photo;
             }

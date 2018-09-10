@@ -17,12 +17,12 @@ SELECT
 	EndTime,
 	GameState,
 	IsJoinableAtAnytime,
-	g.IsActive AS GameIsActive,
+	GameIsActive,
 	PlayerID,
 	Nickname,
 	Phone,
 	Email,
-	SelfieFilePath,
+	SelfieDataURL,
 	NumKills,
 	NumDeaths,
 	NumPhotosTaken,
@@ -30,11 +30,13 @@ SELECT
 	IsVerified,
 	VerificationCode,
 	ConnectionID,
-	p.IsActive AS PlayerIsActive
+	IsConnected,
+	HasLeftGame,
+	PlayerIsActive
 FROM tbl_Game g
 		INNER JOIN tbl_Player p ON (g.GameID = p.GameID)
 WHERE
 	GameState NOT LIKE 'COMPLETE'
-	AND g.IsActive = 1
-	AND p.IsActive = 1
+	AND GameIsActive = 1
+	AND PlayerIsActive = 1
 GO

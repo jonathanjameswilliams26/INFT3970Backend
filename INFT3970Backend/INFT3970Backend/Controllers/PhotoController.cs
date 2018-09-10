@@ -26,15 +26,25 @@ namespace INFT3970Backend.Controllers
         }
 
 
-        // GET: api/Photo
+        
+
+
+        /// <summary>
+        /// Uploads a photo to the database. Sends out notifications to players that a photo must now be voted on.
+        /// Returns a response which indicates success or error. NULL data is returned.
+        /// </summary>
+        /// <param name="imgUrl">The base64 dataURL of the image captured and to be saved in the DB</param>
+        /// <param name="takenByID">The ID of the player who took the photo</param>
+        /// <param name="photoOfID">The ID of the player who the photo is of.</param>
+        /// <param name="latitude">The latitude the photo was captured at</param>
+        /// <param name="longitude">The longitude the photo was captured at.</param>
+        /// <returns></returns>
         [HttpPost]
         [Route("api/photo/upload")]
-        public ActionResult<Response<Photo>> Upload([FromForm] string imgUrl, [FromForm] string takenByID, [FromForm] string photoOfID)
+        public ActionResult<Response<object>> Upload([FromForm] string imgUrl, [FromForm] string takenByID, [FromForm] string photoOfID, [FromForm] string latitude, [FromForm] string longitude)
         {
-            int id1 = int.Parse(takenByID);
-            int id2 = int.Parse(photoOfID);
             PhotoBL photoBL = new PhotoBL();
-            return photoBL.SavePhoto(imgUrl, id1, id2, _hubContext);
+            return photoBL.SavePhoto(imgUrl, takenByID, photoOfID, _hubContext, latitude, longitude);
         }
     }
 }

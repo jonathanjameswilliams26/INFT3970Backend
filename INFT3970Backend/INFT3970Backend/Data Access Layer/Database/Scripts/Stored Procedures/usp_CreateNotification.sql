@@ -58,14 +58,14 @@ BEGIN
 				FETCH NEXT FROM idCursor INTO @notifPlayerID
 				WHILE @notifPlayerID != @playerID --@@FETCH_STATUS = 0 --iterate through all players and give them a notif
 				BEGIN
-					INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, IsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
+					INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
 					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
 				END
 				CLOSE idCursor -- close down cursor
 				DEALLOCATE idCursor
 			END
 			ELSE    --else if notif is not of a type required to send to all, just create singular
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, IsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @playerID)
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @playerID)
 
 		COMMIT
 	END TRY
