@@ -65,5 +65,17 @@ namespace INFT3970Backend.Controllers
             PhotoBL photoBL = new PhotoBL();
             return photoBL.GetVotesToComplete(playerID);
         }
+
+
+
+
+        [HttpPost]
+        [Route("api/photo/vote")]
+        public ActionResult<Response<object>> VoteOnPhoto([FromHeader] int playerID, [FromHeader] int voteID, [FromForm] string decision)
+        {
+            //Call the business logic layer to cast the vote on the photo
+            PhotoBL photoBL = new PhotoBL();
+            return photoBL.VoteOnPhoto(playerID, voteID, decision, _hubContext);
+        }
     }
 }

@@ -150,5 +150,46 @@ namespace INFT3970Backend.Business_Logic_Layer
             PhotoDAL photoDAL = new PhotoDAL();
             return photoDAL.GetVotesToComplete(playerID);
         }
+
+
+
+
+
+        public Response<object> VoteOnPhoto(int playerID, int voteID, string decision, IHubContext<ApplicationHub> hubContext)
+        {
+            //Confirm the decision is in the correct format
+            bool isPhotoSuccessful = false;
+            try
+            {
+                isPhotoSuccessful = bool.Parse(decision);
+            }
+            catch
+            {
+                return new Response<object>(null, "ERROR", "The decision data is invalid. Should only be TRUE or FALSE.", ErrorCodes.EC_DATAINVALID);
+            }
+
+            //Update the Vote record in the database
+            PlayerVotePhoto playerVotePhoto = new PlayerVotePhoto
+            {
+                PlayerID = playerID,
+                VoteID = voteID,
+                IsPhotoSuccessful = isPhotoSuccessful
+            };
+            PhotoDAL photoDAL = new PhotoDAL();
+            Response<PlayerVotePhoto> response = photoDAL.VoteOnPhoto(playerVotePhoto);
+
+
+            if(response.Type == "SUCCESS")
+            {
+                //If the Photo's voting has now been completed send the notifications / updates
+                if(response.Data.Photo.IsVotingComplete)
+                {
+                    HubInterface hubInterface = new HubInterface(hubContext);
+                    hubInterface.UpdatePhotoVotingCompleted(response.Data.Photo);
+                }
+            }
+
+            return new Response<object>(null, response.Type, response.ErrorMessage, response.ErrorCode);
+        }
     }
 }

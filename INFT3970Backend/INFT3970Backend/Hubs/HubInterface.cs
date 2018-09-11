@@ -204,13 +204,14 @@ namespace INFT3970Backend.Hubs
 
 
             //TODO: Add notifications to DB
+            GameDAL gameDAL = new GameDAL();
+            gameDAL.CreateTagResultNotification(photo.GameID, photo.TakenByPlayerID, photo.PhotoOfPlayerID, (photo.NumYesVotes > photo.NumNoVotes));
 
 
             //If the TakenByPlayer is connected to the Hub send out a live notification update
             if (photo.TakenByPlayer.IsConnected)
-            {
-                //TODO: Call live update hub method
-            }
+                await _hubContext.Clients.Client(photo.TakenByPlayer.ConnectionID).SendAsync("UpdateNotifications");
+            
             //Otherwise, send a text message or email notification
             else
             {
@@ -222,10 +223,9 @@ namespace INFT3970Backend.Hubs
 
 
             //If the PhotoOfPlayer is connected to the Hub send out a live notification update
-            if (photo.TakenByPlayer.IsConnected)
-            {
-                //TODO: Call live update hub method
-            }
+            if (photo.PhotoOfPlayer.IsConnected)
+                await _hubContext.Clients.Client(photo.PhotoOfPlayer.ConnectionID).SendAsync("UpdateNotifications");
+
             //Otherwise, send a text message or email notification
             else
             {
