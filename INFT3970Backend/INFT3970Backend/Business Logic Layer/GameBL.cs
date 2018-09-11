@@ -84,10 +84,22 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// Creates a notification of a type, assigned to particular playerID within a gameID
         /// </summary>
         /// <returns>void</returns>
-        public void CreateNotification(string msgTxt, string type, int gameID, int playerID)
+        public void CreateJoinNotification(int gameID, int playerID)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateNotification(msgTxt, type, gameID, playerID);
+            gameDAL.CreateJoinNotification(gameID, playerID);
+        }
+
+        public void CreateLeaveNotification(int gameID, int playerID)
+        {
+            GameDAL gameDAL = new GameDAL();
+            gameDAL.CreateLeaveNotification(gameID, playerID);
+        }
+
+        public void CreateTaggedNotification(int takenByID, int photoOfID)
+        {
+            GameDAL gameDAL = new GameDAL();
+            gameDAL.CreateTaggedNotification(takenByID, photoOfID);
         }
     }
 }

@@ -17,10 +17,8 @@ GO
 --		3. When performing the update in the DB an error occurred
 
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_CreateNotification] 
+CREATE PROCEDURE [dbo].[usp_CreateJoinNotification] 
 	-- Add the parameters for the stored procedure here
-	@msgTxt VARCHAR(255),
-	@type CHAR(8),
 	@gameID INT,
 	@playerID INT,
 	@errorMSG VARCHAR(255) OUTPUT
@@ -49,23 +47,22 @@ BEGIN
 		--PlayerID exists and connectionID exists, add the notif
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			IF (@type = 'JOIN') -- if the type is of JOIN, then all players need to receive the notif
-			BEGIN
-				DECLARE @notifPlayerID INT
-				DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-				OPEN idCursor
+			DECLARE @notifPlayerID INT
+			DECLARE @msgTxt VARCHAR(255)
+			SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @PlayerID
+			SET @msgTxt += ' has joined the game.'
 
-				FETCH NEXT FROM idCursor INTO @notifPlayerID
-				WHILE @notifPlayerID != @playerID --@@FETCH_STATUS = 0 --iterate through all players and give them a notif
-				BEGIN
-					INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
-					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-				END
-				CLOSE idCursor -- close down cursor
-				DEALLOCATE idCursor
+			DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
+			OPEN idCursor
+
+			FETCH NEXT FROM idCursor INTO @notifPlayerID
+			WHILE @notifPlayerID != @playerID --@@FETCH_STATUS = 0 --iterate through all players and give them a notif
+			BEGIN
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'JOIN', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
+				FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
 			END
-			ELSE    --else if notif is not of a type required to send to all, just create singular
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, @type, 0, 1, @gameID, @playerID)
+			CLOSE idCursor -- close down cursor
+			DEALLOCATE idCursor
 
 		COMMIT
 	END TRY

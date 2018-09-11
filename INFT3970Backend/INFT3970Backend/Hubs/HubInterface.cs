@@ -54,8 +54,7 @@ namespace INFT3970Backend.Hubs
             GameBL gameBL = new GameBL();
             if (game.GameState == "PLAYING")
             {
-                string gameJoin = "'" + joinedPlayer.Nickname + "' has joined the game.";
-                gameBL.CreateNotification(gameJoin, "JOIN", game.GameID, joinedPlayer.PlayerID);
+                gameBL.CreateJoinNotification(game.GameID, joinedPlayer.PlayerID);
             }
 
             //Loop through each of the players and update any player currently connected to the hub
