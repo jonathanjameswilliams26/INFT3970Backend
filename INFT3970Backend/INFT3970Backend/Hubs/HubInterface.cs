@@ -133,7 +133,7 @@ namespace INFT3970Backend.Hubs
         /// a new photo has been uploaded to their game of CamTag and is ready to be voted on.
         /// </summary>
         /// <param name="uploadedPhoto">The photo model which has been uploaded.</param>
-        public void UpdatePhotoUploaded(Photo uploadedPhoto)
+        public async void UpdatePhotoUploaded(Photo uploadedPhoto)
         {
             //Get the list of players currently in the game
             PlayerDAL playerDAL = new PlayerDAL();
@@ -159,9 +159,7 @@ namespace INFT3970Backend.Hubs
 
                 //The player is connected to the Hub, call a live update method
                 if(player.IsConnected)
-                {
-                    //TODO: Send out live update to client
-                }
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdatePhotoUploaded");
 
                 //Otherwise, the player is not currently in the WebApp, send a notification to their contact details.
                 else
@@ -202,8 +200,8 @@ namespace INFT3970Backend.Hubs
                 photoOfMsgTxt = photo.TakenByPlayer.Nickname + " failed to tag you.";
             }
 
-
-            //TODO: Add notifications to DB
+            
+            //Add the notifications to the database
             GameDAL gameDAL = new GameDAL();
             gameDAL.CreateTagResultNotification(photo.GameID, photo.TakenByPlayerID, photo.PhotoOfPlayerID, (photo.NumYesVotes > photo.NumNoVotes));
 

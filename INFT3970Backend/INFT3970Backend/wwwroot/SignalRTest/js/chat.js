@@ -81,3 +81,30 @@ connection.on("UpdateNotifications", function () {
         }
     });
 });
+
+
+
+
+
+//Hub Client Function
+//Updates the list of notifications a player has
+connection.on("UpdatePhotoUploaded", function () {
+
+    //Make a call to the API to 
+    $.ajax({
+        type: "GET",
+        url: "https://localhost:5000/api/photo/vote",
+        headers: { 'playerID': '100000' },
+        //dataType: "application/json",
+        success: function (result) {
+            console.log(result);
+
+            //Get the vote/photo data from the result
+           var data = result.data;
+            for (var i = 0; i < data.length; i++) {
+                var dataURL = data[i].photo.photoDataURL;
+                document.getElementById("testIMG").setAttribute("src", dataURL);
+            }
+        }
+    });
+});
