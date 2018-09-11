@@ -192,7 +192,7 @@ CREATE TABLE tbl_Notification
 (
 	NotificationID INT NOT NULL IDENTITY(100000, 1),
 	MessageText VARCHAR(255) NOT NULL DEFAULT 'Notification',
-	NotificationType VARCHAR(255) NOT NULL DEFAULT 'VOTE',
+	NotificationType VARCHAR(255) NOT NULL DEFAULT 'SUCCESS',
 	IsRead BIT NOT NULL DEFAULT 0,
 	NotificationIsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
@@ -202,7 +202,7 @@ CREATE TABLE tbl_Notification
 	FOREIGN KEY (GameID) REFERENCES tbl_Game(GameID),
 	FOREIGN KEY (PlayerID) REFERENCES tbl_Player(PlayerID),
 
-	CHECK(NotificationType IN ('VOTE', 'SUCCESS', 'FAIL', 'JOIN', 'LEAVE', 'TAGGED'))
+	CHECK(NotificationType IN ('SUCCESS', 'FAIL', 'JOIN', 'LEAVE', 'AMMO'))
 );
 GO
 
@@ -635,9 +635,6 @@ GO
 
 
 
-
-
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -647,7 +644,7 @@ GO
 -- =============================================
 -- Author:		Dylan Levin
 -- Create date: 06/09/18
--- Description:	Adds a notification to the DB to then be used.
+-- Description:	Creates a tag notification for each player depending on the result of a tag.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
 
@@ -657,16 +654,21 @@ GO
 --		3. When performing the update in the DB an error occurred
 
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_CreateTaggedNotification] 
+CREATE PROCEDURE [dbo].[usp_CreateTagResultNotification] 
 	-- Add the parameters for the stored procedure here
+	@gameID INT,
 	@takenByID INT,
 	@photoOfID INT,
+	@result BIT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+
+	DECLARE @msgTxt VARCHAR(255)
+	DECLARE @notifPlayerID INT 
 
 	BEGIN TRY  
 		--Confirm the playerID passed in exists
@@ -683,20 +685,97 @@ BEGIN
 			RAISERROR('ERROR: playerID does not exist',16,1);
 		END;
 
+		--Confirm the gameID exists
+		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
+		BEGIN
+			SET @errorMSG = 'The gameID does not exist';
+			RAISERROR('ERROR: gameID does not exist',16,1);
+		END;
 
-		--PlayerID exists and connectionID exists, add the notif
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
+		IF (@result = 1) --success
+		BEGIN
+			SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+			BEGIN TRANSACTION
 
-			DECLARE @msgTxt VARCHAR(255)
-			SET @msgTxt = 'You have been tagged by '
-			SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-			SET @msgTxt += '.'
+				-- send to the tagged player
+				SET @msgTxt = 'You have been tagged by '
+				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				SET @msgTxt += '.'
 
-			DECLARE @gameID INT
-			SELECT @gameID = g.GameID FROM vw_PlayerGame g WHERE g.PlayerID = 100000
-			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'TAGGED', 0, 1, @gameID, @photoOfID) -- insert into table with specific playerID			
-		COMMIT
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @photoOfID) -- insert into table with specific playerID			
+						
+				-- send to the tagging player
+				SET @msgTxt = 'You successfully tagged '
+				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				SET @msgTxt += '.'
+
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @takenByID) -- insert into table with specific playerID	
+						
+				-- send to everyone else						
+				SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				SET @msgTxt += ' was tagged by '
+				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				SET @msgTxt += '.'
+
+				DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
+				OPEN idCursor
+
+				FETCH NEXT FROM idCursor INTO @notifPlayerID
+				WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
+				BEGIN
+					IF (@notifPlayerID != @photoOfID AND @notifPlayerID != @takenByID)
+					BEGIN
+						INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID								
+					END
+					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
+				END
+				CLOSE idCursor -- close down cursor
+				DEALLOCATE idCursor							
+			COMMIT
+		END
+		ELSE --fail
+		BEGIN
+		BEGIN
+			SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+			BEGIN TRANSACTION
+
+				-- send to the tagged player				
+				SET @msgTxt = 'You were missed by '
+				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				SET @msgTxt += '.'
+
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @photoOfID) -- insert into table with specific playerID			
+						
+				-- send to the tagging player
+				SET @msgTxt = 'You failed to tag '
+				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				SET @msgTxt += '.'
+
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @takenByID) -- insert into table with specific playerID	
+						
+				-- send to everyone else		
+				SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				SET @msgTxt += ' failed to tag '
+				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				SET @msgTxt += '.'
+
+				DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
+				OPEN idCursor
+
+				FETCH NEXT FROM idCursor INTO @notifPlayerID
+				WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
+				BEGIN
+					IF (@notifPlayerID != @photoOfID AND @notifPlayerID != @takenByID)
+					BEGIN
+						INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID								
+					END
+					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
+				END
+				CLOSE idCursor -- close down cursor
+				DEALLOCATE idCursor							
+			COMMIT
+		END
+		END	
 	END TRY
 
 	--An error occurred in the data validation
@@ -714,6 +793,70 @@ GO
 
 
 
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Dylan Levin
+-- Create date: 11/09/18
+-- Description:	Adds a notification informing the user that their ammo has refilled
+
+-- Returns: 1 = Successful, or 0 = An error occurred
+
+-- Possible Errors Returned:
+--		1. The playerID of the recipient does not exist
+--		2. The gameID does not exist
+--		3. When performing the update in the DB an error occurred
+
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_CreateAmmoNotification] 
+	-- Add the parameters for the stored procedure here
+	@gameID INT,
+	@playerID INT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	BEGIN TRY  
+		--Confirm the playerID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
+		BEGIN
+			SET @errorMSG = 'The playerID does not exist';
+			RAISERROR('ERROR: playerID does not exist',16,1);
+		END;
+
+		--Confirm the gameID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
+		BEGIN
+			SET @errorMSG = 'The gameID does not exist';
+			RAISERROR('ERROR: gameID does not exist',16,1);
+		END;
+
+		--PlayerID exists and gameID exists, add the notif
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION		
+			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('You have more ammo!', 'AMMO', 0, 1, @gameID, @playerID) -- insert into table with specific playerID			
+		COMMIT
+	END TRY
+
+	--An error occurred in the data validation
+	BEGIN CATCH
+		
+		--An error occurred while trying to perform the update on the Notification table
+		IF @@TRANCOUNT > 0
+		BEGIN
+			ROLLBACK;
+		END
+
+	END CATCH
+END
+GO
 
 
 
@@ -1631,7 +1774,7 @@ INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALU
 GO
 INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Sheridan', '+61478588547', 'localhost', 100000, 0)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 1, 1, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 0, 1, 100000, 100000)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('test.', 'JOIN', 0, 1, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('test.', 'JOIN', 1, 1, 100000, 100000)
 

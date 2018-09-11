@@ -62,10 +62,6 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-
-
-
-
         /// <summary>
         /// Sets the game to inactive after a game was created by the host player and failed to join the game due to an unexpected
         /// error such as invalid contact details or the contact details are already taken by another player in an active playing game.
@@ -98,10 +94,6 @@ namespace INFT3970Backend.Data_Access_Layer
                 //Do nothing
             }
         }
-
-
-
-
 
 
 
@@ -187,8 +179,6 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
-
-
         /// <summary>
         /// Creates a notification of type LEAVE, sent to all players notifying.
         /// </summary>
@@ -229,14 +219,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Creates a notification of type LEAVE, sent to all players notifying.
+        /// Creates a notification of type AMMO, sent a specific player
         /// </summary>
         /// <param name="gameID">The gameID of the game</param>
-        /// <param name="playerID">The playerID of who left the game.</param>
+        /// <param name="playerID">The playerID of the receiver.</param>
         /// <returns>void</returns>
-        public void CreateTaggedNotification(int takenByID, int photoOfID)
+        public void CreateAmmoNotification(int gameID, int playerID)
         {
-            StoredProcedure = "usp_CreateTaggedNotification";
+            StoredProcedure = "usp_CreateAmmoNotification";
             try
             {
                 //Create the connection and command for the stored procedure
@@ -246,8 +236,50 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameID", gameID);
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+
+            }
+        }
+
+
+
+        /// <summary>
+        /// Creates a notification of type SUCCESS or FAIL, sent to specific player.
+        /// </summary>
+        /// <param name="gameID">The gameID of the game</param>
+        /// <param name="playerID">The playerID of the receiver.</param>
+        /// <returns>void</returns>
+        public void CreateTagResultNotification(int gameID, int takenByID, int photoOfID, bool result)
+        {
+            StoredProcedure = "usp_CreateTagResultNotification";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameID", gameID);
                         Command.Parameters.AddWithValue("@takenByID", takenByID);
                         Command.Parameters.AddWithValue("@photoOfID", photoOfID);
+                        Command.Parameters.AddWithValue("@result", result);
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
                         Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
 

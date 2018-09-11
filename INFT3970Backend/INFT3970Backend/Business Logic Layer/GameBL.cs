@@ -81,7 +81,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
         /// <summary>
-        /// Creates a notification of a type, assigned to particular playerID within a gameID
+        /// Creates a notification for a player joining a game. Sent to all.
         /// </summary>
         /// <returns>void</returns>
         public void CreateJoinNotification(int gameID, int playerID)
@@ -90,16 +90,35 @@ namespace INFT3970Backend.Business_Logic_Layer
             gameDAL.CreateJoinNotification(gameID, playerID);
         }
 
+        /// <summary>
+        /// Creates a notification for a player leaving a game. Sent to all.
+        /// </summary>
+        /// <returns>void</returns>
         public void CreateLeaveNotification(int gameID, int playerID)
         {
             GameDAL gameDAL = new GameDAL();
             gameDAL.CreateLeaveNotification(gameID, playerID);
         }
 
-        public void CreateTaggedNotification(int takenByID, int photoOfID)
+        /// <summary>
+        /// Creates a notification for a player that their ammo is refilled.
+        /// </summary>
+        /// <returns>void</returns>
+        public void CreateAmmoNotification(int gameID, int playerID)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateTaggedNotification(takenByID, photoOfID);
+            gameDAL.CreateAmmoNotification(gameID, playerID);
+        }
+
+
+        /// <summary>
+        /// Creates a notification for everyone regarding the result of a photo tag.
+        /// </summary>
+        /// <returns>void</returns>
+        public void CreateTagResultNotification(int gameID, int takenByID, int photoOfID, bool result)
+        {
+            GameDAL gameDAL = new GameDAL();
+            gameDAL.CreateTagResultNotification(gameID, takenByID, photoOfID, result);
         }
     }
 }
