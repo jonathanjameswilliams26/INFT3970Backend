@@ -46,5 +46,24 @@ namespace INFT3970Backend.Controllers
             PhotoBL photoBL = new PhotoBL();
             return photoBL.SavePhoto(imgUrl, takenByID, photoOfID, _hubContext, latitude, longitude);
         }
+
+
+
+
+
+        /// <summary>
+        /// Gets the list of PlayerVotePhoto records which have not been completed by the player.
+        /// This is the list of photos which the player has not voted on yet.
+        /// </summary>
+        /// <param name="playerID">The ID of the player</param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("api/photo/vote")]
+        public ActionResult<Response<List<PlayerVotePhoto>>> GetVotesToComplete([FromHeader] int playerID)
+        {
+            //Call the business logic layer to get the list of votes the player needs to complete
+            PhotoBL photoBL = new PhotoBL();
+            return photoBL.GetVotesToComplete(playerID);
+        }
     }
 }

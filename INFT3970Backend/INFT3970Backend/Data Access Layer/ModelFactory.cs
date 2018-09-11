@@ -40,6 +40,15 @@ namespace INFT3970Backend.Data_Access_Layer
             return Reader.GetBoolean(GetColIndex(colName));
         }
 
+        private bool? GetNullableBool(string colName)
+        {
+            int index = GetColIndex(colName);
+            if (!Reader.IsDBNull(index))
+                return Reader.GetBoolean(index);
+            else
+                return null;
+        }
+
 
         private string SafeGetString(string colName)
         {
@@ -99,6 +108,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.IsVerified = GetBool("IsVerified");
                 player.ConnectionID = SafeGetString("ConnectionID");
                 player.IsConnected = GetBool("IsConnected");
+                player.HasLeftGame = GetBool("HasLeftGame");
                 player.IsActive = GetBool("PlayerIsActive");
 
                 //Build the Game object for the player
@@ -157,6 +167,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.IsVerified = GetBool("TakenByPlayerIsVerified");
                     player.ConnectionID = SafeGetString("TakenByPlayerConnectionID");
                     player.IsConnected = GetBool("TakenByPlayerIsConnected");
+                    player.HasLeftGame = GetBool("TakenByPlayerHasLeftGame");
                     player.IsActive = GetBool("TakenByPlayerIsActive");
                     player.Game = photo.Game;
                     photo.TakenByPlayer = player;
@@ -179,6 +190,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.IsVerified = GetBool("PhotoOfPlayerIsVerified");
                     player.ConnectionID = SafeGetString("PhotoOfPlayerConnectionID");
                     player.IsConnected = GetBool("PhotoOfPlayerIsConnected");
+                    player.HasLeftGame = GetBool("PhotoOfPlayerHasLeftGame");
                     player.IsActive = GetBool("PhotoOfPlayerIsActive");
                     player.Game = photo.Game;
                     photo.PhotoOfPlayer = player;
@@ -208,6 +220,37 @@ namespace INFT3970Backend.Data_Access_Layer
                 game.IsJoinableAtAnytime = GetBool("IsJoinableAtAnytime");
                 game.IsActive = GetBool("GameIsActive");
                 return game;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+        public PlayerVotePhoto PlayerVotePhotoFactory(bool doGetPlayer, bool doGetPhoto)
+        {
+            try
+            {
+                Player player = null;
+                Photo photo = null;
+
+                //Build the PlayerVotePhoto object
+                PlayerVotePhoto playerVotePhoto = new PlayerVotePhoto();
+                playerVotePhoto.VoteID = GetInt("VoteID");
+                playerVotePhoto.IsPhotoSuccessful = GetNullableBool("IsPhotoSuccessful");
+                playerVotePhoto.IsActive = GetBool("PlayerVotePhotoIsActive");
+                playerVotePhoto.PlayerID = GetInt("PlayerID");
+                playerVotePhoto.PhotoID = GetInt("PhotoID");
+
+                if (doGetPlayer)
+                    player = PlayerFactory(true);
+                if (doGetPhoto)
+                    photo = PhotoFactory(true, true, true);
+
+                playerVotePhoto.Photo = photo;
+                playerVotePhoto.Player = player;
+                return playerVotePhoto;
             }
             catch
             {

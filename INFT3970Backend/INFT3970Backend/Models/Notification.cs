@@ -14,6 +14,8 @@ namespace INFT3970Backend.Models
         public bool IsActive { get; set; }
         public int GameID { get; set; }
         public int PlayerID { get; set; }
+        public Game Game { get; set; }
+        public Player Player { get; set; }
 
         public Notification() { }
     }

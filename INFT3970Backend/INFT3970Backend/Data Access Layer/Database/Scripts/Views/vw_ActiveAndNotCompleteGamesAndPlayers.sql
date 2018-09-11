@@ -9,32 +9,8 @@
 CREATE VIEW vw_ActiveAndNotCompleteGamesAndPlayers
 AS
 SELECT
-	g.GameID,
-	GameCode,
-	NumOfPlayers,
-	GameMode,
-	StartTime,
-	EndTime,
-	GameState,
-	IsJoinableAtAnytime,
-	GameIsActive,
-	PlayerID,
-	Nickname,
-	Phone,
-	Email,
-	SelfieDataURL,
-	NumKills,
-	NumDeaths,
-	NumPhotosTaken,
-	IsHost,
-	IsVerified,
-	VerificationCode,
-	ConnectionID,
-	IsConnected,
-	HasLeftGame,
-	PlayerIsActive
-FROM tbl_Game g
-		INNER JOIN tbl_Player p ON (g.GameID = p.GameID)
+	*
+FROM vw_PlayerGame
 WHERE
 	GameState NOT LIKE 'COMPLETE'
 	AND GameIsActive = 1

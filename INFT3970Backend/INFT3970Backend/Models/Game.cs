@@ -16,6 +16,6 @@ namespace INFT3970Backend.Models
         public string GameState { get; set; }
         public bool IsJoinableAtAnytime { get; set; }
         public bool IsActive { get; set; }
-        public Dictionary<int, Player> Players { get; set; }
+        public List<Player> Players { get; set; }
     }
 }

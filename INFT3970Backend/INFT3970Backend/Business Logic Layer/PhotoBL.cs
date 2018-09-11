@@ -133,5 +133,22 @@ namespace INFT3970Backend.Business_Logic_Layer
             if(response.Type == "SUCCESS")
                 hubInterface.UpdatePhotoVotingCompleted(response.Data);
         }
+
+
+
+
+
+
+        /// <summary>
+        /// Gets the list of all PlayerVotePhoto records which have not been completed by the specified playerID
+        /// </summary>
+        /// <param name="playerID">The PlayerID who's incomplete voting records will be returned</param>
+        /// <returns></returns>
+        public Response<List<PlayerVotePhoto>> GetVotesToComplete(int playerID)
+        {
+            //Call the Data Access Layer to get the photos require voting to be completed
+            PhotoDAL photoDAL = new PhotoDAL();
+            return photoDAL.GetVotesToComplete(playerID);
+        }
     }
 }

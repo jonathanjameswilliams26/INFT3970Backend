@@ -207,50 +207,6 @@ CREATE TABLE tbl_Notification
 GO
 
 
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 05/09/18
--- Description:	A view which contains all the active 
---				games and non complete games as well as 
---				all the active players in the game.
--- =============================================
-
-CREATE VIEW vw_ActiveAndNotCompleteGamesAndPlayers
-AS
-SELECT
-	g.GameID,
-	GameCode,
-	NumOfPlayers,
-	GameMode,
-	StartTime,
-	EndTime,
-	GameState,
-	IsJoinableAtAnytime,
-	GameIsActive,
-	PlayerID,
-	Nickname,
-	Phone,
-	Email,
-	SelfieDataURL,
-	NumKills,
-	NumDeaths,
-	NumPhotosTaken,
-	IsHost,
-	IsVerified,
-	VerificationCode,
-	ConnectionID,
-	IsConnected,
-	HasLeftGame,
-	PlayerIsActive
-FROM tbl_Game g
-		INNER JOIN tbl_Player p ON (g.GameID = p.GameID)
-WHERE
-	GameState NOT LIKE 'COMPLETE'
-	AND GameIsActive = 1
-	AND PlayerIsActive = 1
-GO
-
-
 
 
 
@@ -295,6 +251,7 @@ SELECT
 	takenBy.IsVerified AS TakenByPlayerIsVerified,
 	takenBy.ConnectionID AS TakenByPlayerConnectionID,
 	takenBy.IsConnected AS TakenByPlayerIsConnected,
+	takenBy.HasLeftGame AS TakenByPlayerHasLeftGame,
 	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
 	PhotoOfPlayerID,
 	photoOf.Nickname AS PhotoOfPlayerNickname,
@@ -308,6 +265,7 @@ SELECT
 	photoOf.IsVerified AS PhotoOfPlayerIsVerified,
 	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
 	photoOf.IsConnected AS PhotoOfPlayerIsConnected,
+	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame,
 	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive  
 FROM tbl_Photo p
 	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
@@ -345,9 +303,11 @@ SELECT
 	NumPhotosTaken,
 	IsHost,
 	IsVerified,
-	PlayerIsActive,
+	VerificationCode,
 	ConnectionID,
 	IsConnected,
+	HasLeftGame,
+	PlayerIsActive,
 	g.GameID,
 	GameCode,
 	NumOfPlayers,
@@ -363,6 +323,63 @@ FROM tbl_Player p
 GO
 
 
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 05/09/18
+-- Description:	A view which contains all the active 
+--				games and non complete games as well as 
+--				all the active players in the game.
+-- =============================================
+
+CREATE VIEW vw_ActiveAndNotCompleteGamesAndPlayers
+AS
+SELECT
+	*
+FROM vw_PlayerGame
+WHERE
+	GameState NOT LIKE 'COMPLETE'
+	AND GameIsActive = 1
+	AND PlayerIsActive = 1
+GO
+
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 11/09/18
+-- Description:	Creates a view of The PlayerVotePhoto records with the joined Player and Photo tables
+-- =============================================
+USE udb_CamTag
+GO
+CREATE VIEW vw_PlayerVoteJoinTables
+AS
+SELECT 
+	pvp.VoteID,
+	pvp.IsPhotoSuccessful,
+	pvp.PlayerVotePhotoIsActive,
+	pgp.*,
+	pg.PlayerID,
+	pg.Nickname,
+	pg.Phone,
+	pg.Email,
+	pg.SelfieDataURL,
+	pg.NumKills,
+	pg.NumDeaths,
+	pg.NumPhotosTaken,
+	pg.IsHost,
+	pg.IsVerified,
+	pg.ConnectionID,
+	pg.IsConnected,
+	pg.HasLeftGame,
+	pg.PlayerIsActive
+FROM tbl_PlayerVotePhoto pvp
+	INNER JOIN vw_PhotoGameAndPlayers pgp ON (pvp.PhotoID = pgp.PhotoID)
+	INNER JOIN vw_PlayerGame pg ON (pvp.PlayerID = pg.PlayerID)
+GO
 
 
 
@@ -973,6 +990,52 @@ BEGIN
 
 END
 GO
+
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 10/09/18
+-- Description:	Gets the PlayerVotePhoto records which the PlayerID must completed / has not voted on yet
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_GetVotesToComplete] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declaring the possible error codes returned
+	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+
+	--Confirm the playerID passed in exists
+	IF NOT EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @playerID)
+	BEGIN
+		SET @result = @EC_PLAYERIDDOESNOTEXIST;
+		SET @errorMSG = 'The playerID does not exist';
+		RAISERROR('',16,1);
+	END
+
+	SELECT *
+	FROM vw_PlayerVoteJoinTables
+	WHERE PlayerID = @playerID AND IsPhotoSuccessful IS NULL
+	ORDER BY VoteID
+
+	SET @result = 1;
+	SET @errorMSG = '';
+	
+END
+GO
+
+
+
 
 
 
