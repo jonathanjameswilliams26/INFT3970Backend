@@ -47,21 +47,12 @@ namespace INFT3970Backend.Business_Logic_Layer
                 photoOfID = int.Parse(tempPhotoOfID);
                 latitude = double.Parse(tempLatitude);
                 longitude = double.Parse(tempLongitude);
-            }
-            catch
-            {
-                return new Response<object>(null, "ERROR", "The data provided is invalid, check the takenByID, PhotoOfID, lat and long values to ensure they are in the correct format.", ErrorCodes.EC_DATAINVALID);
-            }
-
-            //Confirm the dataURL is actually a base64 string.
-            try
-            {
                 var base64Data = imgUrl.Replace("data:image/jpeg;base64,", "");
                 var binData = Convert.FromBase64String(base64Data);
             }
             catch
             {
-                return new Response<object>(null, "ERROR", "DataURL is not a base64 string.", ErrorCodes.EC_UPLOADPHOTO_DATAURLINVALID);
+                return new Response<object>(null, "ERROR", "The data provided is invalid, check the takenByID, PhotoOfID, lat, long and DataURL values to ensure they are in the correct format.", ErrorCodes.EC_DATAINVALID);
             }
 
             //Save the DataURL to the database

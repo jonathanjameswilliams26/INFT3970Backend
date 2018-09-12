@@ -34,7 +34,9 @@ namespace INFT3970Backend.Models
         public const int EC_VERIFYPLAYER_CODEINCORRECT = 2001;
 
 
-        //PhotoController - Upload Photo
-        public const int EC_UPLOADPHOTO_DATAURLINVALID = 3000;
+        //PhotoController - Vote On Photo Error Codes
+        public const int EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST = 4000;
+        public const int EC_VOTEPHOTO_VOTEALREADYCOMPLETE = 4001;
+        public const int EC_VOTEPHOTO_VOTEFINISHTIMEPASSED = 4003;
     }
 }
