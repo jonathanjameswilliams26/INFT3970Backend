@@ -95,6 +95,43 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
+        // Same as the getGameById but reutrns a response object 
+        public Response<Game> GetGame(int gameID)
+        {
+            StoredProcedure = "usp_GetGameByID";
+            Game game = new Game();
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameID", gameID);
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+                        while (Reader.Read())
+                        {
+                            game = new ModelFactory(Reader).GameFactory();
+                        }
+                        Reader.Close();
+
+                        return new Response<Game>(game, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return null;
+            }
+        }
+
 
 
 

@@ -12,7 +12,7 @@ namespace INFT3970Backend.Controllers
     public class Map : ControllerBase
     {
         [HttpGet]
-        [Route("api/player/getPhotoLocation/{photoID:int}")]
+        [Route("api/map/getPhotoLocation/{photoID:int}")]
         public ActionResult<Response<List<Photo>>> GetPhotoLocation(int photoID)
         {
             /*

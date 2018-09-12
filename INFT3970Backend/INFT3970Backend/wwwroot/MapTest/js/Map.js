@@ -28,12 +28,12 @@ function newMarker(lattitude, logitude, userMap) {
 }
 
 function getLastKnownLocation(userMap) {
-    var photoID = 100002;
+    var photoID = 100000;
 
     console.log("GETTING LOCATION");
     $.ajax({
         type: "GET",
-        url: "https://localhost:5000/api/player/getPhotoLocation/" + photoID,
+        url: "https://localhost:5000/api/map/getPhotoLocation/" + photoID,
         // dataType="application/json",
         success: function (result) {
             console.log(result);

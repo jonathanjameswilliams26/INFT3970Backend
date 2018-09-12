@@ -57,5 +57,17 @@ namespace INFT3970Backend.Controllers
             else
                 return new Response<Player>(null, "ERROR", createGameResponse.ErrorMessage, createGameResponse.ErrorCode);
         }
+
+        [HttpGet]
+        [Route("api/game/getGame/{gameID:int}")]
+        public ActionResult<Response<Game>> GetGame(int gameID)
+        {
+            //Example request
+            //https://localhost:5000/api/game/getGame/100000
+
+      
+            GameBL gameBL = new GameBL();
+            return gameBL.GetGame(gameID);
+        }
     }
 }

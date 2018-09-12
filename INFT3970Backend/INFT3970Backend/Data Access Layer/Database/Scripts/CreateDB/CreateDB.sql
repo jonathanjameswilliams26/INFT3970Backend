@@ -1123,7 +1123,7 @@ BEGIN
 		SET @result = 1;
 		SET @errorMSG = ''
 		
-		PRINT 'Hello';
+	
 
 	END TRY
 
@@ -1909,4 +1909,5 @@ GO
 INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 0, 1, 100000, 100000)
 GO
 INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('test.', 'JOIN', 1, 1, 100000, 100000)
-
+GO
+INSERT INTO tbl_Photo (Lat, Long, PhotoDataURL, IsVotingComplete, GameID, TakenByPlayerID, PhotoOfPlayerID) VALUES (-24.2, 130.0, 'localhost', 1, 100000, 100001, 100002)

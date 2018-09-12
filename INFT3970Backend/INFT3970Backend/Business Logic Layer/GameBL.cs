@@ -120,5 +120,12 @@ namespace INFT3970Backend.Business_Logic_Layer
             GameDAL gameDAL = new GameDAL();
             gameDAL.CreateTagResultNotification(gameID, takenByID, photoOfID, result);
         }
+
+
+        public Response<Game> GetGame(int gameID)
+        {
+            GameDAL gameDAL = new GameDAL();
+            return gameDAL.GetGame(gameID);
+        }
     }
 }
