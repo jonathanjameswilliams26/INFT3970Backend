@@ -158,20 +158,20 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// GET: api/player/leaveGame/{playerID} - 
+        /// POST: api/player/leaveGame - 
         /// Leaves a player from their active game
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
-        /// <returns>A response status.</returns>
-        [HttpGet]
-        [Route("api/player/leaveGame/{playerID:int}")]
-        public Response<int> LeaveGame(int playerID)
+        /// <returns>A response status indicating if the db update was a success.</returns>
+        [HttpPost]
+        [Route("api/player/leaveGame")]
+        public Response<object> LeaveGame([FromHeader] int playerID)
         {
             //Example request
-            //https://localhost:5000/api/player/leaveGame/100000
+            //https://localhost:5000/api/player/leaveGame
 
             PlayerBL playerBL = new PlayerBL();
-            return playerBL.LeaveGame(playerID);
+            return playerBL.LeaveGame(playerID, _hubContext);
         }
     }
 }

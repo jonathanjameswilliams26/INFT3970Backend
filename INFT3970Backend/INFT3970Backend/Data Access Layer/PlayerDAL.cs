@@ -408,7 +408,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
         /// <returns>A response status.</returns>
-        public Response<int> LeaveGame(int playerID)
+        public Response<object> LeaveGame(int playerID)
         {
             StoredProcedure = "usp_LeaveGame";
             try
@@ -436,15 +436,16 @@ namespace INFT3970Backend.Data_Access_Layer
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
 
                         //Format the results into a response object
-                        return new Response<int>(1, Result, ErrorMSG, Result);
+                        return new Response<object>(1, Result, ErrorMSG, Result);
                     }
                 }
             }
 
             //A database exception was thrown, return an error response
-            catch
+            catch (Exception e)
             {
-                return new Response<int>(-1, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                var r  = e;
+                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }

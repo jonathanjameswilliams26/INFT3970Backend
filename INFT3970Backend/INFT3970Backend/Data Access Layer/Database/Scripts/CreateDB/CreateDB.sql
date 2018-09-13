@@ -68,6 +68,7 @@ CREATE TABLE tbl_Game
 	GameState VARCHAR(255) NOT NULL DEFAULT 'STARTING',
 	IsJoinableAtAnytime BIT NOT NULL DEFAULT 0,
 	GameIsActive BIT NOT NULL DEFAULT 1,
+	IsDeleted BIT NOT NULL DEFAULT 0,
 
 	PRIMARY KEY (GameID),
 
@@ -118,6 +119,7 @@ CREATE TABLE tbl_Player
 	ConnectionID VARCHAR(255) DEFAULT NULL,
 	IsConnected BIT NOT NULL DEFAULT 0,
 	HasLeftGame BIT NOT NULL DEFAULT 0,
+	IsDeleted BIT NOT NULL DEFAULT 0,
 	PlayerIsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
 
@@ -151,6 +153,7 @@ CREATE TABLE tbl_Photo
 	NumNoVotes INT NOT NULL DEFAULT 0,
 	IsVotingComplete BIT NOT NULL DEFAULT 0,
 	PhotoIsActive BIT NOT NULL DEFAULT 1,
+	IsDeleted BIT NOT NULL DEFAULT 0,
 	GameID INT NOT NULL,
 	TakenByPlayerID INT NOT NULL,
 	PhotoOfPlayerID INT NOT NULL,
@@ -175,6 +178,7 @@ CREATE TABLE tbl_PlayerVotePhoto
 	VoteID INT NOT NULL IDENTITY(100000, 1),
 	IsPhotoSuccessful BIT DEFAULT NULL,
 	PlayerVotePhotoIsActive BIT NOT NULL DEFAULT 1,
+	IsDeleted BIT NOT NULL DEFAULT 0,
 	PhotoID INT NOT NULL,
 	PlayerID INT NOT NULL,
 
@@ -195,6 +199,7 @@ CREATE TABLE tbl_Notification
 	NotificationType VARCHAR(255) NOT NULL DEFAULT 'SUCCESS',
 	IsRead BIT NOT NULL DEFAULT 0,
 	NotificationIsActive BIT NOT NULL DEFAULT 1,
+	IsDeleted BIT NOT NULL DEFAULT 0,
 	GameID INT NOT NULL,
 	PlayerID INT NOT NULL,
 
@@ -522,9 +527,12 @@ BEGIN
 			OPEN idCursor
 
 			FETCH NEXT FROM idCursor INTO @notifPlayerID
-			WHILE @notifPlayerID != @playerID --@@FETCH_STATUS = 0 --iterate through all players and give them a notif
+			WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
+			BEGIN
+			IF (@notifPlayerID != @playerID)
 			BEGIN
 				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'JOIN', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
+			END
 				FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
 			END
 			CLOSE idCursor -- close down cursor
@@ -608,10 +616,13 @@ BEGIN
 			OPEN idCursor
 
 			FETCH NEXT FROM idCursor INTO @notifPlayerID
-			WHILE @notifPlayerID != @playerID --@@FETCH_STATUS = 0 --iterate through all players and give them a notif
+			WHILE @@FETCH_STATUS = 0  --iterate through all players and give them a notif
+			BEGIN
+			IF (@notifPlayerID != @playerID)
 			BEGIN
 				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'LEAVE', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
-				FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
+			END
+			FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
 			END
 			CLOSE idCursor -- close down cursor
 			DEALLOCATE idCursor
@@ -1886,28 +1897,102 @@ GO
 
 
 
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Dylan Levin
+-- Create date: 13/09/18
+-- Description:	Removes a player to a game.
 
+-- Returns: The result (1 = successful, anything else = error), and the error message associated with it
+
+-- Possible Errors Returned:
+--		1. EC_INSERTERROR - An error occurred while trying to insert the game record
+
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_LeaveGame] 
+	-- Add the parameters for the stored procedure here
+	@playerID VARCHAR(6),
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+
+	BEGIN TRY
+
+		--Confirm the playerID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
+		BEGIN
+			SET @errorMSG = 'The playerID does not exist';
+			RAISERROR('ERROR: playerID does not exist',16,1);
+		END;
+
+		-- fetch gameID from player
+		DECLARE @gameID INT;
+		SELECT @gameID = gameID FROM tbl_Player WHERE PlayerID = @playerID
+
+		-- set player HasLeftGame to true
+		UPDATE tbl_Player SET HasLeftGame = 1, IsDeleted = 1 WHERE PlayerID = @playerID
+
+		-- decrement number of players in respective game
+		UPDATE tbl_Game SET NumOfPlayers = NumOfPlayers-1 WHERE GameID = @gameID
+
+		-- delete photos submitted by player that are not voted upon yet
+		UPDATE tbl_Photo SET IsDeleted = 1 WHERE TakenByPlayerID = @playerID AND IsVotingComplete = 0
+	
+		-- delete votes submitted by player that have not reached an outcome
+		UPDATE tbl_PlayerVotePhoto SET IsDeleted = 1 WHERE PlayerID = @playerID AND PlayerVotePhotoIsActive = 0
+	
+		-- delete any unread notifications for the player
+		UPDATE tbl_Notification SET IsDeleted = 1 WHERE PlayerID = @playerID
+
+		--Set the success return variables
+		SET @result = 1;
+		SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+		IF(@@TRANCOUNT > 0)
+		BEGIN
+			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
+		END
+	END CATCH
+END
+GO
 
 
 
 --Dummy Data
-INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 6, 'STARTING')
+INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf164', 4, 'STARTING')
 GO
 
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Jono', '+61457558322', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Jono', '+61457558322', 'localhost', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Dylan', '+6145620441', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Dylan', '+6145620441', 'localhost', 100000, 0 ,1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Mathew', '+61454758125', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Mathew', '+61454758125', 'localhost', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Harry', '+61478542569', 'localhost', 100000, 0)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Harry', '+61478542569', 'localhost', 100000, 0, 0)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('David', '+61478585269', 'localhost', 100000, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('David', '+61478585269', 'localhost', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsVerified) VALUES ('Sheridan', '+61478588547', 'localhost', 100000, 0)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Sheridan', '+61478588547', 'localhost', 100000, 0, 0)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 0, 1, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, IsDeleted, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 0, 1, 0, 100000, 100000)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('test.', 'JOIN', 1, 1, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, IsDeleted, GameID, PlayerID) VALUES ('test.', 'JOIN', 1, 1, 0, 100000, 100000)
 GO
-INSERT INTO tbl_Photo (Lat, Long, PhotoDataURL, IsVotingComplete, GameID, TakenByPlayerID, PhotoOfPlayerID) VALUES (-24.2, 130.0, 'localhost', 1, 100000, 100001, 100002)
+INSERT INTO tbl_Photo (Lat, Long, PhotoDataURL, IsVotingComplete, IsDeleted, GameID, TakenByPlayerID, PhotoOfPlayerID) VALUES (-24.2, 130.0, 'localhost', 1, 0, 100000, 100001, 100002)

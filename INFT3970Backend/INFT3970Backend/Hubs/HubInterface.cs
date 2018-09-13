@@ -48,7 +48,7 @@ namespace INFT3970Backend.Hubs
             Game game = response.Data[0].Game;
 
             //Get the player who joined
-            Player joinedPlayer = GetJoinedPlayerFromList(playerID, response.Data);
+            Player joinedPlayer = GetPlayerFromList(playerID, response.Data);
 
             //Create notifications of new player joining, if the game has started
             GameBL gameBL = new GameBL();
@@ -106,7 +106,7 @@ namespace INFT3970Backend.Hubs
         /// <param name="playerID">The playerID searching for</param>
         /// <param name="list">The list of players to be searched.</param>
         /// <returns>The player object found matching the specified ID. NULL if not found.</returns>
-        private Player GetJoinedPlayerFromList(int playerID, List<Player> list)
+        private Player GetPlayerFromList(int playerID, List<Player> list)
         {
             bool isFound = false;
             int i = 0;
@@ -231,6 +231,83 @@ namespace INFT3970Backend.Hubs
                     EmailSender.SendInBackground(photo.PhotoOfPlayer.Email, "Voting Complete", photoOfMsgTxt, false);
                 else
                     TextMessageSender.SendInBackground(photoOfMsgTxt, photo.PhotoOfPlayer.Phone);
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Sends a notification to the Players in the game that a player has left the game.
+        /// If the game is currently in the Lobby (GameState = STARTING) then no notification will be sent, the lobby list will be updated.
+        /// If the game is currently playing (GameState = PLAYING) then a notification will be sent to the players in the game.
+        /// A notification will be sent to the players contact (Email or phone) if the player is not currently connected to the application hub.
+        /// Otherwise, if the player is currently in the app and connected to the hub an InGame notification will be sent to the client.
+        /// </summary>
+        /// <param name="playerID"></param>
+        public async void UpdatePlayerLeft(int playerID)
+        {
+            //Get all the players currently in the game
+            PlayerDAL playerDAL = new PlayerDAL();
+            Response<List<Player>> response = playerDAL.GetGamePlayerList(playerID, true);
+
+            //If an error occurred while trying to get the list of players exit the method
+            if (response.Type == "ERROR")
+                return;
+
+            //If the list of players is empty exit the method
+            if (response.Data.Count == 0)
+                return;
+
+            //Get the game the players are joined to
+            Game game = response.Data[0].Game;
+
+            //Get the player who left
+            Player leftPlayer = GetPlayerFromList(playerID, response.Data);
+
+            //Create notifications of new player joining, if the game has started
+            GameBL gameBL = new GameBL();
+            if (game.GameState == "PLAYING")
+            {
+                gameBL.CreateLeaveNotification(game.GameID, leftPlayer.PlayerID);
+            }
+
+            //Loop through each of the players and update any player currently connected to the hub
+            foreach (var player in response.Data)
+            {
+                //If the PlayerID is the playerID who joined skip this iteration
+                if (player.PlayerID == playerID)
+                    continue;
+
+                //The player is connected to the hub, send live updates
+                if (player.IsConnected)
+                {
+                    //If the game state is STARTING then the players are in the Lobby, update the lobby list
+                    if (game.GameState == "STARTING")
+                        await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
+
+                    //If the game state is PLAYING - Send a notification to the players in the game.
+                    if (game.GameState == "PLAYING")
+                        await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                }
+
+                //Otherwise, the player is not connected to the Hub, send a notification via the contact information
+                else
+                {
+                    //Don't send a notification when the game is in a STARTING state (in lobby)
+                    //Send a notification when a new player joins when the game is currently playing.
+                    if (game.GameState == "PLAYING")
+                    {
+                        //If the Player has an email address send the notification the email
+                        if (!string.IsNullOrWhiteSpace(player.Email))
+                            EmailSender.SendInBackground(player.Email, "A Player Left Your Game", leftPlayer.Nickname + " has left your game of CamTag.", false);
+
+                        //otherwise, send to the players phone
+                        else
+                            TextMessageSender.SendInBackground(leftPlayer.Nickname + " has left your game of CamTag.", player.Phone);
+                    }
+                }
             }
         }
     }
