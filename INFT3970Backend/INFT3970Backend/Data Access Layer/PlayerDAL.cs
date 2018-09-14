@@ -457,7 +457,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
         /// <returns>A response status.</returns>
-        public Response<object> NotificationsRead(JsonReadNotifications jsonNotificationIDs)
+        public Response<object> SetNotificationsRead(JsonReadNotifications jsonNotificationIDs)
         {
             StoredProcedure = "usp_SetNotificationsRead";
             try
@@ -468,7 +468,6 @@ namespace INFT3970Backend.Data_Access_Layer
                 {
                     dt.Rows.Add(jsonNotificationIDs.NotificationArray[i]);
                 }
-
 
                 //Create the connection and command for the stored procedure
                 using (Connection = new SqlConnection(ConnectionString))

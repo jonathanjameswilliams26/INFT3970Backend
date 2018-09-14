@@ -183,14 +183,14 @@ namespace INFT3970Backend.Controllers
         /// <param name="jsonNotificationIDs">The playerID and notificationIDs to mark as read.</param>
         /// <returns>A response status indicating if the db update was a success.</returns>
         [HttpPost]
-        [Route("api/player/notificationsRead")]
-        public Response<object> NotificationsRead(JsonReadNotifications jsonNotificationIDs)
+        [Route("api/player/setNotificationsRead")]
+        public Response<object> SetNotificationsRead(JsonReadNotifications jsonNotificationIDs)
         {
             //Example request
-            //https://localhost:5000/api/player/notificationsRead
+            //https://localhost:5000/api/player/setNotificationsRead
 
             PlayerBL playerBL = new PlayerBL();
-            return playerBL.NotificationsRead(jsonNotificationIDs);
+            return playerBL.SetNotificationsRead(jsonNotificationIDs);
         }
     }
 }

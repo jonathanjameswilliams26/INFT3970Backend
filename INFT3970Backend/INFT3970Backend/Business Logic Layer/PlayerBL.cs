@@ -272,11 +272,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
         /// <returns>A response status.</returns>
-        public Response<object> NotificationsRead(JsonReadNotifications jsonNotificationIDs)
+        public Response<object> SetNotificationsRead(JsonReadNotifications jsonNotificationIDs)
         {                  
             //Call the Data Access Layer to remove a player from the game.
             PlayerDAL playerDAL = new PlayerDAL();
-            return playerDAL.NotificationsRead(jsonNotificationIDs);
+            return playerDAL.SetNotificationsRead(jsonNotificationIDs);
         }
     }
 }
