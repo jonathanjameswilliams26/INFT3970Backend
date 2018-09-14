@@ -65,7 +65,7 @@ namespace INFT3970Backend.Controllers
         //    PlayerBL playerBL = new PlayerBL();
         //    return playerBL.UpdateConnectionID(PlayerIDAndConnectionID.Key, PlayerIDAndConnectionID.Value);
         //}
-    
+
 
 
 
@@ -172,6 +172,25 @@ namespace INFT3970Backend.Controllers
 
             PlayerBL playerBL = new PlayerBL();
             return playerBL.LeaveGame(playerID, _hubContext);
+        }
+
+
+
+        /// <summary>
+        /// POST: api/player/notificationsRead
+        /// Marks a set of player notifications as read
+        /// </summary>
+        /// <param name="jsonNotificationIDs">The playerID and notificationIDs to mark as read.</param>
+        /// <returns>A response status indicating if the db update was a success.</returns>
+        [HttpPost]
+        [Route("api/player/notificationsRead")]
+        public Response<object> NotificationsRead(JsonReadNotifications jsonNotificationIDs)
+        {
+            //Example request
+            //https://localhost:5000/api/player/notificationsRead
+
+            PlayerBL playerBL = new PlayerBL();
+            return playerBL.NotificationsRead(jsonNotificationIDs);
         }
     }
 }
