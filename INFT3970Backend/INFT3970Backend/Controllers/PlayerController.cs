@@ -168,5 +168,20 @@ namespace INFT3970Backend.Controllers
             PlayerBL playerBL = new PlayerBL();
             return playerBL.SetNotificationsRead(jsonNotificationIDs);
         }
+
+
+
+
+        [HttpPost]
+        [Route("api/player/useAmmo")]
+        public Response<object> UseAmmo([FromHeader] int playerID)
+        {
+            //Example request
+            //https://localhost:5000/api/player/setNotificationsRead
+
+            PlayerBL playerBL = new PlayerBL();
+            return playerBL.UseAmmo(playerID, _hubContext);
+        }
+
     }
 }

@@ -277,5 +277,17 @@ namespace INFT3970Backend.Business_Logic_Layer
             PlayerDAL playerDAL = new PlayerDAL();
             return playerDAL.SetNotificationsRead(jsonNotificationIDs);
         }
+
+
+
+
+        public Response<object> UseAmmo(int playerID, IHubContext<ApplicationHub> hubContext)
+        {
+            //Call the DataAccessLayer to update the Ammo count for the player
+            Response<object> response = null;
+
+            //If the response was successful schedule a n
+            return null;
+        }
     }
 }
