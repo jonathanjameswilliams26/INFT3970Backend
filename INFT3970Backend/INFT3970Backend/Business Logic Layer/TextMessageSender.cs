@@ -8,9 +8,9 @@ namespace INFT3970Backend.Business_Logic_Layer
 {
     public static class TextMessageSender
     {
-        private const string AccountSID = "AC2e1f821fcbc8308933a9ca301a0127e6";
-        private const string AuthToken = "67f5a9b729e21d1bdafef40a8f55b6d9";
-        private const string TwilioNumber = "+61488843010";
+        private const string AccountSID = "AC95bc5549490e573dd2ce6941b436d72e";
+        private const string AuthToken = "c186c1cbcf2840de60493eaabbce181c";
+        private const string TwilioNumber = "+61408929181";
 
 
         public static bool Send(string messageText, string sendTo)
