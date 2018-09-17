@@ -1,5 +1,7 @@
 ﻿using INFT3970Backend.Data_Access_Layer;
+using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
+using Microsoft.AspNetCore.SignalR;
 using System;
 
 namespace INFT3970Backend.Business_Logic_Layer
@@ -139,7 +141,13 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
-        public Response<object> CompleteGame(int gameID)
+        /// <summary>
+        /// Completes a game of CamTag in the Database.
+        /// </summary>
+        /// <param name="gameID">The GameID to complete</param>
+        /// <param name="hubContext">The hub context used to send notifications to users.</param>
+        /// <returns></returns>
+        public Response<object> CompleteGame(int gameID, IHubContext<ApplicationHub> hubContext)
         {
             //Call the DataAccessLayer to complete the game in the DB
             GameDAL gameDAL = new GameDAL();
@@ -148,7 +156,8 @@ namespace INFT3970Backend.Business_Logic_Layer
             //If the response was successful send out the game completed messages to players
             if(response.IsSuccessful())
             {
-                //TODO: Send out notifications to users that the game has now completed.
+                HubInterface hubInterface = new HubInterface(hubContext);
+                hubInterface.UpdateGameCompleted(gameID);
             }
 
             return response;

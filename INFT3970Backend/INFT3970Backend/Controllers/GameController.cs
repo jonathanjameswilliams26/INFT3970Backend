@@ -11,6 +11,13 @@ namespace INFT3970Backend.Controllers
     [ApiController]
     public class GameController : ControllerBase
     {
+        //The application hub context, used to be able to invokve client methods from anywhere in the code
+        private readonly IHubContext<ApplicationHub> _hubContext;
+        public GameController(IHubContext<ApplicationHub> hubContext)
+        {
+            _hubContext = hubContext;
+        }
+
 
         /// <summary>
         /// POST: api/player/createGame - Creates a new game and joins a player to their created game, 
@@ -70,6 +77,27 @@ namespace INFT3970Backend.Controllers
       
             GameBL gameBL = new GameBL();
             return gameBL.GetGame(gameID);
+        }
+
+
+
+
+
+        /// <summary>
+        /// Test complete game API endpoint
+        /// </summary>
+        /// <param name="gameID"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("api/game/complete/{gameID:int}")]
+        public ActionResult<Response<object>> CompleteGame(int gameID)
+        {
+            //Example request
+            //https://localhost:5000/api/game/complete/100000
+
+
+            GameBL gameBL = new GameBL();
+            return gameBL.CompleteGame(gameID, _hubContext);
         }
     }
 }

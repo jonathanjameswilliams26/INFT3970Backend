@@ -39,7 +39,7 @@ BEGIN
 		DECLARE @gameID INT;
 		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
-		--Get all the active and verified players inside that game
+		--Get all players inside that game
 		SELECT *
 		FROM vw_PlayerGame
 		WHERE GameID = @gameID

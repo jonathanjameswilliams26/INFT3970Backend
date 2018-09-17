@@ -108,3 +108,13 @@ connection.on("UpdatePhotoUploaded", function () {
         }
     });
 });
+
+
+
+
+//Hub Client Function
+//Updates the list of notifications a player has
+connection.on("GameCompleted", function () {
+
+    alert("Game Completed");
+});

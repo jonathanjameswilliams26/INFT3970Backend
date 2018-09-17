@@ -282,7 +282,7 @@ namespace INFT3970Backend.Hubs
                 if (player.IsConnected)
                 {
                     //If the game state is STARTING then the players are in the Lobby, update the lobby list
-                    if (game.GameState == "STARTING")
+                    if (game.GameState == "IN LOBBY")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
                     //If the game state is PLAYING - Send a notification to the players in the game.
@@ -293,7 +293,7 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, the player is not connected to the Hub, send a notification via the contact information
                 else
                 {
-                    //Don't send a notification when the game is in a STARTING state (in lobby)
+                    //Don't send a notification when the game is IN LOBBY state
                     //Send a notification when a new player joins when the game is currently playing.
                     if (game.GameState == "PLAYING")
                     {
@@ -305,6 +305,49 @@ namespace INFT3970Backend.Hubs
                         else
                             TextMessageSender.SendInBackground(leftPlayer.Nickname + " has left your game of CamTag.", player.Phone);
                     }
+                }
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Sends updates to players once the game has been completed.
+        /// Will send a notification to Phone/Email if the players arnt connected to the hub.
+        /// If the players are connected to the hub a hub method will be invoked.
+        /// </summary>
+        /// <param name="gameID">The gameID which was completed</param>
+        public async void UpdateGameCompleted(int gameID)
+        {
+            //Get the list of players from the game
+            List<Player> players = new GameDAL().GetAllPlayersInGame(gameID).Data;
+
+            if (players == null)
+                return;
+
+            if (players.Count == 0)
+                return;
+
+            //Loop through each of the players and send out the notifications
+            foreach(var player in players)
+            {
+                //If the player is not verified, if the player left the game, or they are deleted do not send the notification
+                if (!player.IsVerified || player.HasLeftGame || player.IsDeleted)
+                    continue;
+
+                //If the player is currently connected to the application send them an
+                if(player.IsConnected)
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameCompleted");
+
+                //Otherwise, send them a text message or email letting them know the game is completed
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(player.Email))
+                        EmailSender.SendInBackground(player.Email, "Game Complete", "Your game of CamTag has been completed. Thanks for playing.", false);
+                    else
+                        TextMessageSender.SendInBackground("Your game of CamTag has been completed. Thanks for playing.", player.Phone);
                 }
             }
         }
