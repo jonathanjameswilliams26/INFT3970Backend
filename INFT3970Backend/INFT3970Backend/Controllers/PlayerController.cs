@@ -52,10 +52,11 @@ namespace INFT3970Backend.Controllers
         /// <param name="gameCode">The gamecode the player is trying to join</param>
         /// <param name="nickname">The players nickname in the game</param>
         /// <param name="contact">The players contact info, either phone or email</param>
+        /// <param name="imgUrl">The imgUrl of the players profile picture</param>
         /// <returns>Response including the created Player object. NULL data if an error occurred.</returns>
         [HttpPost]
         [Route("api/player/joinGame")]
-        public ActionResult<Response<Player>> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact)
+        public ActionResult<Response<Player>> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact, [FromForm] string imgUrl)
         {
             //Example request:
             //Use POSTMAN and POST 'Form-Data' using the following values
@@ -63,9 +64,10 @@ namespace INFT3970Backend.Controllers
             //gameCode          tcf124
             //nickname          billy
             //contact           enter an email or phone (NOTE: if using a phone it will send a text message to my number cause the twilio trial can only send to one number)
+            //imgUrl            the imgUrl string of the players profile picture
 
             //Call the business logic layer to validate the form data and create a new player
-            return new PlayerBL().JoinGame(gameCode, nickname, contact, false);
+            return new PlayerBL().JoinGame(gameCode, nickname, contact, imgUrl, false);
         }
 
 

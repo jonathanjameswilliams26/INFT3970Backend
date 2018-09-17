@@ -1537,6 +1537,7 @@ CREATE PROCEDURE [dbo].[usp_JoinGame]
 	@gameCode VARCHAR(6),
 	@nickname VARCHAR(255),
 	@contact VARCHAR(255),
+	@imgURL VARCHAR(MAX), 
 	@isPhone BIT,
 	@verificationCode INT,
 	@isHost BIT,
@@ -1627,11 +1628,11 @@ BEGIN
 		BEGIN TRANSACTION
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, 'no selfie', @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
@@ -1656,7 +1657,6 @@ BEGIN
 	END CATCH
 END
 GO
-
 
 
 
@@ -2405,7 +2405,7 @@ GO
 
 
 --Dummy Data
-INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 4, 'STARTING')
+INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 4, 'IN LOBBY')
 GO
 
 INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Jono', '+61457558322', 'localhost', 100000, 0, 1)
