@@ -134,7 +134,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="contact">The email or phone number entered by the player to receive notifications</param>
         /// <param name="isPhone">Flag value which outlines if the contact passed in is a phone number or email. TRUE = phone number, FALSE = email</param>
         /// <returns>The created Player object or NULL data if error occurred.</returns>
-        public Response<Player> JoinGame(string gameCode, string nickname, string contact, bool isPhone, int verificationCode, bool isHost)
+        public Response<Player> JoinGame(string gameCode, string nickname, string contact, string imgUrl, bool isPhone, int verificationCode, bool isHost)
         {
             StoredProcedure = "usp_JoinGame";
             Player player = null;
@@ -150,6 +150,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         Command.Parameters.AddWithValue("@gameCode", gameCode);
                         Command.Parameters.AddWithValue("@nickname", nickname);
                         Command.Parameters.AddWithValue("@contact", contact);
+                        Command.Parameters.AddWithValue("@imgURL", imgUrl);
                         Command.Parameters.AddWithValue("@isPhone", isPhone);
                         Command.Parameters.AddWithValue("@verificationCode", verificationCode);
                         Command.Parameters.AddWithValue("@isHost", isHost);
