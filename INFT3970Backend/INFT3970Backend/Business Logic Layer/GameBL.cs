@@ -136,5 +136,22 @@ namespace INFT3970Backend.Business_Logic_Layer
             GameDAL gameDAL = new GameDAL();
             return gameDAL.GetGameByID(gameID);
         }
+
+
+
+        public Response<object> CompleteGame(int gameID)
+        {
+            //Call the DataAccessLayer to complete the game in the DB
+            GameDAL gameDAL = new GameDAL();
+            Response<object> response = gameDAL.CompleteGame(gameID);
+
+            //If the response was successful send out the game completed messages to players
+            if(response.IsSuccessful())
+            {
+                //TODO: Send out notifications to users that the game has now completed.
+            }
+
+            return response;
+        }
     }
 }

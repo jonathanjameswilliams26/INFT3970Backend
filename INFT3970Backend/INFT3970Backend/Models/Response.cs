@@ -51,6 +51,16 @@ namespace INFT3970Backend.Models
 
 
 
+        public bool IsSuccessful()
+        {
+            if (Type == "SUCCESS")
+                return true;
+            else
+                return false;
+        }
+
+
+
 
         /// <summary>
         /// Sets the type of the response SUCCESS or ERROR depending on the int passed in

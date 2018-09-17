@@ -257,7 +257,6 @@ namespace INFT3970Backend.Data_Access_Layer
                         //Perform the procedure and get the result
                         Connection.Open();
                         Command.ExecuteNonQuery();
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
                     }
                 }
             }
@@ -308,6 +307,45 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 //Do nothing
+            }
+        }
+
+
+
+        public Response<object> CompleteGame(int gameID)
+        {
+            StoredProcedure = "usp_CompleteGame";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameID", gameID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+
+                        //Build the response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        return new Response<object>(null, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }
