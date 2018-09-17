@@ -27,14 +27,12 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
 	DECLARE @EC_INSERTERROR INT = 2;
 	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
 
-
 	BEGIN TRY  
-		--Confirm the game code does not already exist in an active game / currently playing game
-		IF EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE GameCode = @gameCode)
+		--Confirm the game code does not already exist in a game
+		IF EXISTS (SELECT * FROM tbl_Game WHERE GameCode = @gameCode)
 		BEGIN
 			SET @result = @EC_ITEMALREADYEXISTS;
 			SET @errorMSG = 'The game code already exists.';

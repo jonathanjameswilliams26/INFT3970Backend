@@ -11,6 +11,7 @@ SELECT
 	pvp.VoteID,
 	pvp.IsPhotoSuccessful,
 	pvp.PlayerVotePhotoIsActive,
+	pvp.PlayerVotePhotoIsDeleted,
 	pgp.*,
 	pg.PlayerID,
 	pg.Nickname,
@@ -25,7 +26,8 @@ SELECT
 	pg.ConnectionID,
 	pg.IsConnected,
 	pg.HasLeftGame,
-	pg.PlayerIsActive
+	pg.PlayerIsActive,
+	pg.PlayerIsDeleted
 FROM tbl_PlayerVotePhoto pvp
 	INNER JOIN vw_PhotoGameAndPlayers pgp ON (pvp.PhotoID = pgp.PhotoID)
 	INNER JOIN vw_PlayerGame pg ON (pvp.PlayerID = pg.PlayerID)

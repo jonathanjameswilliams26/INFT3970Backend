@@ -192,19 +192,18 @@ namespace INFT3970Backend.Business_Logic_Layer
             int code = GenerateVerificationCode();
 
             //Call the Data Access Layer to update the verification code for the player and get the contact information for the player
-            Response<string> response = new PlayerDAL().UpdateVerificationCode(playerID, code);
+            Response<Player> response = new PlayerDAL().UpdateVerificationCode(playerID, code);
 
             //If the response is successful send the verification code
             if (response.Type == "SUCCESS")
             {
                 //The contact information returned from the data access is an email address
-                if (response.Data.Contains("@"))
-                    EmailSender.SendInBackground(response.Data, "CamTag Verification Code", "Your CamTag verification code is: " + code, false);
-
+                if (!string.IsNullOrWhiteSpace(response.Data.Email))
+                    EmailSender.SendInBackground(response.Data.Email, "CamTag Verification Code", "Your CamTag verification code is: " + code, false);
 
                 //Otherwise, the contact information returned is a phone number
                 else
-                    TextMessageSender.SendInBackground("Your CamTag verification code is: " + code, response.Data);
+                    TextMessageSender.SendInBackground("Your CamTag verification code is: " + code, response.Data.Phone);
 
                 return new Response<object>(null, "SUCCESS", null, 1);
             }

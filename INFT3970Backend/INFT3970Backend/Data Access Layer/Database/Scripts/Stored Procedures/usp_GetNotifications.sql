@@ -27,25 +27,16 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-
 	BEGIN TRY
-		
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('',16,1);
-		END
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--The playerID exists, get the notifications associated with that player
 		IF (@all = 1)
-		SELECT * FROM tbl_Notification WHERE PlayerID = @playerID	
+			SELECT * FROM tbl_Notification WHERE PlayerID = @playerID	
 		ELSE
-		SELECT * FROM tbl_Notification WHERE PlayerID = @playerID AND IsRead = 0
+			SELECT * FROM tbl_Notification WHERE PlayerID = @playerID AND IsRead = 0
 
 		--Set the return variables
 		SET @result = 1;

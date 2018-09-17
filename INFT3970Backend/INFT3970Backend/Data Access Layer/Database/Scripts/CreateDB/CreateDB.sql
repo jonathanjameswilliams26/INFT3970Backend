@@ -63,12 +63,12 @@ CREATE TABLE tbl_Game
 	GameCode VARCHAR(255) NOT NULL DEFAULT 'ABC123' UNIQUE,
 	NumOfPlayers INT NOT NULL DEFAULT 0,
 	GameMode VARCHAR(255) DEFAULT 'CORE',
-	StartTime DATETIME2 DEFAULT GETDATE(),
-	EndTime DATETIME2 DEFAULT DATEADD(DAY, 1, GETDATE()),
-	GameState VARCHAR(255) NOT NULL DEFAULT 'STARTING',
+	StartTime DATETIME2,
+	EndTime DATETIME2,
+	GameState VARCHAR(255) NOT NULL DEFAULT 'IN LOBBY',
 	IsJoinableAtAnytime BIT NOT NULL DEFAULT 0,
 	GameIsActive BIT NOT NULL DEFAULT 1,
-	IsDeleted BIT NOT NULL DEFAULT 0,
+	GameIsDeleted BIT NOT NULL DEFAULT 0,
 
 	PRIMARY KEY (GameID),
 
@@ -76,7 +76,7 @@ CREATE TABLE tbl_Game
 	CHECK(NumOfPlayers >= 0),
 	CHECK(GameMode IN ('CORE')),
 	CHECK(StartTime < EndTime),
-	CHECK(GameState IN ('STARTING', 'PLAYING', 'COMPLETED'))
+	CHECK(GameState IN ('IN LOBBY', 'STARTING', 'PLAYING', 'COMPLETED'))
 );
 GO
 
@@ -110,6 +110,7 @@ CREATE TABLE tbl_Player
 	Phone VARCHAR(12),
 	Email VARCHAR(255),
 	SelfieDataURL VARCHAR(MAX) NOT NULL,
+	AmmoCount INT NOT NULL DEFAULT 3,
 	NumKills INT NOT NULL DEFAULT 0,
 	NumDeaths INT NOT NULL DEFAULT 0,
 	NumPhotosTaken INT NOT NULL DEFAULT 0,
@@ -119,7 +120,7 @@ CREATE TABLE tbl_Player
 	ConnectionID VARCHAR(255) DEFAULT NULL,
 	IsConnected BIT NOT NULL DEFAULT 0,
 	HasLeftGame BIT NOT NULL DEFAULT 0,
-	IsDeleted BIT NOT NULL DEFAULT 0,
+	PlayerIsDeleted BIT NOT NULL DEFAULT 0,
 	PlayerIsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
 
@@ -129,6 +130,7 @@ CREATE TABLE tbl_Player
 	CHECK(NumKills >= 0),
 	CHECK(NumDeaths >= 0),
 	CHECK(NumPhotosTaken >= 0),
+	CHECK(AmmoCount >= 0),
 	CONSTRAINT IsContactProvided CHECK 
 	(
 		dbo.udf_IsPlayerEmailAndPhoneValid(Phone, Email) = 1
@@ -153,7 +155,7 @@ CREATE TABLE tbl_Photo
 	NumNoVotes INT NOT NULL DEFAULT 0,
 	IsVotingComplete BIT NOT NULL DEFAULT 0,
 	PhotoIsActive BIT NOT NULL DEFAULT 1,
-	IsDeleted BIT NOT NULL DEFAULT 0,
+	PhotoIsDeleted BIT NOT NULL DEFAULT 0,
 	GameID INT NOT NULL,
 	TakenByPlayerID INT NOT NULL,
 	PhotoOfPlayerID INT NOT NULL,
@@ -178,7 +180,7 @@ CREATE TABLE tbl_PlayerVotePhoto
 	VoteID INT NOT NULL IDENTITY(100000, 1),
 	IsPhotoSuccessful BIT DEFAULT NULL,
 	PlayerVotePhotoIsActive BIT NOT NULL DEFAULT 1,
-	IsDeleted BIT NOT NULL DEFAULT 0,
+	PlayerVotePhotoIsDeleted BIT NOT NULL DEFAULT 0,
 	PhotoID INT NOT NULL,
 	PlayerID INT NOT NULL,
 
@@ -199,7 +201,7 @@ CREATE TABLE tbl_Notification
 	NotificationType VARCHAR(255) NOT NULL DEFAULT 'SUCCESS',
 	IsRead BIT NOT NULL DEFAULT 0,
 	NotificationIsActive BIT NOT NULL DEFAULT 1,
-	IsDeleted BIT NOT NULL DEFAULT 0,
+	NotificationIsDeleted BIT NOT NULL DEFAULT 0,
 	GameID INT NOT NULL,
 	PlayerID INT NOT NULL,
 
@@ -211,72 +213,6 @@ CREATE TABLE tbl_Notification
 );
 GO
 
-
-
-
-
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 05/09/18
--- Description:	A view which joins the Photo. game and player records
--- =============================================
-USE udb_CamTag
-GO
-CREATE VIEW vw_PhotoGameAndPlayers
-AS
-SELECT 
-	PhotoID,
-	Lat,
-	Long,
-	PhotoDataURL,
-	TimeTaken,
-	VotingFinishTime,
-	NumYesVotes,
-	NumNoVotes,
-	IsVotingComplete,
-	PhotoIsActive,
-	p.GameID,
-	GameCode,
-	NumOfPlayers,
-	GameMode,
-	StartTime,
-	EndTime,
-	GameState,
-	IsJoinableAtAnytime,
-	GameIsActive,
-	TakenByPlayerID,
-	takenBy.Nickname AS TakenByPlayerNickname,
-	takenBy.Phone AS TakenByPlayerPhone,
-	takenBy.Email AS TakenByPlayerEmail,
-	takenBy.SelfieDataURL AS TakenByPlayerSelfieDataURL,
-	takenBy.NumKills AS TakenByPlayerNumKills,
-	takenBy.NumDeaths AS TakenByPlayerNumDeaths,
-	takenBy.NumPhotosTaken AS TakenByPlayerNumPhotosTaken,
-	takenBy.IsHost AS TakenByPlayerIsHost,
-	takenBy.IsVerified AS TakenByPlayerIsVerified,
-	takenBy.ConnectionID AS TakenByPlayerConnectionID,
-	takenBy.IsConnected AS TakenByPlayerIsConnected,
-	takenBy.HasLeftGame AS TakenByPlayerHasLeftGame,
-	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
-	PhotoOfPlayerID,
-	photoOf.Nickname AS PhotoOfPlayerNickname,
-	photoOf.Phone AS PhotoOfPlayerPhone,
-	photoOf.Email AS PhotoOfPlayerEmail,
-	photoOf.SelfieDataURL AS PhotoOfPlayerSelfieDataURL,
-	photoOf.NumKills AS PhotoOfPlayerNumKills,
-	photoOf.NumDeaths AS PhotoOfPlayerNumDeaths,
-	photoOf.NumPhotosTaken AS PhotoOfPlayerNumPhotosTaken,
-	photoOf.IsHost AS PhotoOfPlayerIsHost,
-	photoOf.IsVerified AS PhotoOfPlayerIsVerified,
-	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
-	photoOf.IsConnected AS PhotoOfPlayerIsConnected,
-	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame,
-	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive  
-FROM tbl_Photo p
-	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
-	INNER JOIN tbl_Player takenBy ON (p.TakenByPlayerID = takenBy.PlayerID)
-	INNER JOIN tbl_Player photoOf ON (p.PhotoOfPlayerID = photoOf.PlayerID)
-GO
 
 
 
@@ -308,11 +244,11 @@ SELECT
 	NumPhotosTaken,
 	IsHost,
 	IsVerified,
-	VerificationCode,
+	PlayerIsActive,
+	PlayerIsDeleted,
+	HasLeftGame,
 	ConnectionID,
 	IsConnected,
-	HasLeftGame,
-	PlayerIsActive,
 	g.GameID,
 	GameCode,
 	NumOfPlayers,
@@ -321,11 +257,132 @@ SELECT
 	EndTime,
 	GameState,
 	IsJoinableAtAnytime,
-	GameIsActive
-
+	GameIsActive,
+	GameIsDeleted
 FROM tbl_Player p
 	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
 GO
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 05/09/18
+-- Description:	A view which joins the Photo. game and player records
+-- =============================================
+USE udb_CamTag
+GO
+CREATE VIEW vw_PhotoGameAndPlayers
+AS
+SELECT 
+	PhotoID,
+	Lat,
+	Long,
+	PhotoDataURL,
+	TimeTaken,
+	VotingFinishTime,
+	NumYesVotes,
+	NumNoVotes,
+	IsVotingComplete,
+	PhotoIsActive,
+	PhotoIsDeleted,
+	p.GameID,
+	GameCode,
+	NumOfPlayers,
+	GameMode,
+	StartTime,
+	EndTime,
+	GameState,
+	IsJoinableAtAnytime,
+	GameIsActive,
+	GameIsDeleted,
+	TakenByPlayerID,
+	takenBy.Nickname AS TakenByPlayerNickname,
+	takenBy.Phone AS TakenByPlayerPhone,
+	takenBy.Email AS TakenByPlayerEmail,
+	takenBy.SelfieDataURL AS TakenByPlayerSelfieDataURL,
+	takenBy.NumKills AS TakenByPlayerNumKills,
+	takenBy.NumDeaths AS TakenByPlayerNumDeaths,
+	takenBy.NumPhotosTaken AS TakenByPlayerNumPhotosTaken,
+	takenBy.IsHost AS TakenByPlayerIsHost,
+	takenBy.IsVerified AS TakenByPlayerIsVerified,
+	takenBy.ConnectionID AS TakenByPlayerConnectionID,
+	takenBy.IsConnected AS TakenByPlayerIsConnected,
+	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
+	takenBy.PlayerIsDeleted AS TakenByPlayerIsDeleted,
+	PhotoOfPlayerID,
+	photoOf.Nickname AS PhotoOfPlayerNickname,
+	photoOf.Phone AS PhotoOfPlayerPhone,
+	photoOf.Email AS PhotoOfPlayerEmail,
+	photoOf.SelfieDataURL AS PhotoOfPlayerSelfieDataURL,
+	photoOf.NumKills AS PhotoOfPlayerNumKills,
+	photoOf.NumDeaths AS PhotoOfPlayerNumDeaths,
+	photoOf.NumPhotosTaken AS PhotoOfPlayerNumPhotosTaken,
+	photoOf.IsHost AS PhotoOfPlayerIsHost,
+	photoOf.IsVerified AS PhotoOfPlayerIsVerified,
+	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
+	photoOf.IsConnected AS PhotoOfPlayerIsConnected,
+	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive,
+	photoOf.PlayerIsDeleted AS PhotoOfPlayerIsDeleted  
+FROM tbl_Photo p
+	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
+	INNER JOIN tbl_Player takenBy ON (p.TakenByPlayerID = takenBy.PlayerID)
+	INNER JOIN tbl_Player photoOf ON (p.PhotoOfPlayerID = photoOf.PlayerID)
+GO
+
+
+
+
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 05/09/18
+-- Description:	Creates a view of all Active, Non Deleted and Verfied Players
+-- =============================================
+CREATE VIEW vw_ActiveAndVerifiedPlayers
+AS
+SELECT
+	PlayerID,
+	Nickname,
+	Phone,
+	Email,
+	SelfieDataURL,
+	NumKills,
+	NumDeaths,
+	NumPhotosTaken,
+	IsHost,
+	IsVerified,
+	VerificationCode,
+	ConnectionID,
+	IsConnected,
+	HasLeftGame,
+	PlayerIsDeleted,
+	PlayerIsActive,
+	GameID
+
+FROM tbl_Player
+WHERE
+	PlayerIsActive = 1 AND
+	PlayerIsDeleted = 0 AND
+	IsVerified = 1
+GO
+
+
+
+
+
+
+
 
 
 
@@ -346,7 +403,12 @@ WHERE
 	GameState NOT LIKE 'COMPLETE'
 	AND GameIsActive = 1
 	AND PlayerIsActive = 1
+	AND PlayerIsDeleted = 0
+	AND GameIsDeleted = 0
 GO
+
+
+
 
 
 
@@ -366,6 +428,7 @@ SELECT
 	pvp.VoteID,
 	pvp.IsPhotoSuccessful,
 	pvp.PlayerVotePhotoIsActive,
+	pvp.PlayerVotePhotoIsDeleted,
 	pgp.*,
 	pg.PlayerID,
 	pg.Nickname,
@@ -380,11 +443,463 @@ SELECT
 	pg.ConnectionID,
 	pg.IsConnected,
 	pg.HasLeftGame,
-	pg.PlayerIsActive
+	pg.PlayerIsActive,
+	pg.PlayerIsDeleted
 FROM tbl_PlayerVotePhoto pvp
 	INNER JOIN vw_PhotoGameAndPlayers pgp ON (pvp.PhotoID = pgp.PhotoID)
 	INNER JOIN vw_PlayerGame pg ON (pvp.PlayerID = pg.PlayerID)
 GO
+
+
+
+
+
+
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[usp_DoRaiseError] 
+	@result INT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+	
+	IF(@result <> 1)
+	BEGIN
+		RAISERROR('',16,1);
+	END	
+END
+GO
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Get the GameID from the passed in PlayerID
+-- =============================================
+CREATE PROCEDURE usp_GetGameIDFromPlayer
+	@id INT,
+	@gameID INT OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	SELECT @gameID = GameID
+	FROM tbl_Player
+	WHERE PlayerID = @id
+END
+GO
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the GameID is active. If the GameID active the procedure will return
+--				Otherwise the procedure will raise an error.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmGameExists
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+	DECLARE @EC_GAMEDOESNOTEXIST INT = 13;
+
+    IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @id AND GameIsDeleted = 0)
+	BEGIN
+		SELECT @result = @EC_GAMEDOESNOTEXIST;
+		SET @errorMSG = 'The Game does not exist.';
+	END
+	ELSE
+	BEGIN
+		SELECT @result = 1;
+		SET @errorMSG = '';
+	END
+END
+GO
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the GameID is active. If the GameID active the procedure will return
+--				Otherwise the procedure will raise an error.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmGameIsActive
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	DECLARE @EC_GAMENOTACTIVE INT = 9;
+
+    IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @id AND GameIsActive = 1 AND GameIsDeleted = 0)
+	BEGIN
+		SELECT @result = @EC_GAMENOTACTIVE;
+		SET @errorMSG = 'The Game is not active.';
+	END
+	ELSE
+	BEGIN
+		SELECT @result = 1;
+		SET @errorMSG = '';
+	END
+END
+GO
+
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the Game exists and is active.
+--				Will run normally if the GameID is active and exists
+--				Will raise an error and return the error message and result if fails.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmGameExistsAndIsActive
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Call the procedure to confirm the playerID exists
+    EXEC [dbo].[usp_ConfirmGameExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+
+	IF(@result = 1)
+	BEGIN
+		--Call the proceduer to confirm the PlayerID is active
+		EXEC [dbo].[usp_ConfirmGameIsActive] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	END
+END
+GO
+
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the Game is not already completed.
+--				If the game is not complete it will run normally,
+--				otherwise, if the game is completed an error will be raised
+-- =============================================
+CREATE PROCEDURE usp_ConfirmGameNotCompleted
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
+
+	IF EXISTS (SELECT * FROM tbl_Game WHERE GameID = @id AND GameState = 'COMPLETED')
+	BEGIN
+		SELECT @result = @EC_GAMEALREADYCOMPLETE;
+		SET @errorMSG = 'The game is already completed.';
+	END
+	ELSE
+	BEGIN
+		SELECT @result = 1;
+		SET @errorMSG = '';
+	END
+END
+GO
+
+
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the PlayerID exists. If the playerID exists the procedure will return
+--				Otherwise the procedure will raise an error.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmPlayerExists
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	DECLARE @EC_PLAYERDOESNOTEXIST INT = 12;
+
+    IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @id AND PlayerIsDeleted = 0)
+	BEGIN
+		SELECT @result = @EC_PLAYERDOESNOTEXIST;
+		SET @errorMSG = 'The PlayerID does not exist';
+	END
+	ELSE
+	BEGIN
+		SELECT @result = 1;
+		SET @errorMSG = '';
+	END
+END
+GO
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the PlayerID is active. If the playerID active the procedure will return
+--				Otherwise the procedure will raise an error.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmPlayerIsActive
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	DECLARE @EC_PLAYERNOTACTIVE INT = 10;
+
+    IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @id AND PlayerIsActive = 1 AND PlayerIsDeleted = 0)
+	BEGIN
+		SELECT @result = @EC_PLAYERNOTACTIVE;
+		SET @errorMSG = 'The PlayerID is not active.';
+	END
+	ELSE
+	BEGIN
+		SELECT @result = 1;
+		SET @errorMSG = '';
+	END
+END
+GO
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the PlayerID exists and is active.
+--				Will run normally if the playerID is active and exists
+--				Will raise an error and return the error message and result if fails.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmPlayerExistsAndIsActive
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Call the procedure to confirm the playerID exists
+    EXEC [dbo].[usp_ConfirmPlayerExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+
+	IF(@result = 1)
+	BEGIN
+		--Call the proceduer to confirm the PlayerID is active
+		EXEC [dbo].[usp_ConfirmPlayerIsActive] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	END
+END
+GO
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 06/09/18
+-- Description:	Gets the game record matching the specified ID
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_GetGameByID] 
+	-- Add the parameters for the stored procedure here
+	@gameID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Confirm the GameID passed in exists and is active
+	EXEC [dbo].[usp_ConfirmGameExistsAndIsActive] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+	SELECT *
+	FROM tbl_Game
+	WHERE GameID = @gameID
+
+	SET @result = 1;
+	SET @errorMSG = '';
+END
+GO
+
+
+
+
+
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Dylan Levin
+-- Create date: 11/09/18
+-- Description:	Adds a notification informing the user that their ammo has refilled
+
+-- Returns: 1 = Successful, or 0 = An error occurred
+
+-- Possible Errors Returned:
+--		1. EC_PLAYERNOTACTIVE - The playerID passed in is not active
+--		2. EC_PLAYERDOESNOTEXIST - The playerID passed in does not exist
+--		3. EC_INSERTERROR - When performing the update in the DB an error occurred
+
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_CreateAmmoNotification] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	DECLARE @EC_INSERTERROR INT = 2;
+
+	BEGIN TRY  
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+
+		--Add the notification after successfully performing the precondition checks
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION		
+			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('You have more ammo!', 'AMMO', 0, 1, @gameID, @playerID) -- insert into table with specific playerID			
+		COMMIT
+	END TRY
+
+	--An error occurred in the data validation
+	BEGIN CATCH
+		
+		--An error occurred while trying to perform the update on the Notification table
+		IF @@TRANCOUNT > 0
+		BEGIN
+			ROLLBACK;
+			SELECT @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to create the ammo notification.'
+		END
+
+	END CATCH
+END
+GO
+
+
+
+
+
+
+
 
 
 
@@ -418,14 +933,12 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
 	DECLARE @EC_INSERTERROR INT = 2;
 	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
 
-
 	BEGIN TRY  
-		--Confirm the game code does not already exist in an active game / currently playing game
-		IF EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE GameCode = @gameCode)
+		--Confirm the game code does not already exist in a game
+		IF EXISTS (SELECT * FROM tbl_Game WHERE GameCode = @gameCode)
 		BEGIN
 			SET @result = @EC_ITEMALREADYEXISTS;
 			SET @errorMSG = 'The game code already exists.';
@@ -467,8 +980,6 @@ GO
 
 
 
-
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -478,20 +989,20 @@ GO
 -- =============================================
 -- Author:		Dylan Levin
 -- Create date: 06/09/18
--- Description:	Adds a notification to the DB to then be used.
+-- Description:	Adds a Join notification to each player in the game.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
 
 -- Possible Errors Returned:
---		1. The playerID of the recipient does not exist
---		2. The gameID does not exist
---		3. When performing the update in the DB an error occurred
+--		1. EC_PLAYERNOTACTIVE - The playerID passed in is not active
+--		2. EC_PLAYERDOESNOTEXIST - The playerID passed in does not exist
+--		3. EC_INSERTERROR - When performing the update in the DB an error occurred
 
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateJoinNotification] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT,
 	@playerID INT,
+	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
@@ -499,60 +1010,57 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	DECLARE @EC_INSERTERROR INT = 2;
+
 	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
-		--Confirm the new connectionID does not already exists
-		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
-		BEGIN
-			SET @errorMSG = 'The gameID does not exist';
-			RAISERROR('ERROR: gameID does not exist',16,1);
-		END;
+		--Confirm the game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-
-		--PlayerID exists and connectionID exists, add the notif
+		--Add the join notification to each other player in the game.
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			DECLARE @notifPlayerID INT
+
+			--Get the message which will be added as the notification text
 			DECLARE @msgTxt VARCHAR(255)
-			SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @PlayerID
-			SET @msgTxt += ' has joined the game.'
+			SELECT @msgTxt = p.Nickname + ' has joined the game.' FROM tbl_Player p WHERE p.PlayerID = @PlayerID
 
-			DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-			OPEN idCursor
 
-			FETCH NEXT FROM idCursor INTO @notifPlayerID
-			WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
-			BEGIN
-			IF (@notifPlayerID != @playerID)
-			BEGIN
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'JOIN', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
-			END
-				FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-			END
-			CLOSE idCursor -- close down cursor
-			DEALLOCATE idCursor
+			--Create the notifications for all other players in the game
+			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
+			SELECT @msgTxt, 'JOIN', 0, 1, @gameID, PlayerID
+			FROM vw_ActiveAndVerifiedPlayers
+			WHERE PlayerID <> @playerID AND GameID = @gameID
 
 		COMMIT
+
+		SET @result = 1;
+		SET @errorMSG = '';
+
 	END TRY
 
 	--An error occurred in the data validation
 	BEGIN CATCH
-		
 		--An error occurred while trying to perform the update on the Notification table
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
-
 	END CATCH
 END
 GO
+
+
 
 
 
@@ -579,8 +1087,8 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateLeaveNotification] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT,
 	@playerID INT,
+	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
@@ -588,60 +1096,50 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	DECLARE @EC_INSERTERROR INT = 2;
+
 	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
-		--Confirm the new connectionID does not already exists
-		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
-		BEGIN
-			SET @errorMSG = 'The gameID does not exist';
-			RAISERROR('ERROR: gameID does not exist',16,1);
-		END;
-
+		--Confirm the game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--PlayerID exists and connectionID exists, add the notif
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			DECLARE @notifPlayerID INT
+			
+			--Get the message which will be added as the notification text
 			DECLARE @msgTxt VARCHAR(255)
-			SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @PlayerID
-			SET @msgTxt += ' has left the game.'
+			SELECT @msgTxt = p.Nickname + ' has left the game.' FROM tbl_Player p WHERE p.PlayerID = @PlayerID
 
-			DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-			OPEN idCursor
-
-			FETCH NEXT FROM idCursor INTO @notifPlayerID
-			WHILE @@FETCH_STATUS = 0  --iterate through all players and give them a notif
-			BEGIN
-			IF (@notifPlayerID != @playerID)
-			BEGIN
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'LEAVE', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
-			END
-			FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-			END
-			CLOSE idCursor -- close down cursor
-			DEALLOCATE idCursor
-
+			--Create the notifications for all other players in the game
+			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
+			SELECT @msgTxt, 'LEAVE', 0, 1, @gameID, PlayerID
+			FROM vw_ActiveAndVerifiedPlayers
+			WHERE PlayerID <> @playerID AND GameID = @gameID
 		COMMIT
 	END TRY
 
 	--An error occurred in the data validation
 	BEGIN CATCH
-		
 		--An error occurred while trying to perform the update on the Notification table
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
-
 	END CATCH
 END
 GO
+
 
 
 
@@ -667,10 +1165,10 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateTagResultNotification] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT,
 	@takenByID INT,
 	@photoOfID INT,
-	@result BIT,
+	@decision BIT,
+	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
@@ -679,29 +1177,32 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @msgTxt VARCHAR(255)
-	DECLARE @notifPlayerID INT 
+	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_DATAINVALID INT = 17;
 
 	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @photoOfID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the TakenByID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @takenByID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @takenByID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the PhotoOfID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @photoOfID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the gameID exists
-		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
+		--Get the GameID of the TakenByPLayerID and PhotoOfPlayerID and confirm they are in the same game
+		DECLARE @takenByGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @takenByGameID OUTPUT
+		DECLARE @photoOfGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @photoOfGameID OUTPUT
+		IF(@takenByGameID <> @photoOfGameID)
 		BEGIN
-			SET @errorMSG = 'The gameID does not exist';
-			RAISERROR('ERROR: gameID does not exist',16,1);
-		END;
+			SET @result = @EC_DATAINVALID;
+			SET @errorMSG = 'The players provided are not in the same game.'
+		END
+
+		--Confirm the game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @takenByGameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		IF (@result = 1) --success
 		BEGIN
@@ -709,39 +1210,22 @@ BEGIN
 			BEGIN TRANSACTION
 
 				-- send to the tagged player
-				SET @msgTxt = 'You have been tagged by '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @photoOfID) -- insert into table with specific playerID			
+				SELECT @msgTxt = 'You have been tagged by ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @takenByGameID, @photoOfID) -- insert into table with specific playerID			
 						
 				-- send to the tagging player
-				SET @msgTxt = 'You successfully tagged '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @takenByID) -- insert into table with specific playerID	
+				SELECT @msgTxt = 'You successfully tagged ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @takenByGameID, @takenByID) -- insert into table with specific playerID	
 						
 				-- send to everyone else						
-				SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += ' was tagged by '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += '.'
+				SELECT @msgTxt = p.Nickname + ' was tagged by ' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				SELECT @msgTxt += p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @takenByID
 
-				DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-				OPEN idCursor
-
-				FETCH NEXT FROM idCursor INTO @notifPlayerID
-				WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
-				BEGIN
-					IF (@notifPlayerID != @photoOfID AND @notifPlayerID != @takenByID)
-					BEGIN
-						INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID								
-					END
-					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-				END
-				CLOSE idCursor -- close down cursor
-				DEALLOCATE idCursor							
+				--Create the notifications for all other players in the game
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
+				SELECT @msgTxt, 'SUCCESS', 0, 1, @takenByGameID, PlayerID
+				FROM vw_ActiveAndVerifiedPlayers
+				WHERE PlayerID <> @takenByID AND PlayerID <> @photoOfID AND GameID = @takenByGameID						
 			COMMIT
 		END
 		ELSE --fail
@@ -751,39 +1235,22 @@ BEGIN
 			BEGIN TRANSACTION
 
 				-- send to the tagged player				
-				SET @msgTxt = 'You were missed by '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @photoOfID) -- insert into table with specific playerID			
+				SELECT @msgTxt = 'You were missed by ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @takenByGameID, @photoOfID) -- insert into table with specific playerID			
 						
 				-- send to the tagging player
-				SET @msgTxt = 'You failed to tag '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @takenByID) -- insert into table with specific playerID	
+				SELECT @msgTxt = 'You failed to tag ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @takenByGameID, @takenByID) -- insert into table with specific playerID	
 						
 				-- send to everyone else		
-				SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += ' failed to tag '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += '.'
-
-				DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-				OPEN idCursor
-
-				FETCH NEXT FROM idCursor INTO @notifPlayerID
-				WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
-				BEGIN
-					IF (@notifPlayerID != @photoOfID AND @notifPlayerID != @takenByID)
-					BEGIN
-						INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID								
-					END
-					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-				END
-				CLOSE idCursor -- close down cursor
-				DEALLOCATE idCursor							
+				SELECT @msgTxt = p.Nickname + ' failed to tag ' FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				SELECT @msgTxt += p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				
+				--Create the notifications for all other players in the game
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
+				SELECT @msgTxt, 'FAIL', 0, 1, @takenByGameID, PlayerID
+				FROM vw_ActiveAndVerifiedPlayers
+				WHERE PlayerID <> @takenByID AND PlayerID <> @photoOfID AND GameID = @takenByGameID						
 			COMMIT
 		END
 		END	
@@ -791,83 +1258,18 @@ BEGIN
 
 	--An error occurred in the data validation
 	BEGIN CATCH
-		
 		--An error occurred while trying to perform the update on the Notification table
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
-
 	END CATCH
 END
 GO
 
 
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Dylan Levin
--- Create date: 11/09/18
--- Description:	Adds a notification informing the user that their ammo has refilled
-
--- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The playerID of the recipient does not exist
---		2. The gameID does not exist
---		3. When performing the update in the DB an error occurred
-
--- =============================================
-CREATE PROCEDURE [dbo].[usp_CreateAmmoNotification] 
-	-- Add the parameters for the stored procedure here
-	@gameID INT,
-	@playerID INT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
-
-		--Confirm the gameID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
-		BEGIN
-			SET @errorMSG = 'The gameID does not exist';
-			RAISERROR('ERROR: gameID does not exist',16,1);
-		END;
-
-		--PlayerID exists and gameID exists, add the notif
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION		
-			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES ('You have more ammo!', 'AMMO', 0, 1, @gameID, @playerID) -- insert into table with specific playerID			
-		COMMIT
-	END TRY
-
-	--An error occurred in the data validation
-	BEGIN CATCH
-		
-		--An error occurred while trying to perform the update on the Notification table
-		IF @@TRANCOUNT > 0
-		BEGIN
-			ROLLBACK;
-		END
-
-	END CATCH
-END
-GO
 
 
 
@@ -885,15 +1287,21 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_DeactivateGameAfterHostJoinError] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT
+	@gameID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Confirm the playerID passed in exists and is active
+	EXEC [dbo].[usp_ConfirmGameExistsAndIsActive] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+
 	UPDATE tbl_Game
-	SET GameIsActive = 0
+	SET GameIsActive = 0, GameIsDeleted = 1
 	WHERE GameID = @gameID
 
 END
@@ -903,24 +1311,55 @@ GO
 
 
 
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Dylan Levin
+-- Create date: 06/09/18
+-- Description:	Returns all the notifications for a player
+
+-- Returns: 1 = Successful, or 0 = An error occurred
+
+-- Possible Errors Returned:
+--		1. The playerID of the recipient does not exist
+--		2. When performing the update in the DB an error occurred
 
 -- =============================================
--- Author:		Jonathan Williams
--- Create date: 06/09/18
--- Description:	Gets the game record matching the specified ID
--- =============================================
-CREATE PROCEDURE [dbo].[usp_GetGameByID] 
+CREATE PROCEDURE [dbo].[usp_GetNotifications] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT
+	@playerID INT,
+	@all BIT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+	BEGIN TRY
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-	SELECT *
-	FROM tbl_Game
-	WHERE GameID = @gameID
+		--The playerID exists, get the notifications associated with that player
+		IF (@all = 1)
+			SELECT * FROM tbl_Notification WHERE PlayerID = @playerID	
+		ELSE
+			SELECT * FROM tbl_Notification WHERE PlayerID = @playerID AND IsRead = 0
+
+		--Set the return variables
+		SET @result = 1;
+		SET @errorMSG = ''
+
+	END TRY
+
+	BEGIN CATCH
+		
+	END CATCH
 END
 GO
 
@@ -961,22 +1400,18 @@ BEGIN
 
 	BEGIN TRY
 		
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('',16,1);
-		END
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--The playerID exists, get the GameID associated with that player
+		--Get the GameID from the player
 		DECLARE @gameID INT;
-		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
 		--Get all the active and verified players inside that game
 		SELECT *
 		FROM vw_PlayerGame
-		WHERE GameID = @gameID AND PlayerIsActive = 1 AND isVerified = 1
+		WHERE GameID = @gameID
 
 		--Set the return variables
 		SET @result = 1;
@@ -990,7 +1425,6 @@ BEGIN
 
 END
 GO
-
 
 
 
@@ -1003,20 +1437,18 @@ SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
 -- Author:		Dylan Levin
--- Create date: 06/09/18
--- Description:	Returns all the notifications for a player
+-- Create date: 13/09/18
+-- Description:	Removes a player to a game.
 
--- Returns: 1 = Successful, or 0 = An error occurred
+-- Returns: The result (1 = successful, anything else = error), and the error message associated with it
 
 -- Possible Errors Returned:
---		1. The playerID of the recipient does not exist
---		2. When performing the update in the DB an error occurred
+--		1. EC_INSERTERROR - An error occurred while trying to insert the game record
 
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_GetNotifications] 
+CREATE PROCEDURE [dbo].[usp_LeaveGame] 
 	-- Add the parameters for the stored procedure here
-	@playerID INT,
-	@all BIT,
+	@playerID VARCHAR(6),
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -1026,169 +1458,52 @@ BEGIN
 	SET NOCOUNT ON;
 
 	--Declaring the possible error codes returned
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+	DECLARE @EC_INSERTERROR INT = 2;
 
 	BEGIN TRY
-		
+
 		--Confirm the playerID passed in exists
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
 		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
 			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('',16,1);
-		END
+			RAISERROR('ERROR: playerID does not exist',16,1);
+		END;
 
-		--The playerID exists, get the notifications associated with that player
-		IF (@all = 1)
-		SELECT * FROM tbl_Notification WHERE PlayerID = @playerID	
-		ELSE
-		SELECT * FROM tbl_Notification WHERE PlayerID = @playerID AND IsRead = 0
-
-		--Set the return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-
-	END TRY
-
-	BEGIN CATCH
-		
-	END CATCH
-END
-GO
-
-
-
-
-
-
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 10/09/18
--- Description:	Gets the Photo Record matching the specified ID
--- =============================================
-CREATE PROCEDURE [dbo].[usp_GetPhotoByID] 
-	-- Add the parameters for the stored procedure here
-	@photoID INT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	SELECT *
-	FROM vw_PhotoGameAndPlayers
-	WHERE PhotoID = @photoID
-	
-END
-GO
-
-
-
-
-
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[usp_GetPlayerPhotoLocation] 
-	-- Add the parameters for the stored procedure here
-	@photoID INT, 
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_PHOTOIDDOESNOTEXIST INT = 69;
-
-	BEGIN TRY
-		
-		
-
-			--Confirm the photoID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Photo WHERE PhotoID = @photoID)
-		BEGIN
-			SET @result = @EC_PHOTOIDDOESNOTEXIST;
-			SET @errorMSG = 'The photoID does not exist';
-			RAISERROR('',16,1);
-		END
-
-		
-
-		--The playerID exists, get the GameID associated with that player
+		-- fetch gameID from player
 		DECLARE @gameID INT;
-		SELECT @gameID = GameID FROM tbl_Photo WHERE PhotoID = @photoID;
+		SELECT @gameID = gameID FROM tbl_Player WHERE PlayerID = @playerID
 
-		-- The playerID and photoID exist get the location of the photo
-		SELECT *
-		FROM tbl_Photo
-		WHERE GameID = @gameID AND PhotoIsActive = 1 AND IsVotingComplete = 1 AND PhotoID = @photoID
+		-- set player HasLeftGame to true
+		UPDATE tbl_Player SET HasLeftGame = 1, PlayerIsDeleted = 1 WHERE PlayerID = @playerID
 
-		--Set the return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-		
+		-- decrement number of players in respective game
+		UPDATE tbl_Game SET NumOfPlayers = NumOfPlayers-1 WHERE GameID = @gameID
+
+		-- delete photos submitted by player that are not voted upon yet
+		UPDATE tbl_Photo SET PhotoIsDeleted = 1 WHERE TakenByPlayerID = @playerID AND IsVotingComplete = 0
 	
+		-- delete votes submitted by player that have not reached an outcome
+		UPDATE tbl_PlayerVotePhoto SET PlayerVotePhotoIsDeleted = 1 WHERE PlayerID = @playerID AND PlayerVotePhotoIsActive = 0
+	
+		-- delete any unread notifications for the player
+		UPDATE tbl_Notification SET NotificationIsDeleted = 1 WHERE PlayerID = @playerID
+
+		--Set the success return variables
+		SET @result = 1;
+		SET @errorMSG = '';
 
 	END TRY
 
 	BEGIN CATCH
-
+		IF(@@TRANCOUNT > 0)
+		BEGIN
+			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
+		END
 	END CATCH
-
 END
 GO
-
-
-
-
-
-
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 10/09/18
--- Description:	Gets the PlayerVotePhoto records which the PlayerID must completed / has not voted on yet
--- =============================================
-CREATE PROCEDURE [dbo].[usp_GetVotesToComplete] 
-	-- Add the parameters for the stored procedure here
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-
-	--Confirm the playerID passed in exists
-	IF NOT EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @playerID)
-	BEGIN
-		SET @result = @EC_PLAYERIDDOESNOTEXIST;
-		SET @errorMSG = 'The playerID does not exist';
-		RAISERROR('',16,1);
-	END
-
-	SELECT *
-	FROM vw_PlayerVoteJoinTables
-	WHERE PlayerID = @playerID AND IsPhotoSuccessful IS NULL
-	ORDER BY VoteID
-
-	SET @result = 1;
-	SET @errorMSG = '';
-	
-END
-GO
-
-
 
 
 
@@ -1248,7 +1563,7 @@ BEGIN
 
 		--Confirm the gameCode passed in exists and is active
 		DECLARE @gameIDToJoin INT;
-		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1
+		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1 AND GameIsDeleted = 0
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
 			SET @result = @EC_GAMEDOESNOTEXIST;
@@ -1257,28 +1572,23 @@ BEGIN
 		END
 
 		--Confirm the game you are trying to join is not completed
-		DECLARE @gameState VARCHAR(255);
-		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameIDToJoin
-		IF(@gameState LIKE 'COMPLETED')
-		BEGIN
-			SET @result = @EC_GAMEALREADYCOMPLETE;
-			SET @errorMSG = 'The game you are trying to join is already completed.';
-			RAISERROR('',16,1);
-		END
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameIDToJoin, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Check to see if the player is okay to join the game, as the player may be attempting to join a game which has already begun
 		DECLARE @canJoin BIT;
 		SELECT @canJoin = IsJoinableAtAnytime FROM tbl_Game WHERE GameID = @gameIDToJoin
+		DECLARE @gameState VARCHAR(255);
+		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameIDToJoin
 
 		--If the player cannot join at anytime and the current game state is currently PLAYING, return an error because the player
 		--is trying to join a game which has already begun and does not allow players to join at anytime
-		IF(@canJoin = 0 AND @gameState LIKE 'PLAYING')
+		IF(@canJoin = 0 AND @gameState IN ('STARTING','PLAYING'))
 		BEGIN
 			SET @result = @EC_JOINGAME_UNABLETOJOIN;
 			SET @errorMSG = 'The game you are trying to join is already playing and does not allow you to join after the game has started.';
 			RAISERROR('',16,1);
 		END
-
 
 
 		--Confirm the nickname entered is not already taken by a player in the game
@@ -1307,7 +1617,7 @@ BEGIN
 			IF EXISTS(SELECT Email FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE Email LIKE @contact)
 			BEGIN
 				SET @result = @EC_JOINGAME_EMAILTAKEN;
-				SET @errorMSG = 'The email address you entered is already taken by another player in the game. Please enter a unique contact.';
+				SET @errorMSG = 'The email address you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
 		END
@@ -1350,28 +1660,335 @@ GO
 
 
 
-
 -- =============================================
 -- Author:		Jonathan Williams
--- Create date: 06/09/18
--- Description:	Removes a players connectionID to the ApplicationHub, outlining
---				that the player is no longer connected to the application hub and
---				receive live updates in the game
+-- Create date: 10/09/18
+-- Description:	Gets the PlayerVotePhoto records which the PlayerID must completed / has not voted on yet
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_RemoveConnectionID] 
+CREATE PROCEDURE [dbo].[usp_GetVotesToComplete] 
 	-- Add the parameters for the stored procedure here
-	@connectionID VARCHAR(255)
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	UPDATE tbl_Player
-	SET IsConnected = 0, ConnectionID = NULL
-	WHERE ConnectionID LIKE @connectionID
+	--Confirm the playerID passed in exists and is active
+	EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+	SELECT *
+	FROM vw_PlayerVoteJoinTables
+	WHERE PlayerID = @playerID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1 AND PlayerVotePhotoIsDeleted = 0
+	ORDER BY VoteID
+
+	SET @result = 1;
+	SET @errorMSG = '';
+	
 END
 GO
+
+
+
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[usp_GetPlayerPhotoLocation] 
+	-- Add the parameters for the stored procedure here
+	@photoID INT, 
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declaring the possible error codes returned
+	DECLARE @EC_PHOTOIDDOESNOTEXIST INT = 69;
+
+	BEGIN TRY
+		
+		
+
+			--Confirm the photoID passed in exists
+		IF NOT EXISTS (SELECT * FROM tbl_Photo WHERE PhotoID = @photoID)
+		BEGIN
+			SET @result = @EC_PHOTOIDDOESNOTEXIST;
+			SET @errorMSG = 'The photoID does not exist';
+			RAISERROR('',16,1);
+		END
+
+		
+
+		--The playerID exists, get the GameID associated with that player
+		DECLARE @gameID INT;
+		SELECT @gameID = GameID FROM tbl_Photo WHERE PhotoID = @photoID;
+
+		-- The playerID and photoID exist get the location of the photo
+		SELECT *
+		FROM tbl_Photo
+		WHERE GameID = @gameID AND PhotoIsActive = 1 AND IsVotingComplete = 1 AND PhotoID = @photoID
+
+		--Set the return variables
+		SET @result = 1;
+		SET @errorMSG = ''
+		
+		PRINT 'Hello';
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
+
+END
+GO
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 10/09/18
+-- Description:	Gets the Photo Record matching the specified ID
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_GetPhotoByID] 
+	-- Add the parameters for the stored procedure here
+	@photoID INT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	SELECT *
+	FROM vw_PhotoGameAndPlayers
+	WHERE PhotoID = @photoID
+	
+END
+GO
+
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[usp_UpdateVerificationCode] 
+	-- Add the parameters for the stored procedure here
+	@verificationCode INT,
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+	DECLARE @EC_VERIFYPLAYER_ALREADYVERIFIED INT = 2002;
+	
+
+	BEGIN TRY
+		
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Confirm the playerID is in a non verified state
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
+		BEGIN
+			SET @result = @EC_VERIFYPLAYER_ALREADYVERIFIED;
+			SET @errorMSG = 'The playerID is already verified.';
+			RAISERROR('',16,1);
+		END
+
+		--Update the players verfication code
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION
+			UPDATE tbl_Player
+			SET VerificationCode = @verificationCode
+			WHERE PlayerID = @playerID
+		COMMIT
+
+		--Set the success return variables
+		SET @result = 1;
+		SET @errorMSG = ''
+		SELECT * FROM tbl_Player WHERE PlayerID = @playerID
+	END TRY
+
+	BEGIN CATCH
+		IF(@@TRANCOUNT > 0)
+		BEGIN
+			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying update the player record';
+		END
+	END CATCH
+END
+GO
+
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 30/08/18
+-- Description:	Updates a Player's ConnectionID and sets them as CONNECTED to the SignalR Hub
+
+-- Returns: 1 = Successful, or 0 = An error occurred
+
+-- Possible Errors Returned:
+--		1. The playerID trying to update does not exist
+--		2. The new connectionID already exists inside the database
+--		3. When performing the update in the DB an error occurred
+
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_UpdateConnectionID] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@connectionID VARCHAR(255),
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
+
+	BEGIN TRY  
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Confirm the new connectionID does not already exists
+		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
+		BEGIN
+			SET @result = @EC_ITEMALREADYEXISTS;
+			SET @errorMSG = 'The connectionID already exists.';
+			RAISERROR('',16,1);
+		END;
+
+		--PlayerID exists and connectionID does not exists, make the update
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION
+			UPDATE tbl_Player
+			SET ConnectionID = @connectionID, IsConnected = 1
+			WHERE PlayerID = @playerID
+		COMMIT
+	END TRY
+
+	--An error occurred in the data validation
+	BEGIN CATCH
+		--An error occurred while trying to perform the update on the PLayer table
+		IF @@TRANCOUNT > 0
+		BEGIN
+			ROLLBACK;
+		END
+	END CATCH
+END
+GO
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Dylan Levin
+-- Create date: 14/09/18
+-- Description:	Marks player notifications as read.
+
+-- Returns: The result (1 = successful, anything else = error), and the error message associated with it
+
+-- Possible Errors Returned:
+--		1. EC_INSERTERROR - An error occurred while trying to insert the game record
+
+-- =============================================
+
+-- create type to store incoming data into a table
+DROP TYPE IF EXISTS udtNotifs
+GO
+CREATE TYPE udt_Notifs AS TABLE
+    ( 
+        notificationID INT
+    )
+GO
+
+CREATE PROCEDURE [dbo].[usp_SetNotificationsRead] 
+	-- Add the parameters for the stored procedure here
+	@udtNotifs AS dbo.udt_Notifs READONLY,
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declaring the possible error codes returned
+	DECLARE @EC_INSERTERROR INT = 2;
+
+	BEGIN TRY
+
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Update the notifications to IsRead = 1
+		UPDATE tbl_Notification
+		SET IsRead = 1
+		WHERE PlayerID = @playerID AND NotificationID IN (
+				SELECT notificationID
+				FROM @udtNotifs
+			)
+
+		--Set the success return variables
+		SET @result = 1;
+		SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+		IF(@@TRANCOUNT > 0)
+		BEGIN
+			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
+		END
+	END CATCH
+END
+GO
+
 
 
 
@@ -1402,39 +2019,36 @@ BEGIN
 	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
 	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
 	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_DATAINVALID INT = 17;
 
 	BEGIN TRY
 		--Check the takenByID exists
-		IF NOT EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @takenByID)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The taken by PlayerID passed in does not exist or is not active.';
-			RAISERROR('',16,1);
-		END
-
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @takenByID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Check the photoOfID exists
-		IF NOT EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @photoOfID)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The photo of PlayerID passed in does not exist or is not active.';
-			RAISERROR('',16,1);
-		END
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @photoOfID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Get the gameID of the players
 		DECLARE @gameID INT;
 		SELECT @gameID = GameID FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @takenByID
 
 
-		--Confirm the game is not completed
-		DECLARE @gameState VARCHAR(255);
-		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameID
-		IF(@gameState LIKE 'COMPLETED')
+		--Get the GameID of the TakenByPLayerID and PhotoOfPlayerID and confirm they are in the same game
+		DECLARE @takenByGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @takenByGameID OUTPUT
+		DECLARE @photoOfGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @photoOfGameID OUTPUT
+		IF(@takenByGameID <> @photoOfGameID)
 		BEGIN
-			SET @result = @EC_GAMEALREADYCOMPLETE;
-			SET @errorMSG = 'The game is already completed.';
-			RAISERROR('',16,1);
+			SET @result = @EC_DATAINVALID;
+			SET @errorMSG = 'The players provided are not in the same game.'
 		END
+
+		--Confirm the game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @takenByGameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Insert the new photo
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
@@ -1451,11 +2065,9 @@ BEGIN
 			WHERE GameID = @gameID AND IsVerified = 1 AND HasLeftGame = 0 AND PlayerID <> @photoOfID AND PlayerID <> @takenByID
 		COMMIT
 
-
-		SELECT * FROM vw_PhotoGameAndPlayers WHERE PhotoID = @createdPhotoID
 		SET @result = 1;
 		SET @errorMSG = '';
-
+		SELECT * FROM vw_PhotoGameAndPlayers WHERE PhotoID = @createdPhotoID
 	END TRY
 
 	BEGIN CATCH
@@ -1473,28 +2085,15 @@ GO
 
 
 
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 -- =============================================
 -- Author:		Jonathan Williams
--- Create date: 30/08/18
--- Description:	Updates a Player's ConnectionID and sets them as CONNECTED to the SignalR Hub
-
--- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The playerID trying to update does not exist
---		2. The new connectionID already exists inside the database
---		3. When performing the update in the DB an error occurred
-
+-- Create date: 06/09/18
+-- Description:	Removes a players connectionID to the ApplicationHub, outlining
+--				that the player is no longer connected to the application hub and
+--				receive live updates in the game
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_UpdateConnectionID] 
+CREATE PROCEDURE [dbo].[usp_RemoveConnectionID] 
 	-- Add the parameters for the stored procedure here
-	@playerID INT,
 	@connectionID VARCHAR(255)
 AS
 BEGIN
@@ -1502,187 +2101,9 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-
-	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
-
-		--Confirm the new connectionID does not already exists
-		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
-		BEGIN
-			RAISERROR('ERROR: connectionID alread exists',16,1);
-		END;
-
-
-		--PlayerID exists and connectionID does not exists, make the update
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			UPDATE tbl_Player
-			SET ConnectionID = @connectionID, IsConnected = 1
-			WHERE PlayerID = @playerID
-		COMMIT
-	END TRY
-
-	--An error occurred in the data validation
-	BEGIN CATCH
-		
-		--An error occurred while trying to perform the update on the PLayer table
-		IF @@TRANCOUNT > 0
-		BEGIN
-			ROLLBACK;
-		END
-
-	END CATCH
-END
-GO
-
-
-
-
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[usp_UpdateVerificationCode] 
-	-- Add the parameters for the stored procedure here
-	@verificationCode INT,
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT,
-	@phone VARCHAR(255) OUTPUT,
-	@email VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-	
-
-	BEGIN TRY
-		
-		--Confirm the playerID exists and is in a non verified state
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID does not exist or is already verified.';
-			RAISERROR('',16,1);
-		END
-
-		--Update the players verfication code
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			UPDATE tbl_Player
-			SET VerificationCode = @verificationCode
-			WHERE PlayerID = @playerID
-		COMMIT
-
-		--Set the success return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-		SELECT @phone = Phone FROM tbl_Player WHERE PlayerID = @playerID
-		SELECT @email = Email FROM tbl_Player WHERE PlayerID = @playerID
-
-	END TRY
-
-	BEGIN CATCH
-		IF(@@TRANCOUNT > 0)
-		BEGIN
-			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'An error occurred while trying update the player record';
-		END
-	END CATCH
-END
-GO
-
-
-
-
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[usp_ValidateVerificationCode] 
-	-- Add the parameters for the stored procedure here
-	@verificationCode INT,
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-	DECLARE @EC_VERIFYPLAYER_CODEINCORRECT INT = 2001;
-	
-
-	BEGIN TRY
-		
-		--Confirm the playerID exists and is in a non verified state
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID does not exist or is already verified.';
-			RAISERROR('',16,1);
-		END
-
-		--Confirm the verification code passed in equals the verification code stored against the user account
-		DECLARE @actualVerificationCode INT;
-		SELECT @actualVerificationCode = VerificationCode FROM tbl_Player WHERE PlayerID = @playerID
-		IF(@actualVerificationCode <> @verificationCode)
-		BEGIN
-			SET @result = @EC_VERIFYPLAYER_CODEINCORRECT;
-			SET @errorMSG = 'The verification code is not correct.';
-			RAISERROR('',16,1);
-		END
-
-		--The verification code is valid, update the player to verified
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			UPDATE tbl_Player
-			SET IsVerified = 1
-			WHERE PlayerID = @playerID
-
-			--Update the player count in the game which the player belongs to
-			DECLARE @gameID INT
-			SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID
-
-			UPDATE tbl_Game
-			SET NumOfPlayers = NumOfPlayers + 1
-			WHERE GameID = @gameID
-		COMMIT
-
-		--Set the success return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-
-	END TRY
-
-	BEGIN CATCH
-		IF(@@TRANCOUNT > 0)
-		BEGIN
-			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'An error occurred while trying update the player record';
-		END
-	END CATCH
+	UPDATE tbl_Player
+	SET IsConnected = 0, ConnectionID = NULL
+	WHERE ConnectionID LIKE @connectionID
 END
 GO
 
@@ -1769,7 +2190,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -1810,14 +2230,17 @@ BEGIN
 
 	BEGIN TRY
 		
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
 		--Confirm the vote record exists
-		IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PlayerID = @playerID AND VoteID = @voteID AND PlayerVotePhotoIsActive = 1 AND IsPhotoSuccessful IS NULL)
+		IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PlayerID = @playerID AND VoteID = @voteID AND PlayerVotePhotoIsActive = 1 AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsDeleted = 0)
 		BEGIN
 			SET @result = @EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST;
-			SET @errorMSG = 'The PlayerVotePhoto record does not exist or the vote has already been completed.';
+			SET @errorMSG = 'The PlayerVotePhoto record does not exist.';
 			RAISERROR('',16,1);
 		END
-
 
 		--Get the photoID from the PlayerVotePhoto record
 		DECLARE @photoID INT;
@@ -1829,7 +2252,7 @@ BEGIN
 		IF(@isVotingCompleted = 1)
 		BEGIN
 			SET @result = @EC_VOTEPHOTO_VOTEALREADYCOMPLETE;
-			SET @errorMSG = 'The Photo voting has already been completed.';
+			SET @errorMSG = 'The PlayerVotePhoto record has already been completed.';
 			RAISERROR('',16,1);
 		END
 
@@ -1868,19 +2291,17 @@ BEGIN
 
 
 			--Update the photo's IsVotingComplete field if all the player votes have successfully been completed
-			IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PhotoID = @photoID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1)
+			IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PhotoID = @photoID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1 AND PlayerVotePhotoIsDeleted = 0)
 			BEGIN
 				UPDATE tbl_Photo
 				SET IsVotingComplete = 1
 				WHERE PhotoID = @photoID
 			END
-
 		COMMIT
 
-		SELECT * FROM vw_PlayerVoteJoinTables WHERE VoteID = @voteID
 		SET @result = 1;
 		SET @errorMSG = '';
-
+		SELECT * FROM vw_PlayerVoteJoinTables WHERE VoteID = @voteID
 	END TRY
 
 	BEGIN CATCH
@@ -1903,20 +2324,10 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
--- =============================================
--- Author:		Dylan Levin
--- Create date: 13/09/18
--- Description:	Removes a player to a game.
-
--- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
-
--- =============================================
-CREATE PROCEDURE [dbo].[usp_LeaveGame] 
+CREATE PROCEDURE [dbo].[usp_ValidateVerificationCode] 
 	-- Add the parameters for the stored procedure here
-	@playerID VARCHAR(6),
+	@verificationCode INT,
+	@playerID INT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -1927,39 +2338,53 @@ BEGIN
 
 	--Declaring the possible error codes returned
 	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+	DECLARE @EC_VERIFYPLAYER_CODEINCORRECT INT = 2001;
+	DECLARE @EC_VERIFYPLAYER_ALREADYVERIFIED INT = 2002;
+	
 
 	BEGIN TRY
+		
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
+		--Confirm the playerID is in a non verified state
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
 		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+			SET @result = @EC_VERIFYPLAYER_ALREADYVERIFIED;
+			SET @errorMSG = 'The playerID is already verified.';
+			RAISERROR('',16,1);
+		END
 
-		-- fetch gameID from player
-		DECLARE @gameID INT;
-		SELECT @gameID = gameID FROM tbl_Player WHERE PlayerID = @playerID
+		--Confirm the verification code passed in equals the verification code stored against the user account
+		DECLARE @actualVerificationCode INT;
+		SELECT @actualVerificationCode = VerificationCode FROM tbl_Player WHERE PlayerID = @playerID
+		IF(@actualVerificationCode <> @verificationCode)
+		BEGIN
+			SET @result = @EC_VERIFYPLAYER_CODEINCORRECT;
+			SET @errorMSG = 'The verification code is not correct.';
+			RAISERROR('',16,1);
+		END
 
-		-- set player HasLeftGame to true
-		UPDATE tbl_Player SET HasLeftGame = 1, IsDeleted = 1 WHERE PlayerID = @playerID
+		--The verification code is valid, update the player to verified
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION
+			UPDATE tbl_Player
+			SET IsVerified = 1
+			WHERE PlayerID = @playerID
 
-		-- decrement number of players in respective game
-		UPDATE tbl_Game SET NumOfPlayers = NumOfPlayers-1 WHERE GameID = @gameID
-
-		-- delete photos submitted by player that are not voted upon yet
-		UPDATE tbl_Photo SET IsDeleted = 1 WHERE TakenByPlayerID = @playerID AND IsVotingComplete = 0
-	
-		-- delete votes submitted by player that have not reached an outcome
-		UPDATE tbl_PlayerVotePhoto SET IsDeleted = 1 WHERE PlayerID = @playerID AND PlayerVotePhotoIsActive = 0
-	
-		-- delete any unread notifications for the player
-		UPDATE tbl_Notification SET IsDeleted = 1 WHERE PlayerID = @playerID
+			--Update the player count in the game which the player belongs to
+			DECLARE @gameID INT;
+			EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+			UPDATE tbl_Game
+			SET NumOfPlayers = NumOfPlayers + 1
+			WHERE GameID = @gameID
+		COMMIT
 
 		--Set the success return variables
 		SET @result = 1;
-		SET @errorMSG = '';
-
+		SET @errorMSG = ''
 	END TRY
 
 	BEGIN CATCH
@@ -1967,7 +2392,7 @@ BEGIN
 		BEGIN
 			ROLLBACK;
 			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
+			SET @errorMSG = 'An error occurred while trying update the player record';
 		END
 	END CATCH
 END
@@ -1976,88 +2401,6 @@ GO
 
 
 
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Dylan Levin
--- Create date: 14/09/18
--- Description:	Marks player notifications as read.
-
--- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
-
--- =============================================
-
--- create type to store incoming data into a table
-DROP TYPE IF EXISTS udtNotifs
-GO
-CREATE TYPE udt_Notifs AS TABLE
-    ( 
-        notificationID VARCHAR(6)
-    )
-GO
-
-CREATE PROCEDURE [dbo].[usp_SetNotificationsRead] 
-	-- Add the parameters for the stored procedure here
-	@udtNotifs AS dbo.udt_Notifs READONLY,
-	@playerID VARCHAR(6),
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-
-	DECLARE @notifID INT;
-
-	BEGIN TRY
-
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
-
-		DECLARE idCursor CURSOR FOR SELECT notificationID FROM @udtNotifs --open a cursor from the data table
-		OPEN idCursor
-
-		FETCH NEXT FROM idCursor INTO @notifID
-		WHILE @@FETCH_STATUS = 0 --iterate through the notification IDs in the table
-		BEGIN
-			UPDATE tbl_Notification SET IsRead = 1 WHERE PlayerID = @playerID AND NotificationID = @notifID-- update IsRead status on the notification							
-			FETCH NEXT FROM idCursor INTO @notifID  --iterate to next notifID
-		END
-		CLOSE idCursor -- close down cursor
-		DEALLOCATE idCursor		
-
-
-		--Set the success return variables
-		SET @result = 1;
-		SET @errorMSG = '';
-
-	END TRY
-
-	BEGIN CATCH
-		IF(@@TRANCOUNT > 0)
-		BEGIN
-			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
-		END
-	END CATCH
-END
-GO
 
 
 
@@ -2065,24 +2408,24 @@ GO
 INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 4, 'STARTING')
 GO
 
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Jono', '+61457558322', 'localhost', 100000, 0, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Jono', '+61457558322', 'localhost', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Dylan', '+6145620441', 'localhost', 100000, 0 ,1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Dylan', '+6145620441', 'localhost', 100000, 0 ,1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Mathew', '+61454758125', 'localhost', 100000, 0, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Mathew', '+61454758125', 'localhost', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Harry', '+61478542569', 'localhost', 100000, 0, 0)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Harry', '+61478542569', 'localhost', 100000, 0, 0)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('David', '+61478585269', 'localhost', 100000, 0, 1)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('David', '+61478585269', 'localhost', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, IsDeleted, IsVerified) VALUES ('Sheridan', '+61478588547', 'localhost', 100000, 0, 0)
+INSERT INTO tbl_Player (Nickname, Phone, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Sheridan', '+61478588547', 'localhost', 100000, 0, 0)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, IsDeleted, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 0, 1, 0, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, NotificationIsDeleted, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 0, 1, 0, 100000, 100000)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, IsDeleted, GameID, PlayerID) VALUES ('Somebody has left the game.', 'LEAVE', 1, 1, 0, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, NotificationIsDeleted, GameID, PlayerID) VALUES ('Somebody has left the game.', 'LEAVE', 1, 1, 0, 100000, 100000)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, IsDeleted, GameID, PlayerID) VALUES ('test IsRead 1', 'FAIL', 0, 1, 0, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, NotificationIsDeleted, GameID, PlayerID) VALUES ('test IsRead 1', 'FAIL', 0, 1, 0, 100000, 100000)
 GO
-INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, IsDeleted, GameID, PlayerID) VALUES ('test IsRead 2', 'FAIL', 0, 1, 0, 100000, 100000)
+INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, NotificationIsDeleted, GameID, PlayerID) VALUES ('test IsRead 2', 'FAIL', 0, 1, 0, 100000, 100000)
 GO
-INSERT INTO tbl_Photo (Lat, Long, PhotoDataURL, IsVotingComplete, IsDeleted, GameID, TakenByPlayerID, PhotoOfPlayerID) VALUES (-24.2, 130.0, 'localhost', 1, 0, 100000, 100001, 100002)
+INSERT INTO tbl_Photo (Lat, Long, PhotoDataURL, IsVotingComplete, PhotoIsDeleted, GameID, TakenByPlayerID, PhotoOfPlayerID) VALUES (-24.2, 130.0, 'localhost', 1, 0, 100000, 100001, 100002)

@@ -38,14 +38,17 @@ BEGIN
 
 	BEGIN TRY
 		
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
 		--Confirm the vote record exists
-		IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PlayerID = @playerID AND VoteID = @voteID AND PlayerVotePhotoIsActive = 1 AND IsPhotoSuccessful IS NULL)
+		IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PlayerID = @playerID AND VoteID = @voteID AND PlayerVotePhotoIsActive = 1 AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsDeleted = 0)
 		BEGIN
 			SET @result = @EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST;
-			SET @errorMSG = 'The PlayerVotePhoto record does not exist or the vote has already been completed.';
+			SET @errorMSG = 'The PlayerVotePhoto record does not exist.';
 			RAISERROR('',16,1);
 		END
-
 
 		--Get the photoID from the PlayerVotePhoto record
 		DECLARE @photoID INT;
@@ -57,7 +60,7 @@ BEGIN
 		IF(@isVotingCompleted = 1)
 		BEGIN
 			SET @result = @EC_VOTEPHOTO_VOTEALREADYCOMPLETE;
-			SET @errorMSG = 'The Photo voting has already been completed.';
+			SET @errorMSG = 'The PlayerVotePhoto record has already been completed.';
 			RAISERROR('',16,1);
 		END
 
@@ -96,19 +99,17 @@ BEGIN
 
 
 			--Update the photo's IsVotingComplete field if all the player votes have successfully been completed
-			IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PhotoID = @photoID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1)
+			IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PhotoID = @photoID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1 AND PlayerVotePhotoIsDeleted = 0)
 			BEGIN
 				UPDATE tbl_Photo
 				SET IsVotingComplete = 1
 				WHERE PhotoID = @photoID
 			END
-
 		COMMIT
 
-		SELECT * FROM vw_PlayerVoteJoinTables WHERE VoteID = @voteID
 		SET @result = 1;
 		SET @errorMSG = '';
-
+		SELECT * FROM vw_PlayerVoteJoinTables WHERE VoteID = @voteID
 	END TRY
 
 	BEGIN CATCH

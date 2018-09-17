@@ -31,22 +31,18 @@ BEGIN
 
 	BEGIN TRY
 		
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('',16,1);
-		END
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--The playerID exists, get the GameID associated with that player
+		--Get the GameID from the player
 		DECLARE @gameID INT;
-		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
 		--Get all the active and verified players inside that game
 		SELECT *
 		FROM vw_PlayerGame
-		WHERE GameID = @gameID AND PlayerIsActive = 1 AND isVerified = 1
+		WHERE GameID = @gameID
 
 		--Set the return variables
 		SET @result = 1;

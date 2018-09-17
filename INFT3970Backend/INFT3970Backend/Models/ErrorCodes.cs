@@ -10,8 +10,10 @@ namespace INFT3970Backend.Models
         //General / Global Error Codes
         public const int EC_DATABASECONNECTERROR = 0;
         public const int EC_INSERTERROR = 2;
+        public const int EC_GAMENOTACTIVE = 9;
+        public const int EC_PLAYERNOTACTIVE = 10;
         public const int EC_BUILDMODELERROR = 11;
-        public const int EC_PLAYERIDDOESNOTEXIST = 12;
+        public const int EC_PLAYERDOESNOTEXIST = 12;
         public const int EC_GAMEDOESNOTEXIST = 13;
         public const int EC_ITEMALREADYEXISTS = 14;
         public const int EC_MISSINGORBLANKDATA = 15;
@@ -32,6 +34,7 @@ namespace INFT3970Backend.Models
         //PlayerController - Verify Player / Verify verification code Error Codes
         public const int EC_VERIFYPLAYER_CODEINVALID = 2000;
         public const int EC_VERIFYPLAYER_CODEINCORRECT = 2001;
+        public const int EC_VERIFYPLAYER_ALREADYVERIFIED = 2002;
 
 
         //PhotoController - Vote On Photo Error Codes

@@ -20,15 +20,20 @@ BEGIN
 	DECLARE @EC_INSERTERROR INT = 2;
 	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
 	DECLARE @EC_VERIFYPLAYER_CODEINCORRECT INT = 2001;
+	DECLARE @EC_VERIFYPLAYER_ALREADYVERIFIED INT = 2002;
 	
 
 	BEGIN TRY
 		
-		--Confirm the playerID exists and is in a non verified state
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Confirm the playerID is in a non verified state
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
 		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID does not exist or is already verified.';
+			SET @result = @EC_VERIFYPLAYER_ALREADYVERIFIED;
+			SET @errorMSG = 'The playerID is already verified.';
 			RAISERROR('',16,1);
 		END
 
@@ -50,9 +55,8 @@ BEGIN
 			WHERE PlayerID = @playerID
 
 			--Update the player count in the game which the player belongs to
-			DECLARE @gameID INT
-			SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID
-
+			DECLARE @gameID INT;
+			EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 			UPDATE tbl_Game
 			SET NumOfPlayers = NumOfPlayers + 1
 			WHERE GameID = @gameID
@@ -61,7 +65,6 @@ BEGIN
 		--Set the success return variables
 		SET @result = 1;
 		SET @errorMSG = ''
-
 	END TRY
 
 	BEGIN CATCH

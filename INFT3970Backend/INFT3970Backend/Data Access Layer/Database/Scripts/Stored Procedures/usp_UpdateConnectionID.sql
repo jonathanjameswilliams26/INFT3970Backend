@@ -20,27 +20,29 @@ GO
 CREATE PROCEDURE [dbo].[usp_UpdateConnectionID] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
-	@connectionID VARCHAR(255)
+	@connectionID VARCHAR(255),
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
 
 	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Confirm the new connectionID does not already exists
 		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
 		BEGIN
-			RAISERROR('ERROR: connectionID alread exists',16,1);
+			SET @result = @EC_ITEMALREADYEXISTS;
+			SET @errorMSG = 'The connectionID already exists.';
+			RAISERROR('',16,1);
 		END;
-
 
 		--PlayerID exists and connectionID does not exists, make the update
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
@@ -53,13 +55,11 @@ BEGIN
 
 	--An error occurred in the data validation
 	BEGIN CATCH
-		
 		--An error occurred while trying to perform the update on the PLayer table
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
 		END
-
 	END CATCH
 END
 GO

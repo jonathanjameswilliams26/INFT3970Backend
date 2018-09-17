@@ -52,7 +52,7 @@ BEGIN
 
 		--Confirm the gameCode passed in exists and is active
 		DECLARE @gameIDToJoin INT;
-		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1
+		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1 AND GameIsDeleted = 0
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
 			SET @result = @EC_GAMEDOESNOTEXIST;
@@ -61,28 +61,23 @@ BEGIN
 		END
 
 		--Confirm the game you are trying to join is not completed
-		DECLARE @gameState VARCHAR(255);
-		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameIDToJoin
-		IF(@gameState LIKE 'COMPLETED')
-		BEGIN
-			SET @result = @EC_GAMEALREADYCOMPLETE;
-			SET @errorMSG = 'The game you are trying to join is already completed.';
-			RAISERROR('',16,1);
-		END
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameIDToJoin, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Check to see if the player is okay to join the game, as the player may be attempting to join a game which has already begun
 		DECLARE @canJoin BIT;
 		SELECT @canJoin = IsJoinableAtAnytime FROM tbl_Game WHERE GameID = @gameIDToJoin
+		DECLARE @gameState VARCHAR(255);
+		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameIDToJoin
 
 		--If the player cannot join at anytime and the current game state is currently PLAYING, return an error because the player
 		--is trying to join a game which has already begun and does not allow players to join at anytime
-		IF(@canJoin = 0 AND @gameState LIKE 'PLAYING')
+		IF(@canJoin = 0 AND @gameState IN ('STARTING','PLAYING'))
 		BEGIN
 			SET @result = @EC_JOINGAME_UNABLETOJOIN;
 			SET @errorMSG = 'The game you are trying to join is already playing and does not allow you to join after the game has started.';
 			RAISERROR('',16,1);
 		END
-
 
 
 		--Confirm the nickname entered is not already taken by a player in the game
@@ -111,7 +106,7 @@ BEGIN
 			IF EXISTS(SELECT Email FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE Email LIKE @contact)
 			BEGIN
 				SET @result = @EC_JOINGAME_EMAILTAKEN;
-				SET @errorMSG = 'The email address you entered is already taken by another player in the game. Please enter a unique contact.';
+				SET @errorMSG = 'The email address you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
 		END

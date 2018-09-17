@@ -11,11 +11,12 @@ namespace INFT3970Backend.Models
         public string GameCode { get; set; }
         public int NumOfPlayers { get; set; }
         public string GameMode { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
         public string GameState { get; set; }
         public bool IsJoinableAtAnytime { get; set; }
         public bool IsActive { get; set; }
+        public bool IsDeleted { get; set; }
         public List<Player> Players { get; set; }
     }
 }

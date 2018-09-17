@@ -52,10 +52,8 @@ namespace INFT3970Backend.Hubs
 
             //Create notifications of new player joining, if the game has started
             GameBL gameBL = new GameBL();
-            if (game.GameState == "PLAYING")
-            {
-                gameBL.CreateJoinNotification(game.GameID, joinedPlayer.PlayerID);
-            }
+            if (game.GameState == "PLAYING" || game.GameState == "STARTING")
+                gameBL.CreateJoinNotification(joinedPlayer.PlayerID);
 
             //Loop through each of the players and update any player currently connected to the hub
             foreach (var player in response.Data)
@@ -68,11 +66,11 @@ namespace INFT3970Backend.Hubs
                 if(player.IsConnected)
                 {
                     //If the game state is STARTING then the players are in the Lobby, update the lobby list
-                    if(game.GameState == "STARTING")
+                    if(game.GameState == "IN LOBBY")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
-                    //If the game state is PLAYING - Send a notification to the players in the game.
-                    if(game.GameState == "PLAYING")            
+                    //Send a notification to the players in the game.
+                    else           
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                 }
 
@@ -203,7 +201,7 @@ namespace INFT3970Backend.Hubs
             
             //Add the notifications to the database
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateTagResultNotification(photo.GameID, photo.TakenByPlayerID, photo.PhotoOfPlayerID, (photo.NumYesVotes > photo.NumNoVotes));
+            gameDAL.CreateTagResultNotification(photo.TakenByPlayerID, photo.PhotoOfPlayerID, (photo.NumYesVotes > photo.NumNoVotes));
 
 
             //If the TakenByPlayer is connected to the Hub send out a live notification update
@@ -270,7 +268,7 @@ namespace INFT3970Backend.Hubs
             GameBL gameBL = new GameBL();
             if (game.GameState == "PLAYING")
             {
-                gameBL.CreateLeaveNotification(game.GameID, leftPlayer.PlayerID);
+                gameBL.CreateLeaveNotification(leftPlayer.PlayerID);
             }
 
             //Loop through each of the players and update any player currently connected to the hub

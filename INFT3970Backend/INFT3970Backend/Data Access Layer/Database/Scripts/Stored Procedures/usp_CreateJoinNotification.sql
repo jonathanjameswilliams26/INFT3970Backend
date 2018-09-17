@@ -7,20 +7,20 @@ GO
 -- =============================================
 -- Author:		Dylan Levin
 -- Create date: 06/09/18
--- Description:	Adds a notification to the DB to then be used.
+-- Description:	Adds a Join notification to each player in the game.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
 
 -- Possible Errors Returned:
---		1. The playerID of the recipient does not exist
---		2. The gameID does not exist
---		3. When performing the update in the DB an error occurred
+--		1. EC_PLAYERNOTACTIVE - The playerID passed in is not active
+--		2. EC_PLAYERDOESNOTEXIST - The playerID passed in does not exist
+--		3. EC_INSERTERROR - When performing the update in the DB an error occurred
 
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateJoinNotification] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT,
 	@playerID INT,
+	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
@@ -28,54 +28,52 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	DECLARE @EC_INSERTERROR INT = 2;
+
 	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
-		--Confirm the new connectionID does not already exists
-		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
-		BEGIN
-			SET @errorMSG = 'The gameID does not exist';
-			RAISERROR('ERROR: gameID does not exist',16,1);
-		END;
+		--Confirm the game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-
-		--PlayerID exists and connectionID exists, add the notif
+		--Add the join notification to each other player in the game.
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			DECLARE @notifPlayerID INT
+
+			--Get the message which will be added as the notification text
 			DECLARE @msgTxt VARCHAR(255)
-			SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @PlayerID
-			SET @msgTxt += ' has joined the game.'
+			SELECT @msgTxt = p.Nickname + ' has joined the game.' FROM tbl_Player p WHERE p.PlayerID = @PlayerID
 
-			DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-			OPEN idCursor
 
-			FETCH NEXT FROM idCursor INTO @notifPlayerID
-			WHILE @notifPlayerID != @playerID --@@FETCH_STATUS = 0 --iterate through all players and give them a notif
-			BEGIN
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'JOIN', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID
-				FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-			END
-			CLOSE idCursor -- close down cursor
-			DEALLOCATE idCursor
+			--Create the notifications for all other players in the game
+			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
+			SELECT @msgTxt, 'JOIN', 0, 1, @gameID, PlayerID
+			FROM vw_ActiveAndVerifiedPlayers
+			WHERE PlayerID <> @playerID AND GameID = @gameID
 
 		COMMIT
+
+		SET @result = 1;
+		SET @errorMSG = '';
+
 	END TRY
 
 	--An error occurred in the data validation
 	BEGIN CATCH
-		
 		--An error occurred while trying to perform the update on the Notification table
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
-
 	END CATCH
 END
 GO

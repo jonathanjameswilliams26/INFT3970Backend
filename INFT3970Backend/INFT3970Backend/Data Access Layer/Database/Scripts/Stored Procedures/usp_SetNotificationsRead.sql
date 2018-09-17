@@ -21,14 +21,14 @@ DROP TYPE IF EXISTS udtNotifs
 GO
 CREATE TYPE udt_Notifs AS TABLE
     ( 
-        notificationID VARCHAR(6)
+        notificationID INT
     )
 GO
 
 CREATE PROCEDURE [dbo].[usp_SetNotificationsRead] 
 	-- Add the parameters for the stored procedure here
 	@udtNotifs AS dbo.udt_Notifs READONLY,
-	@playerID VARCHAR(6),
+	@playerID INT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -40,29 +40,19 @@ BEGIN
 	--Declaring the possible error codes returned
 	DECLARE @EC_INSERTERROR INT = 2;
 
-	DECLARE @notifID INT;
-
 	BEGIN TRY
 
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		DECLARE idCursor CURSOR FOR SELECT notificationID FROM @udtNotifs --open a cursor from the data table
-		OPEN idCursor
-
-		FETCH NEXT FROM idCursor INTO @notifID
-		WHILE @@FETCH_STATUS = 0 --iterate through the notification IDs in the table
-		BEGIN
-			UPDATE tbl_Notification SET IsRead = 1 WHERE PlayerID = @playerID AND NotificationID = @notifID-- update IsRead status on the notification							
-			FETCH NEXT FROM idCursor INTO @notifID  --iterate to next notifID
-		END
-		CLOSE idCursor -- close down cursor
-		DEALLOCATE idCursor		
-
+		--Update the notifications to IsRead = 1
+		UPDATE tbl_Notification
+		SET IsRead = 1
+		WHERE PlayerID = @playerID AND NotificationID IN (
+				SELECT notificationID
+				FROM @udtNotifs
+			)
 
 		--Set the success return variables
 		SET @result = 1;

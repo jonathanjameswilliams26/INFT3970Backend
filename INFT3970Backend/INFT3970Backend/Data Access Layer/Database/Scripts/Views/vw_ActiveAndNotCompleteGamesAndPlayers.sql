@@ -15,4 +15,6 @@ WHERE
 	GameState NOT LIKE 'COMPLETE'
 	AND GameIsActive = 1
 	AND PlayerIsActive = 1
+	AND PlayerIsDeleted = 0
+	AND GameIsDeleted = 0
 GO

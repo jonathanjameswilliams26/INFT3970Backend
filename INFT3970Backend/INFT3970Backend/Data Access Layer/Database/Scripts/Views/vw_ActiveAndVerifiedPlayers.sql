@@ -7,9 +7,9 @@ GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 05/09/18
--- Description:	Creates a view of Players and their game
+-- Description:	Creates a view of all Active, Non Deleted and Verfied Players
 -- =============================================
-CREATE VIEW vw_PlayerGame
+CREATE VIEW vw_ActiveAndVerifiedPlayers
 AS
 SELECT
 	PlayerID,
@@ -22,20 +22,18 @@ SELECT
 	NumPhotosTaken,
 	IsHost,
 	IsVerified,
-	PlayerIsActive,
-	PlayerIsDeleted,
+	VerificationCode,
 	ConnectionID,
 	IsConnected,
-	g.GameID,
-	GameCode,
-	NumOfPlayers,
-	GameMode,
-	StartTime,
-	EndTime,
-	GameState,
-	IsJoinableAtAnytime,
-	GameIsActive,
-	GameIsDeleted
-FROM tbl_Player p
-	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
+	HasLeftGame,
+	IsDeleted,
+	PlayerIsActive,
+	PlayerIsDeleted,
+	GameID
+
+FROM tbl_Player
+WHERE
+	PlayerIsActive = 1 AND
+	PlayerIsDeleted = 0 AND
+	IsVerified = 1
 GO

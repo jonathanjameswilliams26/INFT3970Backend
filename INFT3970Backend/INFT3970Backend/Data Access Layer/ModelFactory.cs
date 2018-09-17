@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Data;
 using System.Data.SqlClient;
 using INFT3970Backend.Models;
 
@@ -12,11 +8,22 @@ namespace INFT3970Backend.Data_Access_Layer
     {
         private SqlDataReader Reader;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="reader">The SQL DataReader which will be used to read objects</param>
         public ModelFactory(SqlDataReader reader)
         {
             Reader = reader;
         }
 
+
+
+        /// <summary>
+        /// Gets the index of the column with the specified column name.
+        /// </summary>
+        /// <param name="colName">The name of the column.</param>
+        /// <returns>The column index if found, negative INT if the column name does not exist within the reader.</returns>
         private int GetColIndex(string colName)
         {
             try
@@ -29,18 +36,65 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
+
+
+        /// <summary>
+        /// Gets an INT value from the column.
+        /// </summary>
+        /// <param name="colName">The column name containing the INT value</param>
+        /// <returns>The INT value found inside the column</returns>
         private int GetInt(string colName)
         {
             return Reader.GetInt32(GetColIndex(colName));
         }
 
 
+
+        /// <summary>
+        /// Gets a BOOL value from the column
+        /// </summary>
+        /// <param name="colName">The column name containing the BOOL value</param>
+        /// <returns>The BOOL value found inside the column</returns>
         private bool GetBool(string colName)
         {
             return Reader.GetBoolean(GetColIndex(colName));
         }
 
-        private bool? GetNullableBool(string colName)
+
+
+        /// <summary>
+        /// Gets a DOUBLE value from the column
+        /// </summary>
+        /// <param name="colName">The column name containing the DOUBLE value</param>
+        /// <returns>The DOUBLE value found inside the column</returns>
+        private double GetDouble(string colName)
+        {
+            return Reader.GetDouble(GetColIndex(colName));
+        }
+
+
+
+
+        /// <summary>
+        /// Gets a DATETIME value from the column
+        /// </summary>
+        /// <param name="colName">The column name containing the DATETIME value</param>
+        /// <returns>The DATETIME value found inside the column</returns>
+        private DateTime GetDateTime(string colName)
+        {
+            return Reader.GetDateTime(GetColIndex(colName));
+        }
+
+
+
+
+
+        /// <summary>
+        /// Safely get a BOOL value from the column. Will return NULL if the column value is NULL
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <returns>The BOOL value found inside the column or NULL if the column is null</returns>
+        private bool? SafeGetBool(string colName)
         {
             int index = GetColIndex(colName);
             if (!Reader.IsDBNull(index))
@@ -50,6 +104,13 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
+
+
+        /// <summary>
+        /// Safely get a STRING value from the column. Will return STRING.EMPTY if the column value is NULL
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <returns>The STRING value found inside the column or STRING.EMPTY if the column is null</returns>
         private string SafeGetString(string colName)
         {
             int index = GetColIndex(colName);
@@ -58,17 +119,30 @@ namespace INFT3970Backend.Data_Access_Layer
             return string.Empty;
         }
 
-        private double GetDouble(string colName)
+
+
+        /// <summary>
+        /// Safely get a DATETIME value from the column. Will return NULL if the column value is NULL
+        /// </summary>
+        /// <param name="colName"></param>
+        /// <returns>The DATETIME value found inside the column or NULL if the column is null</returns>
+        private DateTime? SafeGetDateTime(string colName)
         {
-            return Reader.GetDouble(GetColIndex(colName));
+            int index = GetColIndex(colName);
+            if (!Reader.IsDBNull(index))
+                return Reader.GetDateTime(index);
+            else
+                return null;
         }
 
-        private DateTime GetDateTime(string colName)
-        {
-            return Reader.GetDateTime(GetColIndex(colName));
-        }
+        
 
+        
 
+        /// <summary>
+        /// Builds a Notification Model from the data reader.
+        /// </summary>
+        /// <returns>A Notification object, NULL if an error occurred while trying to build the object.</returns>
         public Notification NotificationFactory()
         {
             try
@@ -79,6 +153,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 notification.Type = SafeGetString("NotificationType");
                 notification.IsRead = GetBool("IsRead");
                 notification.IsActive = GetBool("NotificationIsActive");
+                notification.IsDeleted = GetBool("NotificationIsDeleted");
                 notification.GameID = GetInt("GameID");
                 notification.PlayerID = GetInt("PlayerID");
                 return notification;
@@ -90,6 +165,13 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
+
+
+        /// <summary>
+        /// Builds a Player Model from the data reader.
+        /// </summary>
+        /// <param name="doGetGame">A flag which outlines if also building the Game model inside the player.</param>
+        /// <returns>A Player object, NULL if an error occurred while trying to build the object.</returns>
         public Player PlayerFactory(bool doGetGame)
         {
             try
@@ -110,13 +192,13 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.IsConnected = GetBool("IsConnected");
                 player.HasLeftGame = GetBool("HasLeftGame");
                 player.IsActive = GetBool("PlayerIsActive");
+                player.IsDeleted = GetBool("PlayerIsDeleted");
 
                 //Build the Game object for the player
                 if(doGetGame)
                 {
                     game = GameFactory();
                     player.Game = game;
-                    
                 }
                 return player;
             }
@@ -127,6 +209,15 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
+
+
+        /// <summary>
+        /// Builds a Photo Model from the data reader.
+        /// </summary>
+        /// <param name="doGetGame">A flag which outlines if also building the Game model inside the photo.</param>
+        /// <param name="doGetPlayerWhoTookPhoto">A flag which outlines if also building the Player model who took the photo.</param>
+        /// <param name="doGetPlayerWhoPhotoIsOf">A flag which outlines if also building the Player model who the photo is of.</param>
+        /// <returns>A Player object, NULL if an error occurred while trying to build the object.</returns>
         public Photo PhotoFactory(bool doGetGame, bool doGetPlayerWhoTookPhoto, bool doGetPlayerWhoPhotoIsOf)
         {
             try
@@ -143,6 +234,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 photo.NumNoVotes = GetInt("NumNoVotes");
                 photo.IsVotingComplete = GetBool("IsVotingComplete");
                 photo.IsActive = GetBool("PhotoIsActive");
+                photo.IsDeleted = GetBool("PhotoIsDeleted");
                 photo.GameID = GetInt("GameID");
                 photo.TakenByPlayerID = GetInt("TakenByPlayerID");
                 photo.PhotoOfPlayerID = GetInt("PhotoOfPlayerID");
@@ -169,7 +261,8 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.IsConnected = GetBool("TakenByPlayerIsConnected");
                     player.HasLeftGame = GetBool("TakenByPlayerHasLeftGame");
                     player.IsActive = GetBool("TakenByPlayerIsActive");
-                    player.Game = photo.Game;
+                    player.IsDeleted = GetBool("TakenByPlayerIsDeleted");
+                    player.Game = null;
                     photo.TakenByPlayer = player;
                 }
 
@@ -192,7 +285,8 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.IsConnected = GetBool("PhotoOfPlayerIsConnected");
                     player.HasLeftGame = GetBool("PhotoOfPlayerHasLeftGame");
                     player.IsActive = GetBool("PhotoOfPlayerIsActive");
-                    player.Game = photo.Game;
+                    player.IsDeleted = GetBool("PhotoOfPlayerIsDeleted");
+                    player.Game = null;
                     photo.PhotoOfPlayer = player;
                 }
 
@@ -205,6 +299,12 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
+
+
+        /// <summary>
+        /// Builds a Game Model from the data reader.
+        /// </summary>
+        /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
         public Game GameFactory()
         {
             try
@@ -214,11 +314,12 @@ namespace INFT3970Backend.Data_Access_Layer
                 game.GameCode = SafeGetString("GameCode");
                 game.NumOfPlayers = GetInt("NumOfPlayers");
                 game.GameMode = SafeGetString("GameMode");
-                game.StartTime = GetDateTime("StartTime");
-                game.EndTime = GetDateTime("EndTime");
+                game.StartTime = SafeGetDateTime("StartTime");
+                game.EndTime = SafeGetDateTime("EndTime");
                 game.GameState = SafeGetString("GameState");
                 game.IsJoinableAtAnytime = GetBool("IsJoinableAtAnytime");
                 game.IsActive = GetBool("GameIsActive");
+                game.IsDeleted = GetBool("GameIsDeleted");
                 return game;
             }
             catch
@@ -228,6 +329,14 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
+
+
+        /// <summary>
+        /// Builds a PlayerVotePhoto Model from the data reader.
+        /// </summary>
+        /// <param name="doGetPlayer">A flag which outlines if also building the Player model.</param>
+        /// <param name="doGetPhoto">A flag which outlines if also building the Photo model.</param>
+        /// <returns></returns>
         public PlayerVotePhoto PlayerVotePhotoFactory(bool doGetPlayer, bool doGetPhoto)
         {
             try
@@ -238,10 +347,11 @@ namespace INFT3970Backend.Data_Access_Layer
                 //Build the PlayerVotePhoto object
                 PlayerVotePhoto playerVotePhoto = new PlayerVotePhoto();
                 playerVotePhoto.VoteID = GetInt("VoteID");
-                playerVotePhoto.IsPhotoSuccessful = GetNullableBool("IsPhotoSuccessful");
+                playerVotePhoto.IsPhotoSuccessful = SafeGetBool("IsPhotoSuccessful");
                 playerVotePhoto.IsActive = GetBool("PlayerVotePhotoIsActive");
                 playerVotePhoto.PlayerID = GetInt("PlayerID");
                 playerVotePhoto.PhotoID = GetInt("PhotoID");
+                playerVotePhoto.IsDeleted = GetBool("PlayerVotePhotoIsDeleted");
 
                 if (doGetPlayer)
                     player = PlayerFactory(true);

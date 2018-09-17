@@ -12,15 +12,21 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_DeactivateGameAfterHostJoinError] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT
+	@gameID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Confirm the playerID passed in exists and is active
+	EXEC [dbo].[usp_ConfirmGameExistsAndIsActive] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+
 	UPDATE tbl_Game
-	SET GameIsActive = 0
+	SET GameIsActive = 0, GameIsDeleted = 1
 	WHERE GameID = @gameID
 
 END

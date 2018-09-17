@@ -23,39 +23,36 @@ BEGIN
 	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
 	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
 	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_DATAINVALID INT = 17;
 
 	BEGIN TRY
 		--Check the takenByID exists
-		IF NOT EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @takenByID)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The taken by PlayerID passed in does not exist or is not active.';
-			RAISERROR('',16,1);
-		END
-
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @takenByID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Check the photoOfID exists
-		IF NOT EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @photoOfID)
-		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The photo of PlayerID passed in does not exist or is not active.';
-			RAISERROR('',16,1);
-		END
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @photoOfID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Get the gameID of the players
 		DECLARE @gameID INT;
 		SELECT @gameID = GameID FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @takenByID
 
 
-		--Confirm the game is not completed
-		DECLARE @gameState VARCHAR(255);
-		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameID
-		IF(@gameState LIKE 'COMPLETED')
+		--Get the GameID of the TakenByPLayerID and PhotoOfPlayerID and confirm they are in the same game
+		DECLARE @takenByGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @takenByGameID OUTPUT
+		DECLARE @photoOfGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @photoOfGameID OUTPUT
+		IF(@takenByGameID <> @photoOfGameID)
 		BEGIN
-			SET @result = @EC_GAMEALREADYCOMPLETE;
-			SET @errorMSG = 'The game is already completed.';
-			RAISERROR('',16,1);
+			SET @result = @EC_DATAINVALID;
+			SET @errorMSG = 'The players provided are not in the same game.'
 		END
+
+		--Confirm the game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @takenByGameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Insert the new photo
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
@@ -72,11 +69,9 @@ BEGIN
 			WHERE GameID = @gameID AND IsVerified = 1 AND HasLeftGame = 0 AND PlayerID <> @photoOfID AND PlayerID <> @takenByID
 		COMMIT
 
-
-		SELECT * FROM vw_PhotoGameAndPlayers WHERE PhotoID = @createdPhotoID
 		SET @result = 1;
 		SET @errorMSG = '';
-
+		SELECT * FROM vw_PhotoGameAndPlayers WHERE PhotoID = @createdPhotoID
 	END TRY
 
 	BEGIN CATCH

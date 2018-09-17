@@ -19,10 +19,10 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateTagResultNotification] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT,
 	@takenByID INT,
 	@photoOfID INT,
-	@result BIT,
+	@decision BIT,
+	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
@@ -31,29 +31,32 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @msgTxt VARCHAR(255)
-	DECLARE @notifPlayerID INT 
+	DECLARE @EC_INSERTERROR INT = 2;
+	DECLARE @EC_DATAINVALID INT = 17;
 
 	BEGIN TRY  
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @photoOfID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the TakenByID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @takenByID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the playerID passed in exists
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @takenByID)
-		BEGIN
-			SET @errorMSG = 'The playerID does not exist';
-			RAISERROR('ERROR: playerID does not exist',16,1);
-		END;
+		--Confirm the PhotoOfID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @photoOfID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the gameID exists
-		IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @gameID)
+		--Get the GameID of the TakenByPLayerID and PhotoOfPlayerID and confirm they are in the same game
+		DECLARE @takenByGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @takenByGameID OUTPUT
+		DECLARE @photoOfGameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @photoOfGameID OUTPUT
+		IF(@takenByGameID <> @photoOfGameID)
 		BEGIN
-			SET @errorMSG = 'The gameID does not exist';
-			RAISERROR('ERROR: gameID does not exist',16,1);
-		END;
+			SET @result = @EC_DATAINVALID;
+			SET @errorMSG = 'The players provided are not in the same game.'
+		END
+
+		--Confirm the game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @takenByGameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		IF (@result = 1) --success
 		BEGIN
@@ -61,39 +64,22 @@ BEGIN
 			BEGIN TRANSACTION
 
 				-- send to the tagged player
-				SET @msgTxt = 'You have been tagged by '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @photoOfID) -- insert into table with specific playerID			
+				SELECT @msgTxt = 'You have been tagged by ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @takenByGameID, @photoOfID) -- insert into table with specific playerID			
 						
 				-- send to the tagging player
-				SET @msgTxt = 'You successfully tagged '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @takenByID) -- insert into table with specific playerID	
+				SELECT @msgTxt = 'You successfully tagged ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @takenByGameID, @takenByID) -- insert into table with specific playerID	
 						
 				-- send to everyone else						
-				SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += ' was tagged by '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += '.'
+				SELECT @msgTxt = p.Nickname + ' was tagged by ' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				SELECT @msgTxt += p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @takenByID
 
-				DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-				OPEN idCursor
-
-				FETCH NEXT FROM idCursor INTO @notifPlayerID
-				WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
-				BEGIN
-					IF (@notifPlayerID != @photoOfID AND @notifPlayerID != @takenByID)
-					BEGIN
-						INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'SUCCESS', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID								
-					END
-					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-				END
-				CLOSE idCursor -- close down cursor
-				DEALLOCATE idCursor							
+				--Create the notifications for all other players in the game
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
+				SELECT @msgTxt, 'SUCCESS', 0, 1, @takenByGameID, PlayerID
+				FROM vw_ActiveAndVerifiedPlayers
+				WHERE PlayerID <> @takenByID AND PlayerID <> @photoOfID AND GameID = @takenByGameID						
 			COMMIT
 		END
 		ELSE --fail
@@ -103,39 +89,22 @@ BEGIN
 			BEGIN TRANSACTION
 
 				-- send to the tagged player				
-				SET @msgTxt = 'You were missed by '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @photoOfID) -- insert into table with specific playerID			
+				SELECT @msgTxt = 'You were missed by ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @takenByGameID, @photoOfID) -- insert into table with specific playerID			
 						
 				-- send to the tagging player
-				SET @msgTxt = 'You failed to tag '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += '.'
-
-				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @takenByID) -- insert into table with specific playerID	
+				SELECT @msgTxt = 'You failed to tag ' + p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @takenByGameID, @takenByID) -- insert into table with specific playerID	
 						
 				-- send to everyone else		
-				SELECT @msgTxt = p.Nickname FROM tbl_Player p WHERE p.PlayerID = @takenByID
-				SET @msgTxt += ' failed to tag '
-				SELECT @msgTxt += p.Nickname FROM tbl_Player p WHERE p.PlayerID = @photoOfID
-				SET @msgTxt += '.'
-
-				DECLARE idCursor CURSOR FOR SELECT PlayerID FROM vw_PlayerGame WHERE GameID = @gameID --open a cursor for the resulting table
-				OPEN idCursor
-
-				FETCH NEXT FROM idCursor INTO @notifPlayerID
-				WHILE @@FETCH_STATUS = 0 --iterate through all players and give them a notif
-				BEGIN
-					IF (@notifPlayerID != @photoOfID AND @notifPlayerID != @takenByID)
-					BEGIN
-						INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) VALUES (@msgTxt, 'FAIL', 0, 1, @gameID, @notifPlayerID) -- insert into table with specific playerID								
-					END
-					FETCH NEXT FROM idCursor INTO @notifPlayerID  --iterate to next playerID
-				END
-				CLOSE idCursor -- close down cursor
-				DEALLOCATE idCursor							
+				SELECT @msgTxt = p.Nickname + ' failed to tag ' FROM tbl_Player p WHERE p.PlayerID = @takenByID
+				SELECT @msgTxt += p.Nickname + '.' FROM tbl_Player p WHERE p.PlayerID = @photoOfID
+				
+				--Create the notifications for all other players in the game
+				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
+				SELECT @msgTxt, 'FAIL', 0, 1, @takenByGameID, PlayerID
+				FROM vw_ActiveAndVerifiedPlayers
+				WHERE PlayerID <> @takenByID AND PlayerID <> @photoOfID AND GameID = @takenByGameID						
 			COMMIT
 		END
 		END	
@@ -143,13 +112,13 @@ BEGIN
 
 	--An error occurred in the data validation
 	BEGIN CATCH
-		
 		--An error occurred while trying to perform the update on the Notification table
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
+			SET @result = @EC_INSERTERROR;
+			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
-
 	END CATCH
 END
 GO

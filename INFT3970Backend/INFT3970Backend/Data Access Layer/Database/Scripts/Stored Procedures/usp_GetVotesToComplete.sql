@@ -14,20 +14,13 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-
-	--Confirm the playerID passed in exists
-	IF NOT EXISTS (SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @playerID)
-	BEGIN
-		SET @result = @EC_PLAYERIDDOESNOTEXIST;
-		SET @errorMSG = 'The playerID does not exist';
-		RAISERROR('',16,1);
-	END
+	--Confirm the playerID passed in exists and is active
+	EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 	SELECT *
 	FROM vw_PlayerVoteJoinTables
-	WHERE PlayerID = @playerID AND IsPhotoSuccessful IS NULL
+	WHERE PlayerID = @playerID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1 AND PlayerVotePhotoIsDeleted = 0
 	ORDER BY VoteID
 
 	SET @result = 1;

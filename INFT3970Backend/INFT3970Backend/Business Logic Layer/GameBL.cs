@@ -84,48 +84,57 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// Creates a notification for a player joining a game. Sent to all.
         /// </summary>
         /// <returns>void</returns>
-        public void CreateJoinNotification(int gameID, int playerID)
+        public void CreateJoinNotification(int playerID)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateJoinNotification(gameID, playerID);
+            gameDAL.CreateJoinNotification(playerID);
         }
 
         /// <summary>
         /// Creates a notification for a player leaving a game. Sent to all.
         /// </summary>
         /// <returns>void</returns>
-        public void CreateLeaveNotification(int gameID, int playerID)
+        public void CreateLeaveNotification(int playerID)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateLeaveNotification(gameID, playerID);
+            gameDAL.CreateLeaveNotification(playerID);
         }
 
         /// <summary>
         /// Creates a notification for a player that their ammo is refilled.
         /// </summary>
         /// <returns>void</returns>
-        public void CreateAmmoNotification(int gameID, int playerID)
+        public void CreateAmmoNotification(int playerID)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateAmmoNotification(gameID, playerID);
+            gameDAL.CreateAmmoNotification(playerID);
         }
 
 
         /// <summary>
         /// Creates a notification for everyone regarding the result of a photo tag.
         /// </summary>
-        /// <returns>void</returns>
-        public void CreateTagResultNotification(int gameID, int takenByID, int photoOfID, bool result)
+        /// <param name="takenByID">The ID of the player who took the photo</param>
+        /// <param name="photoOfID">The ID of the player who the photo is off</param>
+        /// <param name="decision">The successful or unsuccessful decision of the photo</param>
+        public void CreateTagResultNotification(int takenByID, int photoOfID, bool decision)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateTagResultNotification(gameID, takenByID, photoOfID, result);
+            gameDAL.CreateTagResultNotification(takenByID, photoOfID, decision);
         }
 
 
+
+
+        /// <summary>
+        /// Gets the Game object matching the specified ID.
+        /// </summary>
+        /// <param name="gameID">The gameID to return.</param>
+        /// <returns>A Game object if the ID exists, NULL if the ID does not exist.</returns>
         public Response<Game> GetGame(int gameID)
         {
             GameDAL gameDAL = new GameDAL();
-            return gameDAL.GetGame(gameID);
+            return gameDAL.GetGameByID(gameID);
         }
     }
 }

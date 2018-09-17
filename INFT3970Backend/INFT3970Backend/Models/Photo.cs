@@ -17,6 +17,7 @@ namespace INFT3970Backend.Models
         public int NumNoVotes { get; set; }
         public bool IsVotingComplete { get; set; }
         public bool IsActive { get; set; }
+        public bool IsDeleted { get; set; }
         public int GameID { get; set; }
         public int TakenByPlayerID { get; set; }
         public int PhotoOfPlayerID { get; set; }

@@ -12,6 +12,7 @@ namespace INFT3970Backend.Models
         public string Type { get; set; }
         public bool IsRead { get; set; }
         public bool IsActive { get; set; }
+        public bool IsDeleted { get; set; }
         public int GameID { get; set; }
         public int PlayerID { get; set; }
         public Game Game { get; set; }

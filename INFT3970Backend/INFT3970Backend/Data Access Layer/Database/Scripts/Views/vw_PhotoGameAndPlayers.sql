@@ -18,6 +18,7 @@ SELECT
 	NumNoVotes,
 	IsVotingComplete,
 	PhotoIsActive,
+	PhotoIsDeleted,
 	p.GameID,
 	GameCode,
 	NumOfPlayers,
@@ -27,6 +28,7 @@ SELECT
 	GameState,
 	IsJoinableAtAnytime,
 	GameIsActive,
+	GameIsDeleted,
 	TakenByPlayerID,
 	takenBy.Nickname AS TakenByPlayerNickname,
 	takenBy.Phone AS TakenByPlayerPhone,
@@ -40,6 +42,7 @@ SELECT
 	takenBy.ConnectionID AS TakenByPlayerConnectionID,
 	takenBy.IsConnected AS TakenByPlayerIsConnected,
 	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
+	takenBy.PlayerIsDeleted AS TakenByPlayerIsDeleted,
 	PhotoOfPlayerID,
 	photoOf.Nickname AS PhotoOfPlayerNickname,
 	photoOf.Phone AS PhotoOfPlayerPhone,
@@ -52,7 +55,8 @@ SELECT
 	photoOf.IsVerified AS PhotoOfPlayerIsVerified,
 	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
 	photoOf.IsConnected AS PhotoOfPlayerIsConnected,
-	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive  
+	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive,
+	photoOf.PlayerIsDeleted AS PhotoOfPlayerIsDeleted  
 FROM tbl_Photo p
 	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
 	INNER JOIN tbl_Player takenBy ON (p.TakenByPlayerID = takenBy.PlayerID)

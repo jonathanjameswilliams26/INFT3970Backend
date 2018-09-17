@@ -9,9 +9,7 @@ CREATE PROCEDURE [dbo].[usp_UpdateVerificationCode]
 	@verificationCode INT,
 	@playerID INT,
 	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT,
-	@phone VARCHAR(255) OUTPUT,
-	@email VARCHAR(255) OUTPUT
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
@@ -21,15 +19,20 @@ BEGIN
 	--Declaring the possible error codes returned
 	DECLARE @EC_INSERTERROR INT = 2;
 	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
+	DECLARE @EC_VERIFYPLAYER_ALREADYVERIFIED INT = 2002;
 	
 
 	BEGIN TRY
 		
-		--Confirm the playerID exists and is in a non verified state
+		--Confirm the playerID passed in exists and is active
+		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Confirm the playerID is in a non verified state
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
 		BEGIN
-			SET @result = @EC_PLAYERIDDOESNOTEXIST;
-			SET @errorMSG = 'The playerID does not exist or is already verified.';
+			SET @result = @EC_VERIFYPLAYER_ALREADYVERIFIED;
+			SET @errorMSG = 'The playerID is already verified.';
 			RAISERROR('',16,1);
 		END
 
@@ -44,9 +47,7 @@ BEGIN
 		--Set the success return variables
 		SET @result = 1;
 		SET @errorMSG = ''
-		SELECT @phone = Phone FROM tbl_Player WHERE PlayerID = @playerID
-		SELECT @email = Email FROM tbl_Player WHERE PlayerID = @playerID
-
+		SELECT * FROM tbl_Player WHERE PlayerID = @playerID
 	END TRY
 
 	BEGIN CATCH

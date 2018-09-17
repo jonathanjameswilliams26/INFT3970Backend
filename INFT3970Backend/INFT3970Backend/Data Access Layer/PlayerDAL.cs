@@ -103,6 +103,10 @@ namespace INFT3970Backend.Data_Access_Layer
                         Command.CommandType = CommandType.StoredProcedure;
                         Command.Parameters.AddWithValue("@playerID", playerID);
                         Command.Parameters.AddWithValue("@connectionID", connectionID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
 
                         //Perform the procedure and get the result
                         Connection.Open();
@@ -244,9 +248,10 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="playerID">The playerID who's verification code is being updated</param>
         /// <param name="verificationCode">The new verification code</param>
         /// <returns>The email or phone number to send the new verification code to. NULL data if error.</returns>
-        public Response<string> UpdateVerificationCode(int playerID, int verificationCode)
+        public Response<Player> UpdateVerificationCode(int playerID, int verificationCode)
         {
             StoredProcedure = "usp_UpdateVerificationCode";
+            Player player = null;
             try
             {
                 //Create the connection and command for the stored procedure
@@ -262,28 +267,25 @@ namespace INFT3970Backend.Data_Access_Layer
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
                         Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@phone", SqlDbType.VarChar, 255);
-                        Command.Parameters["@phone"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@email", SqlDbType.VarChar, 255);
-                        Command.Parameters["@email"].Direction = ParameterDirection.Output;
 
                         //Perform the procedure and get the result
                         Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Reader = Command.ExecuteReader();
+
+                        while(Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).PlayerFactory(false);
+                            if (player == null)
+                                return new Response<Player>(null, "ERROR", "An error occurred while trying to build the player model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close();
 
                         //Format the results into a response object
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        string phone = Convert.ToString(Command.Parameters["@phone"].Value);
-                        string email = Convert.ToString(Command.Parameters["@email"].Value);
 
-                        //Return the phone or email address to send the new verification to.
-                        if (!String.IsNullOrWhiteSpace(phone))
-                            return new Response<string>(phone, Result, ErrorMSG, Result);
-                        else if (!String.IsNullOrWhiteSpace(email))
-                            return new Response<string>(email, Result, ErrorMSG, Result);
-                        else
-                            return new Response<string>(null, Result, ErrorMSG, Result);
+                        //Return the updated player object
+                        return new Response<Player>(player, Result, ErrorMSG, Result);
                     }
                 }
             }
@@ -291,7 +293,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<string>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<Player>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 

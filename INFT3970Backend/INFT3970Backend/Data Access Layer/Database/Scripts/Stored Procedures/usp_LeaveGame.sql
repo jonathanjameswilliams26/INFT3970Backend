@@ -43,19 +43,19 @@ BEGIN
 		SELECT @gameID = gameID FROM tbl_Player WHERE PlayerID = @playerID
 
 		-- set player HasLeftGame to true
-		UPDATE tbl_Player SET HasLeftGame = 1, IsDeleted = 1 WHERE PlayerID = @playerID
+		UPDATE tbl_Player SET HasLeftGame = 1, PlayerIsDeleted = 1 WHERE PlayerID = @playerID
 
 		-- decrement number of players in respective game
 		UPDATE tbl_Game SET NumOfPlayers = NumOfPlayers-1 WHERE GameID = @gameID
 
 		-- delete photos submitted by player that are not voted upon yet
-		UPDATE tbl_Photo SET IsDeleted = 1 WHERE TakenByPlayerID = @playerID AND IsVotingComplete = 0
+		UPDATE tbl_Photo SET PhotoIsDeleted = 1 WHERE TakenByPlayerID = @playerID AND IsVotingComplete = 0
 	
 		-- delete votes submitted by player that have not reached an outcome
-		UPDATE tbl_PlayerVotePhoto SET IsDeleted = 1 WHERE PlayerID = @playerID AND PlayerVotePhotoIsActive = 0
+		UPDATE tbl_PlayerVotePhoto SET PlayerVotePhotoIsDeleted = 1 WHERE PlayerID = @playerID AND PlayerVotePhotoIsActive = 0
 	
 		-- delete any unread notifications for the player
-		UPDATE tbl_Notification SET IsDeleted = 1 WHERE PlayerID = @playerID
+		UPDATE tbl_Notification SET NotificationIsDeleted = 1 WHERE PlayerID = @playerID
 
 		--Set the success return variables
 		SET @result = 1;
