@@ -34,6 +34,7 @@ SELECT
 	takenBy.Phone AS TakenByPlayerPhone,
 	takenBy.Email AS TakenByPlayerEmail,
 	takenBy.SelfieDataURL AS TakenByPlayerSelfieDataURL,
+	takenBy.AmmoCount AS TakenByPlayerAmmoCount,
 	takenBy.NumKills AS TakenByPlayerNumKills,
 	takenBy.NumDeaths AS TakenByPlayerNumDeaths,
 	takenBy.NumPhotosTaken AS TakenByPlayerNumPhotosTaken,
@@ -43,11 +44,13 @@ SELECT
 	takenBy.IsConnected AS TakenByPlayerIsConnected,
 	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
 	takenBy.PlayerIsDeleted AS TakenByPlayerIsDeleted,
+	takenBy.HasLeftGame AS TakenByPlayerHasLeftGame,
 	PhotoOfPlayerID,
 	photoOf.Nickname AS PhotoOfPlayerNickname,
 	photoOf.Phone AS PhotoOfPlayerPhone,
 	photoOf.Email AS PhotoOfPlayerEmail,
 	photoOf.SelfieDataURL AS PhotoOfPlayerSelfieDataURL,
+	photoOf.AmmoCount AS PhotoOfPlayerAmmoCount,
 	photoOf.NumKills AS PhotoOfPlayerNumKills,
 	photoOf.NumDeaths AS PhotoOfPlayerNumDeaths,
 	photoOf.NumPhotosTaken AS PhotoOfPlayerNumPhotosTaken,
@@ -56,7 +59,8 @@ SELECT
 	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
 	photoOf.IsConnected AS PhotoOfPlayerIsConnected,
 	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive,
-	photoOf.PlayerIsDeleted AS PhotoOfPlayerIsDeleted  
+	photoOf.PlayerIsDeleted AS PhotoOfPlayerIsDeleted,
+	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame  
 FROM tbl_Photo p
 	INNER JOIN tbl_Game g ON (p.GameID = g.GameID)
 	INNER JOIN tbl_Player takenBy ON (p.TakenByPlayerID = takenBy.PlayerID)

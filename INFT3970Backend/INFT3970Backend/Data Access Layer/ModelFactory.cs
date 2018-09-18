@@ -182,7 +182,8 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.Nickname = SafeGetString("Nickname");
                 player.Phone = SafeGetString("Phone");
                 player.Email = SafeGetString("Email");
-                player.SelfieFilePath = SafeGetString("SelfieDataURL");
+                player.SelfieDataURL = SafeGetString("SelfieDataURL");
+                player.AmmoCount = GetInt("AmmoCount");
                 player.NumKills = GetInt("NumKills");
                 player.NumDeaths = GetInt("NumDeaths");
                 player.NumPhotosTaken = GetInt("NumPhotosTaken");
@@ -251,7 +252,8 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.Nickname = SafeGetString("TakenByPlayerNickname");
                     player.Phone = SafeGetString("TakenByPlayerPhone");
                     player.Email = SafeGetString("TakenByPlayerEmail");
-                    player.SelfieFilePath = SafeGetString("TakenByPlayerSelfieDataURL");
+                    player.SelfieDataURL = SafeGetString("TakenByPlayerSelfieDataURL");
+                    player.AmmoCount = GetInt("TakenByPlayerAmmoCount");
                     player.NumKills = GetInt("TakenByPlayerNumKills");
                     player.NumDeaths = GetInt("TakenByPlayerNumDeaths");
                     player.NumPhotosTaken = GetInt("TakenByPlayerNumPhotosTaken");
@@ -275,7 +277,8 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.Nickname = SafeGetString("PhotoOfPlayerNickname");
                     player.Phone = SafeGetString("PhotoOfPlayerPhone");
                     player.Email = SafeGetString("PhotoOfPlayerEmail");
-                    player.SelfieFilePath = SafeGetString("PhotoOfPlayerSelfieDataURL");
+                    player.SelfieDataURL = SafeGetString("PhotoOfPlayerSelfieDataURL");
+                    player.AmmoCount = GetInt("PhotoOfPlayerAmmoCount");
                     player.NumKills = GetInt("PhotoOfPlayerNumKills");
                     player.NumDeaths = GetInt("PhotoOfPlayerNumDeaths");
                     player.NumPhotosTaken = GetInt("PhotoOfPlayerNumPhotosTaken");

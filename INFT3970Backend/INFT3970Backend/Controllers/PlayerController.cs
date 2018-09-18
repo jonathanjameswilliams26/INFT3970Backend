@@ -174,14 +174,13 @@ namespace INFT3970Backend.Controllers
 
         [HttpPost]
         [Route("api/player/useAmmo")]
-        public Response<object> UseAmmo([FromHeader] int playerID)
+        public Response<Player> UseAmmo([FromHeader] int playerID)
         {
             //Example request
-            //https://localhost:5000/api/player/setNotificationsRead
+            //https://localhost:5000/api/player/useAmmo
 
             PlayerBL playerBL = new PlayerBL();
             return playerBL.UseAmmo(playerID, _hubContext);
         }
-
     }
 }

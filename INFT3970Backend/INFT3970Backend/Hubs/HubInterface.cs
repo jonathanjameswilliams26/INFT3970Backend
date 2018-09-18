@@ -13,7 +13,6 @@ namespace INFT3970Backend.Hubs
     public class HubInterface
     {
         private readonly IHubContext<ApplicationHub> _hubContext;
-
         public HubInterface(IHubContext<ApplicationHub> hubContext)
         {
             _hubContext = hubContext;
@@ -82,7 +81,7 @@ namespace INFT3970Backend.Hubs
                     if (game.GameState == "PLAYING")
                     {
                         //If the Player has an email address send the notification the email
-                        if (!string.IsNullOrWhiteSpace(player.Email))
+                        if (player.HasEmail())
                             EmailSender.SendInBackground(player.Email, "New Player Joined Your Game", joinedPlayer.Nickname + " has joined your game of CamTag.", false);
 
                         //otherwise, send to the players phone
@@ -135,11 +134,10 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players currently in the game
             PlayerDAL playerDAL = new PlayerDAL();
-            string test = playerDAL.ToString();
             Response<List<Player>> response = playerDAL.GetGamePlayerList(uploadedPhoto.TakenByPlayerID, false);
 
             //If an error occurred while trying to get the list of players exit the method
-            if (response.Type == "ERROR")
+            if (!response.IsSuccessful())
                 return;
 
             //If the list of players is empty exit the method
@@ -163,7 +161,7 @@ namespace INFT3970Backend.Hubs
                 else
                 {
                     //If the sendToPlayer has an email address send the notification the email
-                    if (!string.IsNullOrWhiteSpace(player.Email))
+                    if (player.HasEmail())
                         EmailSender.SendInBackground(player.Email, "New Photo Submitted", "A new photo has been uploaded in your game of CamTag. Click the link to cast your vote. LINK HERE...", false);
 
                     //otherwise, send to the players phone
@@ -211,7 +209,7 @@ namespace INFT3970Backend.Hubs
             //Otherwise, send a text message or email notification
             else
             {
-                if (!string.IsNullOrWhiteSpace(photo.TakenByPlayer.Email))
+                if (photo.TakenByPlayer.HasEmail())
                     EmailSender.SendInBackground(photo.TakenByPlayer.Email, "Voting Complete", takenByMsgTxt, false);
                 else
                     TextMessageSender.SendInBackground(takenByMsgTxt, photo.TakenByPlayer.Phone);
@@ -225,7 +223,7 @@ namespace INFT3970Backend.Hubs
             //Otherwise, send a text message or email notification
             else
             {
-                if (!string.IsNullOrWhiteSpace(photo.PhotoOfPlayer.Email))
+                if (photo.PhotoOfPlayer.HasEmail())
                     EmailSender.SendInBackground(photo.PhotoOfPlayer.Email, "Voting Complete", photoOfMsgTxt, false);
                 else
                     TextMessageSender.SendInBackground(photoOfMsgTxt, photo.PhotoOfPlayer.Phone);
@@ -251,7 +249,7 @@ namespace INFT3970Backend.Hubs
             Response<List<Player>> response = playerDAL.GetGamePlayerList(playerID, true);
 
             //If an error occurred while trying to get the list of players exit the method
-            if (response.Type == "ERROR")
+            if (!response.IsSuccessful())
                 return;
 
             //If the list of players is empty exit the method
@@ -298,7 +296,7 @@ namespace INFT3970Backend.Hubs
                     if (game.GameState == "PLAYING")
                     {
                         //If the Player has an email address send the notification the email
-                        if (!string.IsNullOrWhiteSpace(player.Email))
+                        if (player.HasEmail())
                             EmailSender.SendInBackground(player.Email, "A Player Left Your Game", leftPlayer.Nickname + " has left your game of CamTag.", false);
 
                         //otherwise, send to the players phone
@@ -344,11 +342,48 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send them a text message or email letting them know the game is completed
                 else
                 {
-                    if (!string.IsNullOrWhiteSpace(player.Email))
+                    if (player.HasEmail())
                         EmailSender.SendInBackground(player.Email, "Game Complete", "Your game of CamTag has been completed. Thanks for playing.", false);
                     else
                         TextMessageSender.SendInBackground("Your game of CamTag has been completed. Thanks for playing.", player.Phone);
                 }
+            }
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Send an update to a player that their ammo has been replenished.
+        /// An update will only be sent out when a player's ammo has went from 0 to 1.
+        /// </summary>
+        /// <param name="player">The player being updated.</param>
+        public async void UpdateAmmoReplenished(Player player)
+        {
+            //Create an ammo notification
+            GameBL gameBL = new GameBL();
+            Response<object> response = gameBL.CreateAmmoNotification(player.PlayerID);
+
+            //If the ammo notification was not successful leave the method
+            if (!response.IsSuccessful())
+                return;
+            
+            //If the player is connected to the hub call the UpdateNotifications and the AmmoReplenished client methods
+            if (player.IsConnected)
+            {
+                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("AmmoReplenished");
+            }
+
+            //Otherwise, send out a text message or email
+            else
+            {
+                if (player.HasEmail())
+                    EmailSender.SendInBackground(player.Email, "Ammo Replenished", "Your ammo has now been replenished, get back in the game.", false);
+                else
+                    TextMessageSender.SendInBackground("Your ammo has now been replenished, get back in the game.", player.Phone);
             }
         }
     }

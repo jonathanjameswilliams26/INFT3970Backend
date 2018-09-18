@@ -445,7 +445,7 @@ namespace INFT3970Backend.Data_Access_Layer
             }
 
             //A database exception was thrown, return an error response
-            catch (Exception e)
+            catch
             {
                 return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
@@ -488,7 +488,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
                         //Perform the procedure and get the result
                         Connection.Open();
-                        Reader = Command.ExecuteReader();
+                        Command.ExecuteNonQuery();
 
                         //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
                         //The data reader will be closed after the last row of the results have been read.
@@ -502,9 +502,124 @@ namespace INFT3970Backend.Data_Access_Layer
             }
 
             //A database exception was thrown, return an error response
-            catch (Exception e)
+            catch
             {
                 return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// Decrements a players ammo count.
+        /// </summary>
+        /// <param name="playerID">The playerID to decrement</param>
+        /// <returns>The updated player object</returns>
+        public Response<Player> UseAmmo(int playerID)
+        {
+            StoredProcedure = "usp_UseAmmo";
+            Player player = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+
+                        while (Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).PlayerFactory(false);
+                            if(player == null)
+                                return new Response<Player>(null, "ERROR", "An error occurred while trying to build the player model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close();
+
+                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
+                        //The data reader will be closed after the last row of the results have been read.
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+
+                        //Format the results into a response object
+                        return new Response<Player>(player, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<Player>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Replenish a players ammo count.
+        /// </summary>
+        /// <param name="playerID">The playerID to update</param>
+        /// <returns>The updated player object.</returns>
+        public Response<Player> ReplenishAmmo(int playerID)
+        {
+            StoredProcedure = "usp_ReplenishAmmo";
+            Player player = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+
+                        while (Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).PlayerFactory(false);
+                            if (player == null)
+                                return new Response<Player>(null, "ERROR", "An error occurred while trying to build the player model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close();
+
+                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
+                        //The data reader will be closed after the last row of the results have been read.
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+
+                        //Format the results into a response object
+                        return new Response<Player>(player, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<Player>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }

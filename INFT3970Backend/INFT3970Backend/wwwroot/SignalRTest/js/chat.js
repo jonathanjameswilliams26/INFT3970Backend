@@ -63,6 +63,7 @@ connection.on("UpdateNotifications", function () {
     //Clear the users list
     document.getElementById("lobby").innerHTML = "";
 
+
     //Make a call to the API to 
     $.ajax({
         type: "GET",
@@ -80,6 +81,8 @@ connection.on("UpdateNotifications", function () {
             }
         }
     });
+
+    alert("Notification Received");
 });
 
 
@@ -117,4 +120,13 @@ connection.on("UpdatePhotoUploaded", function () {
 connection.on("GameCompleted", function () {
 
     alert("Game Completed");
+});
+
+
+
+//Hub Client Function
+//Updates the list of notifications a player has
+connection.on("AmmoReplenished", function () {
+
+    alert("Ammo Replenished");
 });

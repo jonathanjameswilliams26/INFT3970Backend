@@ -17,16 +17,16 @@ namespace INFT3970Backend.Business_Logic_Layer
         {
             try
             {
-                TwilioClient.Init(AccountSID, AuthToken);
+                //TwilioClient.Init(AccountSID, AuthToken);
 
-                //Defaulting SendTo to send to Jono's phone number because the trial account can only send to this number
-                sendTo = "+61457558322";
+                ////Defaulting SendTo to send to Jono's phone number because the trial account can only send to this number
+                //sendTo = "+61457558322";
 
-                var message = MessageResource.Create(
-                body: messageText,
-                from: new PhoneNumber(TwilioNumber),
-                to: new PhoneNumber(sendTo)
-                );
+                //var message = MessageResource.Create(
+                //body: messageText,
+                //from: new PhoneNumber(TwilioNumber),
+                //to: new PhoneNumber(sendTo)
+                //);
                 return true;
             }
             catch
@@ -38,7 +38,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
         public static void SendInBackground(string msgTxt, string sendTo)
         {
-            BackgroundJob.Enqueue(() => Send(msgTxt, sendTo));
+            //BackgroundJob.Enqueue(() => Send(msgTxt, sendTo));
         }
     }
 }

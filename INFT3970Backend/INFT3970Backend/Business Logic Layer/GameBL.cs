@@ -106,10 +106,10 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// Creates a notification for a player that their ammo is refilled.
         /// </summary>
         /// <returns>void</returns>
-        public void CreateAmmoNotification(int playerID)
+        public Response<object> CreateAmmoNotification(int playerID)
         {
             GameDAL gameDAL = new GameDAL();
-            gameDAL.CreateAmmoNotification(playerID);
+            return gameDAL.CreateAmmoNotification(playerID);
         }
 
 

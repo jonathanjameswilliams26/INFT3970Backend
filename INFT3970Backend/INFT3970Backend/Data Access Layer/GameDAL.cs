@@ -236,7 +236,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="gameID">The gameID of the game</param>
         /// <param name="playerID">The playerID of the receiver.</param>
         /// <returns>void</returns>
-        public void CreateAmmoNotification(int playerID)
+        public Response<object> CreateAmmoNotification(int playerID)
         {
             StoredProcedure = "usp_CreateAmmoNotification";
             try
@@ -257,6 +257,11 @@ namespace INFT3970Backend.Data_Access_Layer
                         //Perform the procedure and get the result
                         Connection.Open();
                         Command.ExecuteNonQuery();
+
+                        //Format the results into a response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        return new Response<object>(null, Result, ErrorMSG, Result);
                     }
                 }
             }
@@ -264,7 +269,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-
+                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 

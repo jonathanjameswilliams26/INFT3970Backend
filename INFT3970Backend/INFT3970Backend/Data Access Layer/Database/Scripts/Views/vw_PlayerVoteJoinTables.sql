@@ -18,6 +18,7 @@ SELECT
 	pg.Phone,
 	pg.Email,
 	pg.SelfieDataURL,
+	pg.AmmoCount,
 	pg.NumKills,
 	pg.NumDeaths,
 	pg.NumPhotosTaken,

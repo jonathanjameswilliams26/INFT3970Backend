@@ -11,7 +11,8 @@ namespace INFT3970Backend.Models
         public string Nickname { get; set; }
         public string Phone { get; set; }
         public string Email { get; set; }
-        public string SelfieFilePath { get; set; }
+        public string SelfieDataURL { get; set; }
+        public int AmmoCount { get; set; }
         public int NumKills { get; set; }
         public int NumDeaths { get; set; }
         public int NumPhotosTaken { get; set; }
@@ -26,6 +27,14 @@ namespace INFT3970Backend.Models
         public Player()
         {
             
+        }
+
+        public bool HasEmail()
+        {
+            if (string.IsNullOrWhiteSpace(Email))
+                return false;
+            else
+                return true;
         }
     }
 }

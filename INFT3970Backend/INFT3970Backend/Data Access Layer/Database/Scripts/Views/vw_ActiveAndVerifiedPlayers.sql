@@ -17,6 +17,7 @@ SELECT
 	Phone,
 	Email,
 	SelfieDataURL,
+	AmmoCount,
 	NumKills,
 	NumDeaths,
 	NumPhotosTaken,

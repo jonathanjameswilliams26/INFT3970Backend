@@ -8,11 +8,13 @@ using Microsoft.AspNetCore.SignalR;
 using INFT3970Backend.Hubs;
 using Hangfire;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {
     public class PhotoBL
     {
+
         public Response<List<Photo>> GetPhotoLocation(int photoID)
         {
             PhotoDAL photoDAL = new PhotoDAL();
@@ -74,9 +76,11 @@ namespace INFT3970Backend.Business_Logic_Layer
                 HubInterface hubInterface = new HubInterface(hubContext);
                 hubInterface.UpdatePhotoUploaded(response.Data);
 
-                //Schedule a job to run in order to check to see if the voting has been completed after the voting time limit
-                long timeToWait = response.Data.VotingFinishTime.Value.Ticks - DateTime.Now.Ticks;
-                BackgroundJob.Schedule(() => ScheduledCheckPhotoVotingCompleted(response.Data, hubInterface), TimeSpan.FromTicks(timeToWait));
+                //Create a new thread which will run after the voting time has passed
+                TimeSpan span = response.Data.VotingFinishTime.Value.Subtract(DateTime.Now);
+                int timeToWait = (int)span.TotalMilliseconds;
+                Thread thread = new Thread(() => ScheduledCheckPhotoVotingCompleted(response.Data, hubInterface, timeToWait));
+                thread.Start();
             }
             return new Response<object>(null, response.Type, response.ErrorMessage, response.ErrorCode);
             
@@ -85,7 +89,10 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
-        
+        public static void test()
+        {
+
+        }
 
 
 
@@ -97,12 +104,16 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// </summary>
         /// <param name="uploadedPhoto">The photo which was uploaded and being checked if voting has been completed.</param>
         /// <param name="hubInterface">The Hub interface which will be used to send notifications / updates</param>
-        public static void ScheduledCheckPhotoVotingCompleted(Photo uploadedPhoto, HubInterface hubInterface)
+        public static void ScheduledCheckPhotoVotingCompleted(Photo uploadedPhoto, HubInterface hubContext, int timeToWait)
         {
+            //Wait for the specified time
+            Thread.Sleep(timeToWait);
+
             //Get the updated photo record from the database
             Photo photo = new PhotoDAL().GetPhotoByID(uploadedPhoto.PhotoID);
             if (photo == null)
                 return;
+
 
             //Confirm the game the photo is apart of is not completed, if completed leave the method
             if (photo.Game.GameState == "COMPLETED")
@@ -122,7 +133,7 @@ namespace INFT3970Backend.Business_Logic_Layer
             //If the update was successful then send out the notifications to the affected players
             //Will send out in game notifications and text/email notifications
             if(response.Type == "SUCCESS")
-                hubInterface.UpdatePhotoVotingCompleted(response.Data);
+                hubContext.UpdatePhotoVotingCompleted(response.Data);
         }
 
 
