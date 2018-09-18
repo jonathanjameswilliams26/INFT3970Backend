@@ -47,8 +47,23 @@ namespace INFT3970Backend.Business_Logic_Layer
         public Response<Player> JoinGame(string gameCode, string nickname, string contact, string imgUrl, bool isHost)
         {
             //Confirm the input parameters are not empty or null
-            if (String.IsNullOrWhiteSpace(nickname) || String.IsNullOrWhiteSpace(gameCode) || String.IsNullOrWhiteSpace(contact))
-                return new Response<Player>(null, "ERROR", "Missing request data, nickname, contact or gamecode is empty or null.", ErrorCodes.EC_MISSINGORBLANKDATA);
+            if (string.IsNullOrWhiteSpace(nickname) || string.IsNullOrWhiteSpace(gameCode) || string.IsNullOrWhiteSpace(contact) || string.IsNullOrWhiteSpace(imgUrl))
+                return new Response<Player>(null, "ERROR", "Missing request data, nickname, contact, gamecode or imgURL is empty or null.", ErrorCodes.EC_MISSINGORBLANKDATA);
+
+            //Confirm the imgURL is a base64 string
+            try
+            {
+                if(!imgUrl.Contains("data:image/jpeg;base64,"))
+                    throw new Exception();
+
+                var base64Data = imgUrl.Replace("data:image/jpeg;base64,", "");
+                var binData = Convert.FromBase64String(base64Data);
+            }
+            catch
+            {
+                return new Response<Player>(null, "ERROR", "imgURL is not a base64 string.", ErrorCodes.EC_DATAINVALID);
+            }
+
 
             //Confirm the game code is 6 characters in length and only contains letters and numbers
             Regex gameCodeRegex = new Regex(@"^[a-zA-Z0-9]{6,6}$");

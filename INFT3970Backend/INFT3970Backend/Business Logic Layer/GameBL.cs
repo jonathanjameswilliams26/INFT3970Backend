@@ -14,10 +14,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// Returns the created Game object. NULL data if successful.
         /// </summary>
         /// <returns>Returns the created Game object. NULL data if successful.</returns>
-        public Response<Game> CreateGame()
+        public Response<Player> CreateGame(string nickname, string contact, string imgUrl)
         {
             GameDAL gameDAL = new GameDAL();
             Response<Game> response = null;
+            Response<Player> createdPlayer = null;
 
             bool doRun = true;
             while (doRun)
@@ -39,7 +40,24 @@ namespace INFT3970Backend.Business_Logic_Layer
                 else
                     doRun = false;
             }
-            return response;
+
+
+            //If the create game failed, return the error message and code from that response
+            if(!response.IsSuccessful())
+                return new Response<Player>(null, "ERROR", response.ErrorMessage, response.ErrorCode);
+
+            //Call the Player Business Logic to join the player to the game
+            PlayerBL playerBL = new PlayerBL();
+            createdPlayer = playerBL.JoinGame(response.Data.GameCode, nickname, contact, imgUrl, true);
+
+            //If the Host player failed to join the game deleted the created game
+            if(!createdPlayer.IsSuccessful())
+            {
+                DeactivateGameAfterHostJoinError(response.Data.GameID);
+                return new Response<Player>(null, "ERROR", createdPlayer.ErrorMessage, createdPlayer.ErrorCode);
+            }
+
+            return createdPlayer;
         }
 
 

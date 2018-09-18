@@ -39,32 +39,8 @@ namespace INFT3970Backend.Controllers
             //imgUrl            the imgUrl string of the players profile picture
             //various settings??
 
-            Response<Player> returnResponse = null;
-
             GameBL gameBL = new GameBL();
-            Response<Game> createGameResponse = gameBL.CreateGame();
-
-            //If the create game was successful, join the player to the game as the host player
-            if (createGameResponse.Type == "SUCCESS")
-            {
-                PlayerBL playerBL = new PlayerBL();
-                Response<Player> joinGameResponse = playerBL.JoinGame(createGameResponse.Data.GameCode, nickname, contact, imgUrl, true);
-
-                //If joining the game was not sucessful we must deactivate the game that was just created
-                if (joinGameResponse.Type == "ERROR")
-                {
-                    gameBL.DeactivateGameAfterHostJoinError(createGameResponse.Data.GameID);
-                    returnResponse = new Response<Player>(null, "ERROR", joinGameResponse.ErrorMessage, joinGameResponse.ErrorCode);
-                    return returnResponse;
-                }
-                //Otherwise, The host successfully joined the game, return the Player object
-                else
-                    return joinGameResponse;
-            }
-
-            //Otherwise, return the error response when trying to create the game
-            else
-                return new Response<Player>(null, "ERROR", createGameResponse.ErrorMessage, createGameResponse.ErrorCode);
+            return gameBL.CreateGame(nickname, contact, imgUrl);
         }
 
 
