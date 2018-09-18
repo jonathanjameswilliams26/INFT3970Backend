@@ -31,31 +31,24 @@ namespace INFT3970Backend.Hubs
         /// <param name="playerID"></param>
         public async void UpdatePlayerJoined(int playerID)
         {
-            //Get all the players currently in the game
-            PlayerDAL playerDAL = new PlayerDAL();
-            Response<List<Player>> response = playerDAL.GetGamePlayerList(playerID, true);
+            //Get the list of players currently in the game
+            GameDAL gameDAL = new GameDAL();
+            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
-            if (response.Type == "ERROR")
+            if (!response.IsSuccessful())
                 return;
-
-            //If the list of players is empty exit the method
-            if (response.Data.Count == 0)
-                return;
-
-            //Get the game the players are joined to
-            Game game = response.Data[0].Game;
 
             //Get the player who joined
-            Player joinedPlayer = GetPlayerFromList(playerID, response.Data);
+            Player joinedPlayer = GetPlayerFromList(playerID, response.Data.Players);
 
             //Create notifications of new player joining, if the game has started
             GameBL gameBL = new GameBL();
-            if (game.GameState == "PLAYING" || game.GameState == "STARTING")
+            if (response.Data.Game.GameState == "PLAYING" || response.Data.Game.GameState == "STARTING")
                 gameBL.CreateJoinNotification(joinedPlayer.PlayerID);
 
             //Loop through each of the players and update any player currently connected to the hub
-            foreach (var player in response.Data)
+            foreach (var player in response.Data.Players)
             {
                 //If the PlayerID is the playerID who joined skip this iteration
                 if (player.PlayerID == playerID)
@@ -65,7 +58,7 @@ namespace INFT3970Backend.Hubs
                 if(player.IsConnected)
                 {
                     //If the game state is STARTING then the players are in the Lobby, update the lobby list
-                    if(game.GameState == "IN LOBBY")
+                    if(response.Data.Game.GameState == "IN LOBBY")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
                     //Send a notification to the players in the game.
@@ -78,7 +71,7 @@ namespace INFT3970Backend.Hubs
                 {
                     //Don't send a notification when the game is in a STARTING state (in lobby)
                     //Send a notification when a new player joins when the game is currently playing.
-                    if (game.GameState == "PLAYING")
+                    if (response.Data.Game.GameState == "PLAYING")
                     {
                         //If the Player has an email address send the notification the email
                         if (player.HasEmail())
@@ -133,20 +126,16 @@ namespace INFT3970Backend.Hubs
         public async void UpdatePhotoUploaded(Photo uploadedPhoto)
         {
             //Get the list of players currently in the game
-            PlayerDAL playerDAL = new PlayerDAL();
-            Response<List<Player>> response = playerDAL.GetGamePlayerList(uploadedPhoto.TakenByPlayerID, false);
+            GameDAL gameDAL = new GameDAL();
+            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
                 return;
 
-            //If the list of players is empty exit the method
-            if (response.Data.Count == 0)
-                return;
-
 
             //Loop through all the players in the game and send a Hub method or send a notification to their contact details.
-            foreach(Player player in response.Data)
+            foreach(Player player in response.Data.Players)
             {
                 //If the playerID = the playerID who took the photo or is the playerID who the photo is of, skip this
                 //iteration because they will not be voting on the photo and will not receive a notification
@@ -241,50 +230,41 @@ namespace INFT3970Backend.Hubs
         /// A notification will be sent to the players contact (Email or phone) if the player is not currently connected to the application hub.
         /// Otherwise, if the player is currently in the app and connected to the hub an InGame notification will be sent to the client.
         /// </summary>
-        /// <param name="playerID"></param>
+        /// <param name="playerID">The playerID of the player who left the game</param>
         public async void UpdatePlayerLeft(int playerID)
         {
             //Get all the players currently in the game
-            PlayerDAL playerDAL = new PlayerDAL();
-            Response<List<Player>> response = playerDAL.GetGamePlayerList(playerID, true);
+            GameDAL gameDAL = new GameDAL();
+            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAMEALL", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
                 return;
 
-            //If the list of players is empty exit the method
-            if (response.Data.Count == 0)
-                return;
-
-            //Get the game the players are joined to
-            Game game = response.Data[0].Game;
-
             //Get the player who left
-            Player leftPlayer = GetPlayerFromList(playerID, response.Data);
+            Player leftPlayer = GetPlayerFromList(playerID, response.Data.Players);
 
             //Create notifications of new player joining, if the game has started
             GameBL gameBL = new GameBL();
-            if (game.GameState == "PLAYING")
-            {
-                gameBL.CreateLeaveNotification(leftPlayer.PlayerID);
-            }
+            if (response.Data.Game.GameState == "PLAYING")
+                gameBL.CreateLeaveNotification(playerID);
 
             //Loop through each of the players and update any player currently connected to the hub
-            foreach (var player in response.Data)
+            foreach (var player in response.Data.Players)
             {
-                //If the PlayerID is the playerID who joined skip this iteration
-                if (player.PlayerID == playerID)
+                //If the PlayerID is the playerID who left or is a player who has left the game skip the iteration
+                if (player.PlayerID == playerID || player.HasLeftGame)
                     continue;
 
                 //The player is connected to the hub, send live updates
                 if (player.IsConnected)
                 {
                     //If the game state is STARTING then the players are in the Lobby, update the lobby list
-                    if (game.GameState == "IN LOBBY")
+                    if (response.Data.Game.GameState == "IN LOBBY")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
                     //If the game state is PLAYING - Send a notification to the players in the game.
-                    if (game.GameState == "PLAYING")
+                    if (response.Data.Game.GameState == "PLAYING")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                 }
 
@@ -293,7 +273,7 @@ namespace INFT3970Backend.Hubs
                 {
                     //Don't send a notification when the game is IN LOBBY state
                     //Send a notification when a new player joins when the game is currently playing.
-                    if (game.GameState == "PLAYING")
+                    if (response.Data.Game.GameState == "PLAYING")
                     {
                         //If the Player has an email address send the notification the email
                         if (player.HasEmail())
@@ -320,21 +300,15 @@ namespace INFT3970Backend.Hubs
         public async void UpdateGameCompleted(int gameID)
         {
             //Get the list of players from the game
-            List<Player> players = new GameDAL().GetAllPlayersInGame(gameID).Data;
+            GameDAL gameDAL = new GameDAL();
+            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(gameID, false, "INGAME", "AZ");
 
-            if (players == null)
-                return;
-
-            if (players.Count == 0)
+            if (!response.IsSuccessful())
                 return;
 
             //Loop through each of the players and send out the notifications
-            foreach(var player in players)
+            foreach(var player in response.Data.Players)
             {
-                //If the player is not verified, if the player left the game, or they are deleted do not send the notification
-                if (!player.IsVerified || player.HasLeftGame || player.IsDeleted)
-                    continue;
-
                 //If the player is currently connected to the application send them an
                 if(player.IsConnected)
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameCompleted");

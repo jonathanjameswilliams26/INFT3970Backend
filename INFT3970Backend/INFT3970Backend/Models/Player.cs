@@ -23,6 +23,7 @@ namespace INFT3970Backend.Models
         public string ConnectionID { get; set; }
         public bool IsConnected { get; set; }
         public bool HasLeftGame { get; set; }
+        public int GameID { get; set; }
         public Game Game { get; set; }
         public Player()
         {

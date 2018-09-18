@@ -15,9 +15,9 @@ GO
 --		1. EC_INSERTERROR - An error occurred while trying to insert the game record
 
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_LeaveGame] 
+ALTER PROCEDURE [dbo].[usp_LeaveGame] 
 	-- Add the parameters for the stored procedure here
-	@playerID VARCHAR(6),
+	@playerID INT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -30,20 +30,27 @@ BEGIN
 	DECLARE @EC_INSERTERROR INT = 2;
 
 	BEGIN TRY
+		
+		SET @result = 111;
 
 		--Confirm the playerID passed in exists
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
 		BEGIN
+			SET @result = 111;
 			SET @errorMSG = 'The playerID does not exist';
 			RAISERROR('ERROR: playerID does not exist',16,1);
 		END;
 
 		-- fetch gameID from player
 		DECLARE @gameID INT;
-		SELECT @gameID = gameID FROM tbl_Player WHERE PlayerID = @playerID
+		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID
+
+		SET @result = 112;
 
 		-- set player HasLeftGame to true
-		UPDATE tbl_Player SET HasLeftGame = 1, PlayerIsDeleted = 1 WHERE PlayerID = @playerID
+		UPDATE tbl_Player SET HasLeftGame = 1 WHERE PlayerID = @playerID
+
+		SET @result = 113;
 
 		-- decrement number of players in respective game
 		UPDATE tbl_Game SET NumOfPlayers = NumOfPlayers-1 WHERE GameID = @gameID

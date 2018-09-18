@@ -1362,65 +1362,6 @@ GO
 
 
 
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 1/09/18
--- Description:	Gets all the players in a game, takes in a playerID and users that playerID to find all other players in the game
-
--- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The playerID passed in does not exist
-
--- =============================================
-CREATE PROCEDURE [dbo].[usp_GetGamePlayerList] 
-	-- Add the parameters for the stored procedure here
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-
-	BEGIN TRY
-		
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-
-		--Get the GameID from the player
-		DECLARE @gameID INT;
-		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
-
-		--Get all the active and verified players inside that game
-		SELECT *
-		FROM vw_PlayerGame
-		WHERE GameID = @gameID
-
-		--Set the return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-
-	END TRY
-
-	BEGIN CATCH
-
-	END CATCH
-
-END
-GO
-
 
 
 
@@ -1443,7 +1384,7 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_LeaveGame] 
 	-- Add the parameters for the stored procedure here
-	@playerID VARCHAR(6),
+	@playerID INT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -1456,20 +1397,27 @@ BEGIN
 	DECLARE @EC_INSERTERROR INT = 2;
 
 	BEGIN TRY
+		
+		SET @result = 111;
 
 		--Confirm the playerID passed in exists
 		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID)
 		BEGIN
+			SET @result = 111;
 			SET @errorMSG = 'The playerID does not exist';
 			RAISERROR('ERROR: playerID does not exist',16,1);
 		END;
 
 		-- fetch gameID from player
 		DECLARE @gameID INT;
-		SELECT @gameID = gameID FROM tbl_Player WHERE PlayerID = @playerID
+		SELECT @gameID = GameID FROM tbl_Player WHERE PlayerID = @playerID
+
+		SET @result = 112;
 
 		-- set player HasLeftGame to true
-		UPDATE tbl_Player SET HasLeftGame = 1, PlayerIsDeleted = 1 WHERE PlayerID = @playerID
+		UPDATE tbl_Player SET HasLeftGame = 1 WHERE PlayerID = @playerID
+
+		SET @result = 113;
 
 		-- decrement number of players in respective game
 		UPDATE tbl_Game SET NumOfPlayers = NumOfPlayers-1 WHERE GameID = @gameID
@@ -1497,6 +1445,40 @@ BEGIN
 			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
 		END
 	END CATCH
+END
+GO
+
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 18/09/18
+-- Description:	Gets the player record matching the specified ID
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_GetPlayerByID] 
+	-- Add the parameters for the stored procedure here
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Confirm the GameID passed in exists and is active
+	EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+	SELECT *
+	FROM vw_PlayerGame
+	WHERE PlayerID = @playerID
+
+	SET @result = 1;
+	SET @errorMSG = '';
 END
 GO
 
@@ -2501,15 +2483,28 @@ SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
 -- Author:		Jonathan Williams
--- Create date: 1/09/18
--- Description:	Gets all the players in a game, takes in the game ID and gets all the players
---				in the game include inactive, deleted etc
+-- Create date: 18/09/18
+-- Description:	Gets all the players in a game with multiple filter parameters
+
+--FILTER
+--ALL = get all the players in the game which arnt deleted
+--ACTIVE = get all players in the game which arnt deleted and is active
+--INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
+--INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified (includes players who have left the game)
+
+--ORDER by
+--AZ = Order by name in alphabetical order
+--ZA = Order by name in reverse alphabetical order
+--KILLS= Order from highest to lowest in number of kills
 
 -- Returns: 1 = Successful, or 0 = An error occurred
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_GetAllPlayersInGame] 
 	-- Add the parameters for the stored procedure here
-	@gameID INT,
+	@id INT,
+	@isPlayerID BIT,
+	@filter VARCHAR(255),
+	@orderBy VARCHAR(255),
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -2517,26 +2512,106 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
-
 	BEGIN TRY
 		
-		SELECT *
-		FROM vw_PlayerGame
-		WHERE GameID = @gameID
+		--If the id is a playerID get the GameID from the Player record
+		IF(@isPlayerID = 1)
+		BEGIN
+			--Confirm the playerID exists
+			EXEC [dbo].[usp_ConfirmPlayerExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+			EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+			--Get the GameID from the playerID
+			DECLARE @gameID INT;
+			EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @id, @gameID = @gameID OUTPUT
+
+			--Set the @id to the GameID so it can now be used in the query
+			SET @id = @gameID
+		END
+
+		--Otherwise, confirm the GameID exists
+		ELSE
+		BEGIN
+			EXEC [dbo].[usp_ConfirmGameExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+			EXEC [dbo].[usp_DoRaiseError] @result = @result
+		END
+
+
+		--If filter = ALL get all the players in the game which arnt deleted
+		IF(@filter LIKE 'ALL')
+		BEGIN
+			SELECT * 
+			FROM 
+				tbl_Player 
+			WHERE 
+				PlayerIsDeleted = 0 AND
+				GameID = @id
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
+
+		--If filer = ACTIVE get all players in the game which arnt deleted and active
+		IF(@filter LIKE 'ACTIVE')
+		BEGIN
+			SELECT * 
+			FROM 
+				tbl_Player 
+			WHERE 
+				PlayerIsDeleted = 0 AND 
+				PlayerIsActive = 1 AND
+				GameID = @id
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
+
+		--If filer = INGAME get all players in the game which arnt deleted, isactive, have not left the game and have been verified
+		IF(@filter LIKE 'INGAME')
+		BEGIN
+			SELECT * 
+			FROM 
+				tbl_Player 
+			WHERE 
+				PlayerIsDeleted = 0 AND 
+				PlayerIsActive = 1 AND 
+				HasLeftGame = 0 AND 
+				IsVerified = 1 AND
+				GameID = @id
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
+
+		--If filer = INGAMEALL get all players in the game which arnt deleted, isactive, and have been verified (includes players who have left the game)
+		IF(@filter LIKE 'INGAMEALL')
+		BEGIN
+			SELECT * 
+			FROM 
+				tbl_Player 
+			WHERE 
+				PlayerIsDeleted = 0 AND 
+				PlayerIsActive = 1 AND 
+				IsVerified = 1 AND
+				GameID = @id
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
 
 		--Set the return variables
 		SET @result = 1;
 		SET @errorMSG = ''
-
 	END TRY
 
 	BEGIN CATCH
-
 	END CATCH
-
 END
 GO
-
 
 
 

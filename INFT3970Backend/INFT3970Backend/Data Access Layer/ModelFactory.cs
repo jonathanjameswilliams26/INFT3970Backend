@@ -194,6 +194,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.HasLeftGame = GetBool("HasLeftGame");
                 player.IsActive = GetBool("PlayerIsActive");
                 player.IsDeleted = GetBool("PlayerIsDeleted");
+                player.GameID = GetInt("GameID");
 
                 //Build the Game object for the player
                 if(doGetGame)

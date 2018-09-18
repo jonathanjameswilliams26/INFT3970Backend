@@ -41,5 +41,9 @@ namespace INFT3970Backend.Models
         public const int EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST = 4000;
         public const int EC_VOTEPHOTO_VOTEALREADYCOMPLETE = 4001;
         public const int EC_VOTEPHOTO_VOTEFINISHTIMEPASSED = 4003;
+
+
+        //GameController - GetAllPlayersInGame Error Codes
+        public const int EC_PLAYERLIST_EMPTYLIST = 5000;
     }
 }

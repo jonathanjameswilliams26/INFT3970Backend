@@ -24,26 +24,6 @@ namespace INFT3970Backend.Controllers
         }
 
 
-        /// <summary>
-        /// GET: api/player/getAllPlayersInGame/{playerID} - 
-        /// Gets a list of all the players inside a game. Takes in a playerID and uses that ID to find the GameID and then get all players inside that Game
-        /// </summary>
-        /// <param name="playerID">The playerID used to determine which game the player is in and get all players in that game</param>
-        /// <returns>A list of players inside the same GameID as the PlayerID passed in</returns>
-        [HttpGet]
-        [Route("api/player/getAllPlayersInGame/{playerID:int}")]
-        public ActionResult<Response<List<Player>>> GetAllPlayersInGame(int playerID)
-        {
-            //Example request
-            //https://localhost:5000/api/player/getAllPlayersInGame/100000
-
-            PlayerBL playerBL = new PlayerBL();
-            return playerBL.GetAllPlayersInGame(playerID);
-        }
-
-
-
-
 
         /// <summary>
         /// POST: api/player/joinGame - Joins a player to a game matching the gameCode value, 

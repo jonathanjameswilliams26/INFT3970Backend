@@ -356,7 +356,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-        public Response<List<Player>> GetAllPlayersInGame(int gameID)
+        public Response<GamePlayerList> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             StoredProcedure = "usp_GetAllPlayersInGame";
             List<Player> players = new List<Player>();
@@ -369,7 +369,10 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameID", gameID);
+                        Command.Parameters.AddWithValue("@id", id);
+                        Command.Parameters.AddWithValue("@isPlayerID", isPlayerID);
+                        Command.Parameters.AddWithValue("@filter", filter);
+                        Command.Parameters.AddWithValue("@orderBy", orderBy);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -380,15 +383,15 @@ namespace INFT3970Backend.Data_Access_Layer
                         Reader = Command.ExecuteReader();
 
                         //read the player list, if an error occurred in the stored procedure there will be no results to read an this will be skipped
+                        ModelFactory factory = new ModelFactory(Reader);
                         while (Reader.Read())
                         {
                             //Call the ModelFactory to build the model from the data
-                            ModelFactory factory = new ModelFactory(Reader);
-                            Player player = factory.PlayerFactory(true);
+                            Player player = factory.PlayerFactory(false);
 
                             //If an error occurred while trying to build the player list
                             if (player == null)
-                                return new Response<List<Player>>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<GamePlayerList>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
 
                             players.Add(player);
                         }
@@ -399,16 +402,31 @@ namespace INFT3970Backend.Data_Access_Layer
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
 
-                        //Format the results into a response object
-                        return new Response<List<Player>>(players, Result, ErrorMSG, Result);
+                        //If the response was not successful return the empty response
+                        if(Result != 1)
+                            return new Response<GamePlayerList>(null, Result, ErrorMSG, Result);
                     }
                 }
+
+                //If the players list is empty, return an error
+                if(players.Count == 0)
+                    return new Response<GamePlayerList>(null, "ERROR", "The players list is empty.", ErrorCodes.EC_PLAYERLIST_EMPTYLIST);
+
+                //Get the Game object
+                Response<Game> gameResponse = GetGameByID(players[0].GameID);
+
+                //If the Game response was not successful, return an error
+                if(!gameResponse.IsSuccessful())
+                    return new Response<GamePlayerList>(null, gameResponse.Type, gameResponse.ErrorMessage, gameResponse.ErrorCode);
+
+                //Otherwise, create the successful response with the game and player list
+                return new Response<GamePlayerList>(new GamePlayerList(gameResponse.Data, players), Result, ErrorMSG, Result);
             }
 
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<List<Player>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<GamePlayerList>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }

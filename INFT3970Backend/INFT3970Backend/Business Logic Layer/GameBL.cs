@@ -3,6 +3,7 @@ using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using Microsoft.AspNetCore.SignalR;
 using System;
+using System.Collections.Generic;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {
@@ -161,6 +162,61 @@ namespace INFT3970Backend.Business_Logic_Layer
             }
 
             return response;
+        }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Gets all the players in a game with multiple filter parameters
+        /// 
+        /// FILTER
+        /// ALL = get all the players in the game which arnt deleted
+        /// ACTIVE = get all players in the game which arnt deleted and is active
+        /// INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
+        /// INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified(includes players who have left the game)
+        ///
+        /// ORDER by
+        /// AZ = Order by name in alphabetical order
+        /// ZA = Order by name in reverse alphabetical order
+        /// KILLS= Order from highest to lowest in number of kills
+        /// </summary>
+        /// <param name="id">The playerID or the GameID</param>
+        /// <param name="isPlayerID">A flag which outlines if the ID passed in is a playerID</param>
+        /// <param name="filter">The filter value, ALL, ACTIVE, INGAME, INGAMEALL</param>
+        /// <param name="orderBy">The order by value, AZ, ZA, KILLS</param>
+        /// <returns>The list of all players in the game</returns>
+        public Response<GamePlayerList> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        {
+            //Validate the filer and orderby value is a valid value
+            if (string.IsNullOrWhiteSpace(filter) || string.IsNullOrWhiteSpace(orderBy))
+                return new Response<GamePlayerList>(null, "ERROR", "The filter or orderBy value is null or empty.", ErrorCodes.EC_DATAINVALID);
+
+            //Confirm the filter value passed in is a valid value
+            bool isFilterValid = false;
+            if (filter.ToUpper() == "ALL" || filter.ToUpper() == "ACTIVE" || filter.ToUpper() == "INGAME" || filter.ToUpper() == "INGAMEALL")
+                isFilterValid = true;
+
+
+            //Confirm the order by value passed in is a valid value
+            bool isOrderByValid = false;
+            if (orderBy.ToUpper() == "AZ" || orderBy.ToUpper() == "ZA" || orderBy.ToUpper() == "KILLS")
+                isOrderByValid = true;
+
+
+            //If any of the values are invalid, set them to a default value
+            if (!isFilterValid)
+                filter = "ALL";
+            if (!isOrderByValid)
+                orderBy = "AZ";
+
+            //Call the data access layer to get the list
+            GameDAL gameDAL = new GameDAL();
+            return gameDAL.GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
         }
     }
 }

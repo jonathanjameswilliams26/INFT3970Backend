@@ -67,6 +67,18 @@ namespace INFT3970Backend.Controllers
                 return new Response<Player>(null, "ERROR", createGameResponse.ErrorMessage, createGameResponse.ErrorCode);
         }
 
+
+
+
+
+
+
+
+        /// <summary>
+        /// Gets the Game information matching the specified ID
+        /// </summary>
+        /// <param name="gameID">The GameID</param>
+        /// <returns>A Game object, NULL if error occurred</returns>
         [HttpGet]
         [Route("api/game/getGame/{gameID:int}")]
         public ActionResult<Response<Game>> GetGame(int gameID)
@@ -98,6 +110,43 @@ namespace INFT3970Backend.Controllers
 
             GameBL gameBL = new GameBL();
             return gameBL.CompleteGame(gameID, _hubContext);
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Gets all the players in a game with multiple filter parameters
+        /// 
+        /// FILTER
+        /// ALL = get all the players in the game which arnt deleted
+        /// ACTIVE = get all players in the game which arnt deleted and is active
+        /// INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
+        /// INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified(includes players who have left the game)
+        ///
+        /// ORDER by
+        /// AZ = Order by name in alphabetical order
+        /// ZA = Order by name in reverse alphabetical order
+        /// KILLS= Order from highest to lowest in number of kills
+        /// </summary>
+        /// <param name="id">The playerID or the GameID</param>
+        /// <param name="isPlayerID">A flag which outlines if the ID passed in is a playerID</param>
+        /// <param name="filter">The filter value, ALL, ACTIVE, INGAME, INGAMEALL</param>
+        /// <param name="orderBy">The order by value, AZ, ZA, KILLS</param>
+        /// <returns>The list of all players in the game</returns>
+        [HttpGet]
+        [Route("api/game/getAllPlayersInGame/{id:int}/{isPlayerID:bool}/{filter}/{orderBy}")]
+        public ActionResult<Response<GamePlayerList>> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        {
+            //Example request
+            //https://localhost:5000/api/game/getAllPlayersInGame/100000/true/INGAME/AZ
+
+
+            GameBL gameBL = new GameBL();
+            return gameBL.GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
         }
     }
 }
