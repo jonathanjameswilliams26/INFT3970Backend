@@ -614,6 +614,12 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+        /// <summary>
+        /// Gets the ammo count for the player.
+        /// </summary>
+        /// <param name="playerID">The ID of the Player</param>
+        /// <returns>The ammo count, negative INT if an error occurred.</returns>
         public Response<int> GetAmmoCount(int playerID)
         {
             StoredProcedure = "usp_GetAmmoCount";
