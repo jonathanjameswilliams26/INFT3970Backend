@@ -160,6 +160,23 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
+        /// <summary>
+        /// Gets the Player's ammo count
+        /// </summary>
+        /// <param name="playerID">The player which getting the ammo count for.</param>
+        /// <returns>The ammo count, negative INT if error</returns>
+        public Response<int> GetAmmoCount(int playerID)
+        {
+            //Call the DataAccessLayer to get the Ammo Count
+            PlayerDAL playerDAL = new PlayerDAL();
+            return playerDAL.GetAmmoCount(playerID);
+        }
+
+
+
+
+
+
 
 
 

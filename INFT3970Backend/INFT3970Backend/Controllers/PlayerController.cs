@@ -152,6 +152,14 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+        /// <summary>
+        /// Uses the Players ammo, decrements the players ammo count and schedules the ammo to replenish
+        /// after a certain time period.
+        /// </summary>
+        /// <param name="playerID">The ID of the Player</param>
+        /// <returns>The updated Player object after the ammo count is decremented. NULL if error</returns>
         [HttpPost]
         [Route("api/player/useAmmo")]
         public Response<Player> UseAmmo([FromHeader] int playerID)
@@ -161,6 +169,27 @@ namespace INFT3970Backend.Controllers
 
             PlayerBL playerBL = new PlayerBL();
             return playerBL.UseAmmo(playerID, _hubContext);
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Gets the ammo count for the Player
+        /// </summary>
+        /// <param name="playerID">The ID of the player</param>
+        /// <returns>The ammo count, negative INT if error</returns>
+        [HttpGet]
+        [Route("api/player/ammo")]
+        public Response<int> GetAmmoCount([FromHeader] int playerID)
+        {
+            //Example request
+            //https://localhost:5000/api/player/ammo
+
+            PlayerBL playerBL = new PlayerBL();
+            return playerBL.GetAmmoCount(playerID);
         }
     }
 }

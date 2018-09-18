@@ -14,6 +14,14 @@ namespace INFT3970Backend.Data_Access_Layer
         {
 
         }
+
+
+
+        /// <summary>
+        /// Get a Player object with the specified ID
+        /// </summary>
+        /// <param name="id">The ID of the player</param>
+        /// <returns>The Player object, NULL if an errror occurred</returns>
         public Response<Player> GetPlayerByID(int id)
         {
             StoredProcedure = "usp_GetPlayerByID";
@@ -598,6 +606,55 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 return new Response<Player>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
+
+
+
+
+
+
+        public Response<int> GetAmmoCount(int playerID)
+        {
+            StoredProcedure = "usp_GetAmmoCount";
+            int ammoCount = -1;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@ammoCount", SqlDbType.Int);
+                        Command.Parameters["@ammoCount"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+
+                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
+                        //The data reader will be closed after the last row of the results have been read.
+                        ammoCount = Convert.ToInt32(Command.Parameters["@ammoCount"].Value);
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+
+                        //Format the results into a response object
+                        return new Response<int>(ammoCount, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<int>(-1, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }
