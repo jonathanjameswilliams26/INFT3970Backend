@@ -89,12 +89,6 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
-        public static void test()
-        {
-
-        }
-
-
 
         /// <summary>
         /// This method is a scheduled method which will run after the FinishVotingTime has passed.
@@ -157,6 +151,14 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
+        /// <summary>
+        /// Cast a vote on a photo and decide if the photo is successful or unsuccessful
+        /// </summary>
+        /// <param name="playerID">The playerID who is casting the vote</param>
+        /// <param name="voteID">The ID of the vote record</param>
+        /// <param name="decision">The decision, true = successful, false = unsuccessful</param>
+        /// <param name="hubContext">The hub context used to send out live updates to players.</param>
+        /// <returns></returns>
         public Response<object> VoteOnPhoto(int playerID, int voteID, string decision, IHubContext<ApplicationHub> hubContext)
         {
             //Confirm the decision is in the correct format
