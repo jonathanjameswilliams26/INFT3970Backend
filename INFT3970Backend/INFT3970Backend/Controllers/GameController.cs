@@ -71,27 +71,6 @@ namespace INFT3970Backend.Controllers
 
 
 
-        /// <summary>
-        /// Test complete game API endpoint
-        /// </summary>
-        /// <param name="gameID"></param>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("api/game/complete/{gameID:int}")]
-        public ActionResult<Response<object>> CompleteGame(int gameID)
-        {
-            //Example request
-            //https://localhost:5000/api/game/complete/100000
-
-
-            GameBL gameBL = new GameBL();
-            return gameBL.CompleteGame(gameID, _hubContext);
-        }
-
-
-
-
-
 
 
         /// <summary>
@@ -123,6 +102,29 @@ namespace INFT3970Backend.Controllers
 
             GameBL gameBL = new GameBL();
             return gameBL.GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+        }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Begins the Game
+        /// </summary>
+        /// <param name="playerID">The ID of the host player, the host player is the only player who can begin the game</param>
+        /// <returns>The updated Game object after being updated in the database.</returns>
+        [HttpPost]
+        [Route("api/game/begin")]
+        public ActionResult<Response<Game>> BeginGame([FromHeader] int playerID)
+        {
+            //Example request
+            //https://localhost:5000/api/game/begin
+
+            GameBL gameBL = new GameBL();
+            return gameBL.BeginGame(playerID, _hubContext);
         }
     }
 }

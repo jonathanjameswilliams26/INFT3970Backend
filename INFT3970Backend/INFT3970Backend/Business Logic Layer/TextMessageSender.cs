@@ -1,5 +1,6 @@
 ﻿using Hangfire;
 using System;
+using System.Threading;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
@@ -17,20 +18,22 @@ namespace INFT3970Backend.Business_Logic_Layer
         {
             try
             {
-                TwilioClient.Init(AccountSID, AuthToken);
+                //TwilioClient.Init(AccountSID, AuthToken);
 
                 //Defaulting SendTo to send to Jono's phone number because the trial account can only send to this number
                 sendTo = "+61457558322";
 
-                var message = MessageResource.Create(
-                body: messageText,
-                from: new PhoneNumber(TwilioNumber),
-                to: new PhoneNumber(sendTo)
-                );
+                //var message = MessageResource.Create(
+                //body: messageText,
+                //from: "CamTag",
+                //to: new PhoneNumber(sendTo)
+                //);
+                //Console.WriteLine("Text Message Successfully Sent...");
                 return true;
             }
             catch
             {
+                Console.WriteLine("An error occurred while trying to send the text message...");
                 return false;
             }
         }

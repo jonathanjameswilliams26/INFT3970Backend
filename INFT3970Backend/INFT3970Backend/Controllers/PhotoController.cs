@@ -69,6 +69,16 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
+        /// <summary>
+        /// Cast a vote on a photo. Decide if the photo is a successful photo or unsuccessful.
+        /// </summary>
+        /// <param name="playerID">The ID of the player making the vote.</param>
+        /// <param name="voteID">The ID of the vote record being updated.</param>
+        /// <param name="decision">The decision, TRUE = successful, FALSE = unsuccessful</param>
+        /// <returns></returns>
         [HttpPost]
         [Route("api/photo/vote")]
         public ActionResult<Response<object>> VoteOnPhoto([FromHeader] int playerID, [FromHeader] int voteID, [FromForm] string decision)

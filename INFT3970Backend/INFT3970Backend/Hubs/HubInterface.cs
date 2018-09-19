@@ -73,13 +73,11 @@ namespace INFT3970Backend.Hubs
                     //Send a notification when a new player joins when the game is currently playing.
                     if (response.Data.Game.GameState == "PLAYING")
                     {
-                        //If the Player has an email address send the notification the email
+                        string message = joinedPlayer.Nickname + " has joined your game of CamTag.";
                         if (player.HasEmail())
-                            EmailSender.SendInBackground(player.Email, "New Player Joined Your Game", joinedPlayer.Nickname + " has joined your game of CamTag.", false);
-
-                        //otherwise, send to the players phone
+                            EmailSender.SendInBackground(player.Email, "New Player Joined Your Game", message, false);
                         else
-                            TextMessageSender.SendInBackground(joinedPlayer.Nickname + " has joined your game of CamTag.", player.Phone);
+                            TextMessageSender.SendInBackground(message, player.Phone);
                     }
                 }
             }
@@ -149,13 +147,11 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, the player is not currently in the WebApp, send a notification to their contact details.
                 else
                 {
-                    //If the sendToPlayer has an email address send the notification the email
+                    string message = "A new photo has been uploaded in your game of CamTag. Click the link to cast your vote. LINK HERE...";
                     if (player.HasEmail())
-                        EmailSender.SendInBackground(player.Email, "New Photo Submitted", "A new photo has been uploaded in your game of CamTag. Click the link to cast your vote. LINK HERE...", false);
-
-                    //otherwise, send to the players phone
+                        EmailSender.SendInBackground(player.Email, "New Photo Submitted", message, false);
                     else
-                        TextMessageSender.SendInBackground("A new photo has been uploaded in your game of CamTag. Click the link to cast your vote. LINK HERE...", player.Phone);
+                        TextMessageSender.SendInBackground(message, player.Phone);
                 }
             }
         }
@@ -275,13 +271,11 @@ namespace INFT3970Backend.Hubs
                     //Send a notification when a new player joins when the game is currently playing.
                     if (response.Data.Game.GameState == "PLAYING")
                     {
-                        //If the Player has an email address send the notification the email
+                        string message = leftPlayer.Nickname + " has left your game of CamTag.";
                         if (player.HasEmail())
-                            EmailSender.SendInBackground(player.Email, "A Player Left Your Game", leftPlayer.Nickname + " has left your game of CamTag.", false);
-
-                        //otherwise, send to the players phone
+                            EmailSender.SendInBackground(player.Email, "A Player Left Your Game", message, false);
                         else
-                            TextMessageSender.SendInBackground(leftPlayer.Nickname + " has left your game of CamTag.", player.Phone);
+                            TextMessageSender.SendInBackground(message, player.Phone);
                     }
                 }
             }
@@ -297,11 +291,11 @@ namespace INFT3970Backend.Hubs
         /// If the players are connected to the hub a hub method will be invoked.
         /// </summary>
         /// <param name="gameID">The gameID which was completed</param>
-        public async void UpdateGameCompleted(int gameID)
+        public async void UpdateGameCompleted(Game game)
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(gameID, false, "INGAME", "AZ");
+            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -309,6 +303,10 @@ namespace INFT3970Backend.Hubs
             //Loop through each of the players and send out the notifications
             foreach(var player in response.Data.Players)
             {
+                //If the player left the game, not verified or is deleted skip the iteration
+                if (player.HasLeftGame || !player.IsVerified || player.IsDeleted)
+                    continue;
+
                 //If the player is currently connected to the application send them an
                 if(player.IsConnected)
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameCompleted");
@@ -316,10 +314,11 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send them a text message or email letting them know the game is completed
                 else
                 {
+                    string message = "Your game of CamTag has been completed. Thanks for playing.";
                     if (player.HasEmail())
-                        EmailSender.SendInBackground(player.Email, "Game Complete", "Your game of CamTag has been completed. Thanks for playing.", false);
+                        EmailSender.SendInBackground(player.Email, "Game Completed", message, false);
                     else
-                        TextMessageSender.SendInBackground("Your game of CamTag has been completed. Thanks for playing.", player.Phone);
+                        TextMessageSender.SendInBackground(message, player.Phone);
                 }
             }
         }
@@ -354,10 +353,87 @@ namespace INFT3970Backend.Hubs
             //Otherwise, send out a text message or email
             else
             {
+                string message = "Your ammo has now been replenished, get back in the game.";
                 if (player.HasEmail())
-                    EmailSender.SendInBackground(player.Email, "Ammo Replenished", "Your ammo has now been replenished, get back in the game.", false);
+                    EmailSender.SendInBackground(player.Email, "Ammo Replenished", message, false);
                 else
-                    TextMessageSender.SendInBackground("Your ammo has now been replenished, get back in the game.", player.Phone);
+                    TextMessageSender.SendInBackground(message, player.Phone);
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Sends an update to players that the game is now in a PLAYING state, so the players
+        /// can take photos etc. Will send updates via the Hub to connected clients or via
+        /// email / text if the player is not connected.
+        /// </summary>
+        /// <param name="game">The Game which is now playing</param>
+        public async void UpdateGameNowPlaying(Game game)
+        {
+            //Get the list of players from the game
+            GameDAL gameDAL = new GameDAL();
+            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+
+            if (!response.IsSuccessful())
+                return;
+
+            //Loop through each of the players and invoke the Hub method or send out a notification that the game has started
+            foreach(var player in response.Data.Players)
+            {
+                //If the player is connected invoke the hub method
+                if (player.IsConnected)
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameNowPlaying");
+
+                //Otherwise, send an email/text message notification
+                else
+                {
+                    string message = "Your game of CamTag is now playing. Go tag other players.";
+                    if (player.HasEmail())
+                        EmailSender.SendInBackground(player.Email, "Game Now Playing", message, false);
+                    else
+                        TextMessageSender.SendInBackground(message, player.Phone);
+                }
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// Sends an update to players that the game is now in a STARTING state, so the host
+        /// player has clicked "begin game" and the Game will start in 10 mins. It will send
+        /// updates to players via the Hub or email / text if the player is not connected.
+        /// </summary>
+        /// <param name="game">The Game which has now started.</param>
+        public async void UpdateGameInStartingState(Game game)
+        {
+            //Get the list of players from the game
+            GameDAL gameDAL = new GameDAL();
+            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+
+            if (!response.IsSuccessful())
+                return;
+
+            //Loop through each of the players and invoke the Hub method or send out a notification that the game will begin soon
+            foreach (var player in response.Data.Players)
+            {
+                //If the player is connected invoke the hub method
+                if (player.IsConnected)
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameStarting");
+
+                //Otherwise, send an email/text message notification
+                else
+                {
+                    string message = "Your game of CamTag will begin at: " + game.StartTime.Value.ToString("dd/MM/yyyy HH:mm tt");
+
+                    if (player.HasEmail())
+                        EmailSender.SendInBackground(player.Email, "Game Starting Soon", message, false);
+                    else
+                        TextMessageSender.SendInBackground(message, player.Phone);
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ using INFT3970Backend.Models;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {
@@ -43,7 +44,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
             //If the create game failed, return the error message and code from that response
-            if(!response.IsSuccessful())
+            if (!response.IsSuccessful())
                 return new Response<Player>(null, "ERROR", response.ErrorMessage, response.ErrorCode);
 
             //Call the Player Business Logic to join the player to the game
@@ -51,7 +52,7 @@ namespace INFT3970Backend.Business_Logic_Layer
             createdPlayer = playerBL.JoinGame(response.Data.GameCode, nickname, contact, imgUrl, true);
 
             //If the Host player failed to join the game deleted the created game
-            if(!createdPlayer.IsSuccessful())
+            if (!createdPlayer.IsSuccessful())
             {
                 DeactivateGameAfterHostJoinError(response.Data.GameID);
                 return new Response<Player>(null, "ERROR", createdPlayer.ErrorMessage, createdPlayer.ErrorCode);
@@ -72,9 +73,9 @@ namespace INFT3970Backend.Business_Logic_Layer
             new GameDAL().DeactivateGameAfterHostJoinError(gameID);
         }
 
-        
 
-       
+
+
         /// <summary>
         /// Generates the game code for the game which players use to join the game.
         /// </summary>
@@ -160,31 +161,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
-        /// <summary>
-        /// Completes a game of CamTag in the Database.
-        /// </summary>
-        /// <param name="gameID">The GameID to complete</param>
-        /// <param name="hubContext">The hub context used to send notifications to users.</param>
-        /// <returns></returns>
-        public Response<object> CompleteGame(int gameID, IHubContext<ApplicationHub> hubContext)
-        {
-            //Call the DataAccessLayer to complete the game in the DB
-            GameDAL gameDAL = new GameDAL();
-            Response<object> response = gameDAL.CompleteGame(gameID);
-
-            //If the response was successful send out the game completed messages to players
-            if(response.IsSuccessful())
-            {
-                HubInterface hubInterface = new HubInterface(hubContext);
-                hubInterface.UpdateGameCompleted(gameID);
-            }
-
-            return response;
-        }
-
-
-
-
+        
 
 
 
@@ -235,6 +212,35 @@ namespace INFT3970Backend.Business_Logic_Layer
             //Call the data access layer to get the list
             GameDAL gameDAL = new GameDAL();
             return gameDAL.GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Begins the game.
+        /// </summary>
+        /// <param name="playerID">The ID of the host player beginning the game, only the host player can begin the game.</param>
+        /// <param name="hubContext">The hub context used to send live updates to clients</param>
+        /// <returns>The updated Game object after being updated in the database.</returns>
+        public Response<Game> BeginGame(int playerID, IHubContext<ApplicationHub> hubContext)
+        {
+            //Call the data access layer to begin the game, set the Game to a STARTING state
+            GameDAL gameDAL = new GameDAL();
+            Response<Game> response = gameDAL.BeginGame(playerID);
+
+            if(response.IsSuccessful())
+            {
+                HubInterface hubInterface = new HubInterface(hubContext);
+                ScheduledTasks.ScheduleGameInPlayingState(response.Data, hubInterface);
+                ScheduledTasks.ScheduleCompleteGame(response.Data, hubInterface);
+
+                //Update all clients that the game is now in a starting state and the game will be playing soon
+                hubInterface.UpdateGameInStartingState(response.Data);
+            }
+            return response;
         }
     }
 }

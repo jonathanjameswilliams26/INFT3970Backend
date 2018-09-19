@@ -131,6 +131,8 @@ namespace INFT3970Backend.Data_Access_Layer
                         while(Reader.Read())
                         {
                             game = new ModelFactory(Reader).GameFactory();
+                            if(game == null)
+                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the Game model.", ErrorCodes.EC_BUILDMODELERROR);
                         }
                         Reader.Close();
 
@@ -317,6 +319,15 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
+
+        /// <summary>
+        /// Completes A Game in the Database.
+        /// </summary>
+        /// <param name="gameID">The ID of the Game to Complete</param>
+        /// <returns></returns>
         public Response<object> CompleteGame(int gameID)
         {
             StoredProcedure = "usp_CompleteGame";
@@ -356,6 +367,30 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
+
+
+        /// <summary>
+        /// Gets all the players in a game with multiple filter parameters
+        /// 
+        /// FILTER
+        /// ALL = get all the players in the game which arnt deleted
+        /// ACTIVE = get all players in the game which arnt deleted and is active
+        /// INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
+        /// INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified(includes players who have left the game)
+        ///
+        /// ORDER by
+        /// AZ = Order by name in alphabetical order
+        /// ZA = Order by name in reverse alphabetical order
+        /// KILLS= Order from highest to lowest in number of kills
+        /// </summary>
+        /// <param name="id">The playerID or the GameID</param>
+        /// <param name="isPlayerID">A flag which outlines if the ID passed in is a playerID</param>
+        /// <param name="filter">The filter value, ALL, ACTIVE, INGAME, INGAMEALL</param>
+        /// <param name="orderBy">The order by value, AZ, ZA, KILLS</param>
+        /// <returns>The list of all players in the game</returns>
         public Response<GamePlayerList> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             StoredProcedure = "usp_GetAllPlayersInGame";
@@ -427,6 +462,109 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 return new Response<GamePlayerList>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Sets the Game State to starting in the database, updates the game start time to 10mins
+        /// in the future and sets the Game end time. After this method is run code will be scheduled
+        /// in the business logic to update the game to playing, then also update the game to be completed
+        /// </summary>
+        /// <param name="playerID">The ID of the host player of the game. Only the host player can begin the game.</param>
+        /// <returns>The updated game object, NULL if an error occurred</returns>
+        public Response<Game> BeginGame(int playerID)
+        {
+            StoredProcedure = "usp_BeginGame";
+            Game game = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+                        while (Reader.Read())
+                        {
+                            game = new ModelFactory(Reader).GameFactory();
+                            if(game == null)
+                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the Game model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        return new Response<Game>(game, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<Game>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// Sets the GameState to the state passed in.
+        /// </summary>
+        /// <param name="gameID">The ID of the game to update</param>
+        /// <param name="gameState">The new state to set.</param>
+        /// <returns></returns>
+        public Response<object> SetGameState(int gameID, string gameState)
+        {
+            StoredProcedure = "usp_SetGameState";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@gameID", gameID);
+                        Command.Parameters.AddWithValue("@gameState", gameState);
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Command.ExecuteNonQuery();
+
+                        //Format the results into a response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        return new Response<object>(null, Result, ErrorMSG, Result);
+                    }
+                }
+            }
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }

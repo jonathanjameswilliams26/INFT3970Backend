@@ -45,5 +45,10 @@ namespace INFT3970Backend.Models
 
         //GameController - GetAllPlayersInGame Error Codes
         public const int EC_PLAYERLIST_EMPTYLIST = 5000;
+
+        //GameController - BeginGame Error Codes
+        public const int EC_BEGINGAME_NOTHOST = 6000;
+        public const int EC_BEGINGAME_NOTINLOBBY = 6001;
+        public const int EC_BEGINGAME_NOTENOUGHPLAYERS = 6002;
     }
 }

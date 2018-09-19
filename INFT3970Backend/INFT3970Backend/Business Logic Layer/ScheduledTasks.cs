@@ -1,0 +1,259 @@
+﻿using INFT3970Backend.Data_Access_Layer;
+using INFT3970Backend.Hubs;
+using INFT3970Backend.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace INFT3970Backend.Business_Logic_Layer
+{
+    public class ScheduledTasks
+    {
+
+
+        /// <summary>
+        /// Schedules code to run in a new thread after the game start time has passed in order
+        /// to updated a started game to a PLAYING game state.
+        /// </summary>
+        /// <param name="game">The Game being updated</param>
+        /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
+        public static void ScheduleGameInPlayingState(Game game, HubInterface hubInterface)
+        {
+            //Get how long to wait for the task to run
+            int timeToWait = GetTimeToWait(game.StartTime.Value);
+
+            //Start the Method in a new thread
+            Thread ScheduleGameInPlayingStateThread = new Thread(
+                () => Run_GameInPlayingState(game, timeToWait, hubInterface)
+                );
+            ScheduleGameInPlayingStateThread.Start();
+        }
+
+
+
+
+
+        /// <summary>
+        /// The code which will run in a new thread after the game start time has passed in order
+        /// to updated a started game to a PLAYING game state.
+        /// </summary>
+        /// <param name="game">The Game being updated</param>
+        /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
+        /// <param name="timeToWait">The number of milliseconds to sleep before the thread starts.</param>
+        private static void Run_GameInPlayingState(Game game, int timeToWait, HubInterface hubInterface)
+        {
+            //Sleep the thread until the game has reached the playing state
+            Thread.Sleep(timeToWait);
+
+            //Call the DataAccessLayer to update the Game record
+            GameDAL gameDAL = new GameDAL();
+            Response<object> response = gameDAL.SetGameState(game.GameID, "PLAYING");
+
+            //Send updates to clients that the game has now officially begun
+            if (response.IsSuccessful())
+                hubInterface.UpdateGameNowPlaying(game);
+        }
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Schedules code to run in a new thread after the game finish time has passed in order
+        /// to updated the game record to COMPLETED.
+        /// </summary>
+        /// <param name="game">The Game being updated</param>
+        /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
+        public static void ScheduleCompleteGame(Game game, HubInterface hubInterface)
+        {
+            //Get how long to wait for the task to run
+            int timeToWait = GetTimeToWait(game.EndTime.Value);
+
+            //Start the Method in a new thread
+            Thread ScheduleCompleteGameThread = new Thread(
+                () => Run_CompleteGame(game, timeToWait, hubInterface)
+                );
+            ScheduleCompleteGameThread.Start();
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// The code which will run in a new thread after the game finish time has passed in order
+        /// to updated the game record to COMPLETED.
+        /// </summary>
+        /// <param name="game">The Game being updated</param>
+        /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
+        /// <param name="timeToWait">The number of milliseconds to sleep before the thread starts.</param>
+        private static void Run_CompleteGame(Game game, int timeToWait, HubInterface hubInterface)
+        {
+            Thread.Sleep(timeToWait);
+
+            //Call the DataAccessLayer to complete the game in the DB
+            GameDAL gameDAL = new GameDAL();
+            Response<object> response = gameDAL.CompleteGame(game.GameID);
+
+            //If the response was successful send out the game completed messages to players
+            if (response.IsSuccessful())
+                hubInterface.UpdateGameCompleted(game);
+        }
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Schedules code to run in a new thread after the ammo replenish time has passed in order
+        /// to increment the players ammo count.
+        /// </summary>
+        /// <param name="playerID">The ID of the player being updated.</param>
+        /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
+        public static void ScheduleReplenishAmmo(int playerID, HubInterface hubInterface)
+        {
+            //Get how long to wait for the task to run
+            int timeToWait = GetTimeToWait(DateTime.Now.AddMinutes(10));
+
+            //Start the Method in a new thread
+            Thread ScheduleReplenishAmmoThread = new Thread(
+                () => Run_ReplenishAmmo(playerID, timeToWait, hubInterface)
+                );
+            ScheduleReplenishAmmoThread.Start();
+        }
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// The code which will run in a new thread after the ammo replenish time has passed in order
+        /// to increment the players ammo count.
+        /// </summary>
+        /// <param name="playerID">The ID of the player being updated.</param>
+        /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
+        /// <param name="timeToWait">The number of milliseconds to sleep before the thread starts.</param>
+        private static void Run_ReplenishAmmo(int playerID, int timeToWait, HubInterface hubInterface)
+        {
+            Thread.Sleep(timeToWait);
+
+            //Call the DataAccessLayer to increment the ammo count in the database
+            PlayerDAL playerDAL = new PlayerDAL();
+            Response<Player> response = playerDAL.ReplenishAmmo(playerID);
+
+            if (response.IsSuccessful())
+            {
+                //If the ammo count is now at 1 then the ammo was replinished, send out a notification
+                if (response.Data.AmmoCount == 1)
+                    hubInterface.UpdateAmmoReplenished(response.Data);
+            }
+        }
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Schedules code to run in a new thread which will run after the FinishVotingTime has passed.
+        /// The method checks to see if all players have voted on the image and if not, will
+        /// update the image to be successful and make all votes a success. Then send out notifications
+        /// to the affected players. 
+        /// </summary>
+        /// <param name="uploadedPhoto">The photo which was uploaded and being checked if voting has been completed.</param>
+        /// <param name="hubInterface">The Hub interface which will be used to send notifications / updates</param>
+        public static void ScheduleCheckPhotoVotingCompleted(Photo uploadedPhoto, HubInterface hubInterface)
+        {
+            //Get how long to wait for the task to run
+            int timeToWait = GetTimeToWait(uploadedPhoto.VotingFinishTime.Value);
+
+            //Start the Method in a new thread
+            Thread ScheduleReplenishAmmoThread = new Thread(
+                () => Run_CheckPhotoVotingCompleted(uploadedPhoto, timeToWait, hubInterface)
+                );
+            ScheduleReplenishAmmoThread.Start();
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// The code which will run in a new thread after the FinishVotingTime has passed.
+        /// The method checks to see if all players have voted on the image and if not, will
+        /// update the image to be successful and make all votes a success. Then send out notifications
+        /// to the affected players. 
+        /// </summary>
+        /// <param name="uploadedPhoto">The photo which was uploaded and being checked if voting has been completed.</param>
+        /// /// <param name="timeToWait">The number of milliseconds to wait for the thread to start.</param>
+        /// <param name="hubInterface">The Hub interface which will be used to send notifications / updates</param>
+        private static void Run_CheckPhotoVotingCompleted(Photo uploadedPhoto, int timeToWait, HubInterface hubContext)
+        {
+            //Wait for the specified time
+            Thread.Sleep(timeToWait);
+
+            //Get the updated photo record from the database
+            Photo photo = new PhotoDAL().GetPhotoByID(uploadedPhoto.PhotoID);
+            if (photo == null)
+                return;
+
+            //Confirm the game the photo is apart of is not completed, if completed leave the method
+            if (photo.Game.GameState == "COMPLETED")
+                return;
+
+            //Check to see if the voting has been completed for the photo.
+            //If the voting has been completed exit the method
+            if (photo.IsVotingComplete)
+                return;
+
+            //Otherwise, the game is not completed and the photo has not been successfully voted on by all players
+
+            //Call the Data Access Layer to update the photo record to now be completed.
+            PhotoDAL photoDAL = new PhotoDAL();
+            Response<Photo> response = photoDAL.VotingTimeExpired(photo.PhotoID);
+
+            //If the update was successful then send out the notifications to the affected players
+            //Will send out in game notifications and text/email notifications
+            if (response.Type == "SUCCESS")
+                hubContext.UpdatePhotoVotingCompleted(response.Data);
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Gtes the number of milliseconds from the DateTime passed in and the current DateTime.
+        /// </summary>
+        /// <param name="waitUntil">The end DateTime</param>
+        /// <returns>Number of milliseconds between the current DateTime and the DateTime passed in.</returns>
+        private static int GetTimeToWait(DateTime waitUntil)
+        {
+            DateTime now = DateTime.Now;
+            TimeSpan span = waitUntil.Subtract(now);
+            return (int)span.TotalMilliseconds;
+        }
+    }
+}

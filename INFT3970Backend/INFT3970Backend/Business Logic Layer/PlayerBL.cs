@@ -313,49 +313,13 @@ namespace INFT3970Backend.Business_Logic_Layer
             PlayerDAL playerDAL = new PlayerDAL();
             Response<Player> response = playerDAL.UseAmmo(playerID);
 
-            //If the response was successful schedule code to run in the ammo replenish time
+            //If the response was successful schedule code to run in order to replenish the players ammo
             if (response.IsSuccessful())
             {
                 HubInterface hubInterface = new HubInterface(hubContext);
-
-                //Create a new thread to schedule a method to run after 10 minutes to replenish the ammo.
-                DateTime now = DateTime.Now;
-                DateTime scheduledTime = now.AddMinutes(10);
-                TimeSpan span = scheduledTime.Subtract(now);
-                int timeToWait = (int)span.TotalMilliseconds;
-                Thread thread = new Thread(() => ScheduledReplenishAmmo(response.Data.PlayerID, hubInterface, timeToWait));
-                thread.Start();
+                ScheduledTasks.ScheduleReplenishAmmo(playerID, hubInterface);
             }
-                
             return response;
-        }
-
-
-
-
-
-
-        /// <summary>
-        /// A scheduled method which will run after a player uses ammo. It will replenish the players ammo
-        /// after a certain time period. If player's ammo has now been refilled from 0 a notification
-        /// will be sent out to the player.
-        /// </summary>
-        /// <param name="playerID">The playerID who ammo is being replenished.</param>
-        /// <param name="hubInterface">The hub interface used to send live updates to clients</param>
-        public static void ScheduledReplenishAmmo(int playerID, HubInterface hubInterface, int timeToWait)
-        {
-            Thread.Sleep(timeToWait);
-
-            //Call the DataAccessLayer to increment the ammo count in the database
-            PlayerDAL playerDAL = new PlayerDAL();
-            Response<Player> response = playerDAL.ReplenishAmmo(playerID);
-
-            if(response.IsSuccessful())
-            {
-                //If the ammo count is now at 1 then the ammo was replinished, send out a notification
-                if(response.Data.AmmoCount == 1)
-                    hubInterface.UpdateAmmoReplenished(response.Data);
-            }
         }
     }
 }
