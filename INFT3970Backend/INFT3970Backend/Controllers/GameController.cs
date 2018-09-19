@@ -1,6 +1,7 @@
 ﻿using INFT3970Backend.Business_Logic_Layer;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
+using INFT3970Backend.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>Response including the created Player object, including Game data. NULL data if error occurred.</returns>
         [HttpPost]
         [Route("api/game/createGame")]
-        public ActionResult<Response<Player>> CreateGame([FromForm] string nickname, [FromForm] string contact, [FromForm] string imgUrl) //settings?
+        public ActionResult<Response<Player>> CreateGame(CreateGameRequest request) //settings?
         {
             //Example request:
             //Use POSTMAN and POST 'Form-Data' using the following values
@@ -40,7 +41,7 @@ namespace INFT3970Backend.Controllers
             //various settings??
 
             GameBL gameBL = new GameBL();
-            return gameBL.CreateGame(nickname, contact, imgUrl);
+            return gameBL.CreateGame(request.nickname, request.contact, request.imgUrl);
         }
 
 
