@@ -6,6 +6,7 @@ using INFT3970Backend.Data_Access_Layer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models;
+using INFT3970Backend.Models.Requests;
 using INFT3970Backend.Business_Logic_Layer;
 using Microsoft.AspNetCore.SignalR;
 using INFT3970Backend.Hubs;
@@ -36,7 +37,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>Response including the created Player object. NULL data if an error occurred.</returns>
         [HttpPost]
         [Route("api/player/joinGame")]
-        public ActionResult<Response<Player>> JoinGame([FromForm] string gameCode, [FromForm] string nickname, [FromForm] string contact, [FromForm] string imgUrl)
+        public ActionResult<Response<Player>> JoinGame(JoinGameRequest request)
         {
             //Example request:
             //Use POSTMAN and POST 'Form-Data' using the following values
@@ -47,7 +48,7 @@ namespace INFT3970Backend.Controllers
             //imgUrl            the imgUrl string of the players profile picture
 
             //Call the business logic layer to validate the form data and create a new player
-            return new PlayerBL().JoinGame(gameCode, nickname, contact, imgUrl, false);
+            return new PlayerBL().JoinGame(request.gameCode, request.nickname, request.contact, request.imgUrl, false);
         }
 
 
