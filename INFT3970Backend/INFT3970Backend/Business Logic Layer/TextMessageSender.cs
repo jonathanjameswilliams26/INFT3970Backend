@@ -18,17 +18,13 @@ namespace INFT3970Backend.Business_Logic_Layer
         {
             try
             {
-                //TwilioClient.Init(AccountSID, AuthToken);
-
-                //Defaulting SendTo to send to Jono's phone number because the trial account can only send to this number
-                sendTo = "+61457558322";
-
-                //var message = MessageResource.Create(
-                //body: messageText,
-                //from: "CamTag",
-                //to: new PhoneNumber(sendTo)
-                //);
-                //Console.WriteLine("Text Message Successfully Sent...");
+                TwilioClient.Init(AccountSID, AuthToken);
+                var message = MessageResource.Create(
+                body: messageText,
+                from: "CamTag",
+                to: new PhoneNumber(sendTo)
+                );
+                Console.WriteLine("Text Message Successfully Sent...");
                 return true;
             }
             catch

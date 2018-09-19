@@ -19,7 +19,7 @@ GO
 --		4. @EC_BEGINGAME_NOTENOUGHPLAYERS - Trying to start a game with less than 3 active and verified players.
 
 -- =============================================
-ALTER PROCEDURE [dbo].[usp_BeginGame] 
+CREATE PROCEDURE [dbo].[usp_BeginGame] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
 	@result INT OUTPUT,

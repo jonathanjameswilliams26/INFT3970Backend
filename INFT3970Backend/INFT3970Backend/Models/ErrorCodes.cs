@@ -19,6 +19,7 @@ namespace INFT3970Backend.Models
         public const int EC_MISSINGORBLANKDATA = 15;
         public const int EC_GAMEALREADYCOMPLETE = 16;
         public const int EC_DATAINVALID = 17;
+        public const int EC_GAMESTATEINVALID = 18;
 
         //PlayerController - Join Game Error Codes
         public const int EC_JOINGAME_INVALIDGAMECODE = 1000;

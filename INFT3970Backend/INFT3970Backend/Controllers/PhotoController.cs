@@ -87,5 +87,18 @@ namespace INFT3970Backend.Controllers
             PhotoBL photoBL = new PhotoBL();
             return photoBL.VoteOnPhoto(playerID, voteID, decision, _hubContext);
         }
+
+
+
+
+        [HttpGet]
+        [Route("api/photo/lastKnownLocations")]
+        public ActionResult<Response<List<Photo>>> GetLastKnownLocations([FromHeader] int playerID)
+        {
+            //Call the business logic layer to cast the vote on the photo
+            PhotoBL photoBL = new PhotoBL();
+            return photoBL.GetLastKnownLocations(playerID);
+        }
+
     }
 }
