@@ -7,6 +7,7 @@ using Hangfire;
 using INFT3970Backend.Business_Logic_Layer;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
+using INFT3970Backend.Models.Requests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -41,10 +42,10 @@ namespace INFT3970Backend.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("api/photo/upload")]
-        public ActionResult<Response<object>> Upload([FromForm] string imgUrl, [FromForm] string takenByID, [FromForm] string photoOfID, [FromForm] string latitude, [FromForm] string longitude)
+        public ActionResult<Response<object>> Upload(PhotoUploadRequest request)
         {
             PhotoBL photoBL = new PhotoBL();
-            return photoBL.SavePhoto(imgUrl, takenByID, photoOfID, _hubContext, latitude, longitude);
+            return photoBL.SavePhoto(request.imgUrl, request.takenByID, request.photoOfID, _hubContext, request.latitude, request.longitude);
         }
 
 
