@@ -11,6 +11,13 @@ Author:         Jonathan Williams - 3237808
 -----------------------------------------------------------------
 */
 
+--Creating a login to use with the connection string
+CREATE LOGIN DataAccessLayerLogin WITH PASSWORD = 'test'
+GO
+EXEC master..sp_addsrvrolemember @loginame = N'DataAccessLayerLogin', @rolename = N'sysadmin'
+GO
+
+
 --Drop the database if it exists
 DROP DATABASE udb_CamTag
 GO
@@ -27,9 +34,7 @@ GO
 CREATE DATABASE Hangfire
 GO
 
---Creating a login to use with the connection string
-CREATE LOGIN DataAccessLayerLogin WITH PASSWORD = 'test'
-GO
+
 
 USE udb_CamTag
 GO
@@ -41,32 +46,32 @@ GO
 
 --Creating a role which only has select, insert and update permission since the login used for the web app should only have those permissions
 --Adding the newly created user to the new role
-CREATE ROLE DataAccessLayerRole;
-GO
-EXEC sp_addrolemember @rolename = DataAccessLayerRole, @membername = DataAccessLayerUser;
-GO
-GRANT SELECT, UPDATE, INSERT, DELETE to DataAccessLayerRole;
-GO
+--CREATE ROLE DataAccessLayerRole;
+--GO
+--EXEC sp_addrolemember @rolename = DataAccessLayerRole, @membername = DataAccessLayerUser;
+--GO
+--GRANT SELECT, UPDATE, INSERT, DELETE to DataAccessLayerRole;
+--GO
 
-GRANT EXECUTE TO DataAccessLayerRole;
-GO
+--GRANT EXECUTE TO DataAccessLayerRole;
+--GO
 
 
 USE Hangfire
 GO
 CREATE USER DataAccessLayerUser FOR LOGIN DataAccessLayerLogin;
 GO
-CREATE ROLE DataAccessLayerRole;
-GO
-EXEC sp_addrolemember @rolename = DataAccessLayerRole, @membername = DataAccessLayerUser;
-GO
+--CREATE ROLE DataAccessLayerRole;
+--GO
+--EXEC sp_addrolemember @rolename = DataAccessLayerRole, @membername = DataAccessLayerUser;
+--GO
 
---Granting and deny specific permissions to user
-GRANT SELECT, UPDATE, INSERT, DELETE to DataAccessLayerRole;
-GO
+----Granting and deny specific permissions to user
+--GRANT SELECT, UPDATE, INSERT, DELETE to DataAccessLayerRole;
+--GO
 
-GRANT EXECUTE TO DataAccessLayerRole;
-GO
+--GRANT EXECUTE TO DataAccessLayerRole;
+--GO
 
 
 USE udb_CamTag
