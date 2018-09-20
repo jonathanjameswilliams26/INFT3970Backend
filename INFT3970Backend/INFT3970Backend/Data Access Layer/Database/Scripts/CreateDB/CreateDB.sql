@@ -42,19 +42,35 @@ GO
 --Creating a role which only has select, insert and update permission since the login used for the web app should only have those permissions
 --Adding the newly created user to the new role
 CREATE ROLE DataAccessLayerRole;
+GO
 EXEC sp_addrolemember @rolename = DataAccessLayerRole, @membername = DataAccessLayerUser;
 GO
-
---Granting and deny specific permissions to user
-GRANT SELECT, UPDATE, INSERT to DataAccessLayerRole;
+GRANT SELECT, UPDATE, INSERT, DELETE to DataAccessLayerRole;
 GO
 
 GRANT EXECUTE TO DataAccessLayerRole;
 GO
 
-DENY DELETE, ALTER to DataAccessLayerRole;
+
+USE Hangfire
+GO
+CREATE USER DataAccessLayerUser FOR LOGIN DataAccessLayerLogin;
+GO
+CREATE ROLE DataAccessLayerRole;
+GO
+EXEC sp_addrolemember @rolename = DataAccessLayerRole, @membername = DataAccessLayerUser;
 GO
 
+--Granting and deny specific permissions to user
+GRANT SELECT, UPDATE, INSERT, DELETE to DataAccessLayerRole;
+GO
+
+GRANT EXECUTE TO DataAccessLayerRole;
+GO
+
+
+USE udb_CamTag
+GO
 
 --Create the Game table
 CREATE TABLE tbl_Game
