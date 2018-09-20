@@ -151,7 +151,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         ModelFactory factory = new ModelFactory(Reader);
                         while (Reader.Read())
                         {
-                            var photo = factory.PhotoFactory(false, false, false);
+                            var photo = factory.PhotoFactory(false, true, false);
                             if (photo == null)
                                 return new Response<List<Photo>>(null, "ERROR", "An error occurred while trying to build the list photo model.", ErrorCodes.EC_BUILDMODELERROR);
 

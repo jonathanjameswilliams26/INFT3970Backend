@@ -50,7 +50,7 @@ BEGIN
 		--Perform the select statement to get the last known locations
 		SELECT * 
 		FROM 
-			tbl_Photo p
+			vw_PhotoGameAndPlayers p
 		WHERE
 			p.GameID = @gameID AND
 			p.PhotoIsActive = 1 AND
