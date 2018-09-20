@@ -12,25 +12,12 @@ namespace INFT3970Backend.Controllers
     public class Map : ControllerBase
     {
         [HttpGet]
-        [Route("api/map/getPhotoLocation/{photoID:int}")]
-        public ActionResult<Response<List<Photo>>> GetPhotoLocation(int photoID)
+        [Route("api/map/getLastPhotoLocations/{playerID:int}")]
+        public ActionResult<Response<List<Photo>>> GetLastPhotoLocations(int playerID)
         {
-            /*
-            int lattitude = -24;
-            int longitude = 130;
-
-            Location marker = new Location();
-            marker.Lattitude = lattitude;
-            marker.Longitude = longitude;
-
-            List<Location> _locations = new List<Location>();
-            _locations.Add(marker);
-
-            
-            return new Response<List<Location>>(_locations, "SUCCESS", "", 1);
-             */
+         
             PhotoBL photoBL = new PhotoBL();
-            return photoBL.GetPhotoLocation(photoID);
+            return photoBL.GetLastKnownLocations(playerID);
 
         }
     }

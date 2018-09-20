@@ -4,23 +4,21 @@
     <meta charset="utf-8" />
     <title>Map Example</title>
     <style>
-        /* Set the size of the div element that contains the map */
-        #map {
-            height: 400px; /* The height is 400 pixels */
-            width: 100%; /* The width is the width of the web page */
+     
+
+        #bingMap {
+            height: 800px;
+            width: 100%;
         }
     </style>
 </head>
-<body>
+<body onload="loadMapScenario()">
 
-    <h3>My Google Maps Demo</h3>
-    <!--The div element for the map -->
-    <div id="map"></div>
-    <!-- Replace the value of the key parameter with your own API key. -->
-    <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPhY_OJgEjKyxsTTYxh9D2mdateljycao&callback=initMap">
-    </script>
-    <script src="js/Map.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <h3>Bing Maps Demo</h3>
+    <div id="bingMap"></div>
+    <script src="js/BingMap.js"></script>
+    <script type="text/javascript" src="https://www.bing.com/api/maps/mapcontrol?key=AtRYc_SVF87Tlw1x0AlR7T2oE2qOFZNXtXuKjh8inv8FWnzBKo7QtRMzh3qP-D46"></script>
 </body>
 </html>
