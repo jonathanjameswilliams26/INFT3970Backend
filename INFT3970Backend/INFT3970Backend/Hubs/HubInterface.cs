@@ -173,6 +173,8 @@ namespace INFT3970Backend.Hubs
             {
                 takenByMsgTxt = "You have successfully tagged " + photo.PhotoOfPlayer.Nickname + ".";
                 photoOfMsgTxt = "You have been tagged by " + photo.TakenByPlayer.Nickname + ".";
+
+                await _hubContext.Clients.All.SendAsync("UpdateScoreboard");
             }
             //Otherwise, the photo was not successful
             else

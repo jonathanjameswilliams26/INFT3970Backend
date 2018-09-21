@@ -130,3 +130,17 @@ connection.on("AmmoReplenished", function () {
 
     alert("Ammo Replenished");
 });
+
+
+
+//Hub Client Function
+//Updates the player scoreboard to reflect a kill and death.
+connection.on("UpdateScoreboard", function () {
+
+    //Increment the number of deaths and kills by 1 for respective players.
+    
+
+
+   
+    
+});

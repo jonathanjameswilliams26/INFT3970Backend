@@ -88,6 +88,11 @@ namespace INFT3970Backend.Business_Logic_Layer
             //REFERENCE: http://emailregex.com/
             Regex emailRegex = new Regex(@"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$");
             isEmail = emailRegex.IsMatch(contact);
+            if (contact.Contains("@gmail.com")){// check if gmail address and remove any periods as they all are the same address.
+                string[] p = contact.Split('@');
+                p[0] = p[0].Replace(".", "");
+                contact = p[0] + "@" + p[1];
+            }
 
             //If the contact is not either a phone or email address return an error
             if (!isEmail && !isPhone)
