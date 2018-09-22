@@ -2,10 +2,7 @@
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {

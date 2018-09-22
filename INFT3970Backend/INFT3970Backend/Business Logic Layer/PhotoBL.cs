@@ -2,13 +2,8 @@
 using System.Collections.Generic;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;
-using System.IO;
-using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.SignalR;
 using INFT3970Backend.Hubs;
-using Hangfire;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {

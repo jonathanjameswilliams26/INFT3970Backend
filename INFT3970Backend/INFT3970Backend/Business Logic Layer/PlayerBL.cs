@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Models;
 using INFT3970Backend.Hubs;
 using Microsoft.AspNetCore.SignalR;
-using Hangfire;
-using System.Threading;
 
 namespace INFT3970Backend.Business_Logic_Layer
 {

@@ -1,12 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using INFT3970Backend.Business_Logic_Layer;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;
-using Hangfire;
 
 namespace INFT3970Backend.Hubs
 {

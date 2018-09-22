@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Hangfire;
+﻿using System.Collections.Generic;
 using INFT3970Backend.Business_Logic_Layer;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
 namespace INFT3970Backend.Controllers
 {
-    
+
     [ApiController]
     public class PhotoController : ControllerBase
     {

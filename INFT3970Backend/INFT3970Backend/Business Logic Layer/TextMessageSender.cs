@@ -1,5 +1,4 @@
-﻿using Hangfire;
-using System;
+﻿using System;
 using System.Threading;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
@@ -37,7 +36,10 @@ namespace INFT3970Backend.Business_Logic_Layer
 
         public static void SendInBackground(string msgTxt, string sendTo)
         {
-            BackgroundJob.Enqueue(() => Send(msgTxt, sendTo));
+            Thread txtMsgThread = new Thread(
+                () => Send(msgTxt, sendTo)
+                );
+            txtMsgThread.Start();
         }
     }
 }
