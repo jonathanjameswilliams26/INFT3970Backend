@@ -104,6 +104,14 @@ BEGIN
 				UPDATE tbl_Photo
 				SET IsVotingComplete = 1
 				WHERE PhotoID = @photoID
+
+				-- if successful vote
+				IF (@countYes > @countNo)
+				BEGIN
+					-- updating kills and deaths per players in the photo
+					UPDATE tbl_Player SET NumKills = NumKills +1 WHERE PlayerID = (SELECT TakenByPlayerID FROM tbl_Photo WHERE takenByPlayerID = @playerID)
+					UPDATE tbl_Player SET NumDeaths = NumDeaths +1 WHERE PlayerID = (SELECT PhotoOfPlayerID FROM tbl_Photo WHERE takenByPlayerID = @playerID)
+				END
 			END
 		COMMIT
 
