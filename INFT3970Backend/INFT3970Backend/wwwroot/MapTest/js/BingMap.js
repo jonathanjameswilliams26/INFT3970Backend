@@ -39,9 +39,10 @@ function loadMapScenario()
     
 }
 
+var playerID = 100004;
 // Gets all the latest photos for each user in the game. Each photo is the last one the user has taken
 function getLastKnownLocation() {
-    var playerID = 100004;
+   
     console.log("GETTING LOCATIONS");
     $.ajax({
         type: "GET",
@@ -54,9 +55,77 @@ function getLastKnownLocation() {
             {
                 // Creates the Pin in the map based on the lattitude and longitude of the photo, 
                 // & puts in the players selfie into  the icon for the pin
-                var pin = new Microsoft.Maps.Pushpin(new Microsoft.Maps.Location(photoData[i].lat, photoData[i].long), { icon: photoData[i].photoDataURL });
+                var pin = new Microsoft.Maps.Pushpin(new Microsoft.Maps.Location(photoData[i].lat, photoData[i].long), { icon: photoData[i].takenByPlayer.selfieDataURL });
+
+                // The Date and time of the photo when it was taken  
+                var timestamp = new Date(photoData[i].timeTaken);
+                // Calling the function to format the time into a more user friendly format
+                var correctTime = formatDate(timestamp);
+                // Calls the function to create the information box for the pin
+                createInfoBox(photoData[i].lat, photoData[i].long, photoData[i].takenByPlayer.nickname, pin, correctTime);
+
                 map.entities.push(pin);
+
+               
             }
         }
     });
+}
+
+// Creates an information box for the last known location of the photo, Displays the Nickname and the Timestamp for each of the pins
+function createInfoBox(lattitude, longitude, nickname, pin, timestamp)
+{
+    var infobox = new Microsoft.Maps.Infobox(new Microsoft.Maps.Location(lattitude, longitude),
+        {
+            title: nickname,
+            description:timestamp ,
+            visible: false
+        });
+
+    infobox.setMap(map);
+    Microsoft.Maps.Events.addHandler(pin, 'click', function () {
+        infobox.setOptions({ visible: true });
+    });
+}
+
+// Formats the Date pulled from the database into a time thats more user friendly
+function formatDate(date)
+{
+    var uncorrectedHours = parseInt(date.getHours());
+    var minutes = String(date.getMinutes());
+    var seconds = date.getSeconds();
+    var timeOfDay; 
+    var correctHours;
+ 
+
+    // Time is past 12 
+    if (uncorrectedHours > 12) {
+        timeOfDay = 'PM';
+        correctHours = uncorrectedHours % 12;
+    }
+    // The time is before 12
+    else {
+        timeOfDay = 'AM';
+        correctHours = uncorrectedHours;
+    }
+   
+    var correctMinutes = updateTime(minutes);
+
+    // Outputs the correct time format
+    var time = correctHours + ':' + correctMinutes + '.' + seconds + timeOfDay;
+    return time;
+
+}
+
+function updateTime(time)
+{
+    var correctTime;
+    if (String(time).length = 1) {
+        correctTime = '0' + time;
+    }
+    else {
+        correctTime = time;
+    }
+
+    return correctTime;
 }
