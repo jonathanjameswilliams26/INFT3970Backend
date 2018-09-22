@@ -1,6 +1,7 @@
 ﻿using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
+using INFT3970Backend.Models.Responses;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
@@ -185,11 +186,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="filter">The filter value, ALL, ACTIVE, INGAME, INGAMEALL</param>
         /// <param name="orderBy">The order by value, AZ, ZA, KILLS</param>
         /// <returns>The list of all players in the game</returns>
-        public Response<GamePlayerList> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        public Response<GamePlayerListResponse> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             //Validate the filer and orderby value is a valid value
             if (string.IsNullOrWhiteSpace(filter) || string.IsNullOrWhiteSpace(orderBy))
-                return new Response<GamePlayerList>(null, "ERROR", "The filter or orderBy value is null or empty.", ErrorCodes.EC_DATAINVALID);
+                return new Response<GamePlayerListResponse>(null, "ERROR", "The filter or orderBy value is null or empty.", ErrorCodes.EC_DATAINVALID);
 
             //Confirm the filter value passed in is a valid value
             bool isFilterValid = false;
@@ -241,6 +242,29 @@ namespace INFT3970Backend.Business_Logic_Layer
                 hubInterface.UpdateGameInStartingState(response.Data);
             }
             return response;
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Get the current status of the game / web application. Used when a user reconnects
+        /// back to the web application in order to the front end to be updated with the current
+        /// game / application state so the front end can redirect the user accordingly.
+        /// </summary>
+        /// <param name="playerID">The ID of the player</param>
+        /// <returns>
+        /// A GameStatusResponse object which outlines the GameState, 
+        /// if the player has votes to complete, if the player has any new notifications 
+        /// and the most recent player record. NULL if an error occurred.
+        /// </returns>
+        public Response<GameStatusResponse> GetGameStatus(int playerID)
+        {
+            //Call the data access layer to get the status of the game / player
+            GameDAL gameDAL = new GameDAL();
+            return gameDAL.GetGameStatus(playerID);
         }
     }
 }

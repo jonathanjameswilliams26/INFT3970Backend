@@ -2,13 +2,13 @@
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
+using INFT3970Backend.Models.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
 
 namespace INFT3970Backend.Controllers
 {
-    //[Route("api/[controller]")]
     [ApiController]
     public class GameController : ControllerBase
     {
@@ -95,7 +95,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>The list of all players in the game</returns>
         [HttpGet]
         [Route("api/game/getAllPlayersInGame/{id:int}/{isPlayerID:bool}/{filter}/{orderBy}")]
-        public ActionResult<Response<GamePlayerList>> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        public ActionResult<Response<GamePlayerListResponse>> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             //Example request
             //https://localhost:5000/api/game/getAllPlayersInGame/100000/true/INGAME/AZ
@@ -126,6 +126,33 @@ namespace INFT3970Backend.Controllers
 
             GameBL gameBL = new GameBL();
             return gameBL.BeginGame(playerID, _hubContext);
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Get the current status of the game / web application. Used when a user reconnects
+        /// back to the web application in order to the front end to be updated with the current
+        /// game / application state so the front end can redirect the user accordingly.
+        /// </summary>
+        /// <param name="playerID">The ID of the player</param>
+        /// <returns>
+        /// A GameStatusResponse object which outlines the GameState, 
+        /// if the player has votes to complete, if the player has any new notifications 
+        /// and the most recent player record. NULL if an error occurred.
+        /// </returns>
+        [HttpGet]
+        [Route("api/game/status")]
+        public ActionResult<Response<GameStatusResponse>> GetGameStatus([FromHeader] int playerID)
+        {
+            //Example request
+            //https://localhost:5000/api/game/status
+
+            GameBL gameBL = new GameBL();
+            return gameBL.GetGameStatus(playerID);
         }
     }
 }

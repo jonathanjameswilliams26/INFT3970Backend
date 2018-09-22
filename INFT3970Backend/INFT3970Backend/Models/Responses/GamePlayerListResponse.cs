@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace INFT3970Backend.Models
 {
-    public class GamePlayerList
+    public class GamePlayerListResponse
     {
         public Game Game { get; set; }
         public List<Player> Players { get; set; }
 
-        public GamePlayerList(Game game, List<Player> players)
+        public GamePlayerListResponse(Game game, List<Player> players)
         {
             Game = game;
             Players = players;

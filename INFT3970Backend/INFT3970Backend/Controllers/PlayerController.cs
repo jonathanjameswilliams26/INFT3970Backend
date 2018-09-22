@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using INFT3970Backend.Data_Access_Layer;
-using Microsoft.AspNetCore.Http;
+﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
@@ -141,7 +136,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>A response status indicating if the db update was a success.</returns>
         [HttpPost]
         [Route("api/player/setNotificationsRead")]
-        public Response<object> SetNotificationsRead(JsonReadNotifications jsonNotificationIDs)
+        public Response<object> SetNotificationsRead(ReadNotificationsRequest jsonNotificationIDs)
         {
             //Example request
             //https://localhost:5000/api/player/setNotificationsRead

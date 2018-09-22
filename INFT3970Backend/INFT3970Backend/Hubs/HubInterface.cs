@@ -29,7 +29,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players currently in the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAME", "AZ");
+            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -121,7 +121,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players currently in the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
+            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -229,7 +229,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get all the players currently in the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAMEALL", "AZ");
+            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAMEALL", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -293,7 +293,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
+            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -373,7 +373,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -410,7 +410,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerList> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
             if (!response.IsSuccessful())
                 return;

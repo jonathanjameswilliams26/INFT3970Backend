@@ -446,7 +446,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
         /// <returns>A response status.</returns>
-        public Response<object> SetNotificationsRead(JsonReadNotifications jsonNotificationIDs)
+        public Response<object> SetNotificationsRead(ReadNotificationsRequest jsonNotificationIDs)
         {
             StoredProcedure = "usp_SetNotificationsRead";
             try

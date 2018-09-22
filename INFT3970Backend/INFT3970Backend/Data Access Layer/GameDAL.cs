@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using INFT3970Backend.Models;
+using INFT3970Backend.Models.Responses;
 
 namespace INFT3970Backend.Data_Access_Layer
 {
@@ -391,7 +392,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="filter">The filter value, ALL, ACTIVE, INGAME, INGAMEALL</param>
         /// <param name="orderBy">The order by value, AZ, ZA, KILLS</param>
         /// <returns>The list of all players in the game</returns>
-        public Response<GamePlayerList> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        public Response<GamePlayerListResponse> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             StoredProcedure = "usp_GetAllPlayersInGame";
             List<Player> players = new List<Player>();
@@ -426,7 +427,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
                             //If an error occurred while trying to build the player list
                             if (player == null)
-                                return new Response<GamePlayerList>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<GamePlayerListResponse>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
 
                             players.Add(player);
                         }
@@ -439,29 +440,29 @@ namespace INFT3970Backend.Data_Access_Layer
 
                         //If the response was not successful return the empty response
                         if(Result != 1)
-                            return new Response<GamePlayerList>(null, Result, ErrorMSG, Result);
+                            return new Response<GamePlayerListResponse>(null, Result, ErrorMSG, Result);
                     }
                 }
 
                 //If the players list is empty, return an error
                 if(players.Count == 0)
-                    return new Response<GamePlayerList>(null, "ERROR", "The players list is empty.", ErrorCodes.EC_PLAYERLIST_EMPTYLIST);
+                    return new Response<GamePlayerListResponse>(null, "ERROR", "The players list is empty.", ErrorCodes.EC_PLAYERLIST_EMPTYLIST);
 
                 //Get the Game object
                 Response<Game> gameResponse = GetGameByID(players[0].GameID);
 
                 //If the Game response was not successful, return an error
                 if(!gameResponse.IsSuccessful())
-                    return new Response<GamePlayerList>(null, gameResponse.Type, gameResponse.ErrorMessage, gameResponse.ErrorCode);
+                    return new Response<GamePlayerListResponse>(null, gameResponse.Type, gameResponse.ErrorMessage, gameResponse.ErrorCode);
 
                 //Otherwise, create the successful response with the game and player list
-                return new Response<GamePlayerList>(new GamePlayerList(gameResponse.Data, players), Result, ErrorMSG, Result);
+                return new Response<GamePlayerListResponse>(new GamePlayerListResponse(gameResponse.Data, players), Result, ErrorMSG, Result);
             }
 
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<GamePlayerList>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<GamePlayerListResponse>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -565,6 +566,88 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+            }
+        }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Get the current status of the game / web application. Used when a user reconnects
+        /// back to the web application in order to the front end to be updated with the current
+        /// game / application state so the front end can redirect the user accordingly.
+        /// </summary>
+        /// <param name="playerID">The ID of the player</param>
+        /// <returns>
+        /// A GameStatusResponse object which outlines the GameState, 
+        /// if the player has votes to complete, if the player has any new notifications 
+        /// and the most recent player record. NULL if an error occurred.
+        /// </returns>
+        public Response<GameStatusResponse> GetGameStatus(int playerID)
+        {
+            StoredProcedure = "usp_GetGameStatus";
+            Response<GameStatusResponse> response = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        Command.CommandType = CommandType.StoredProcedure;
+                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@gameState", SqlDbType.VarChar, 255);
+                        Command.Parameters["@gameState"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@hasVotesToComplete", SqlDbType.Bit);
+                        Command.Parameters["@hasVotesToComplete"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@hasNotifications", SqlDbType.Bit);
+                        Command.Parameters["@hasNotifications"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@result", SqlDbType.Int);
+                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
+                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
+                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+
+                        //Perform the procedure and get the result
+                        Connection.Open();
+                        Reader = Command.ExecuteReader();
+
+                        Player player = null;
+                        while(Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).PlayerFactory(true);
+                            if(player == null)
+                                return new Response<GameStatusResponse>(null, "ERROR", "An error occurred while trying to build the Player model.", ErrorCodes.EC_BUILDMODELERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        response = new Response<GameStatusResponse>(null, Result, ErrorMSG, Result);
+
+                        //If the result is not an error build the GameStatus object and assign it to the response
+                        if(!IsError)
+                        {
+                            string gameState = Convert.ToString(Command.Parameters["@gameState"].Value);
+                            bool hasVotesToComplete = Convert.ToBoolean(Command.Parameters["@hasVotesToComplete"].Value);
+                            bool hasNotifications = Convert.ToBoolean(Command.Parameters["@hasNotifications"].Value);
+                            GameStatusResponse gsr = new GameStatusResponse(gameState, hasVotesToComplete, hasNotifications, player);
+                            response.Data = gsr;
+                        }
+
+                        return response;
+                    }
+                }
+            }
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return new Response<GameStatusResponse>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }
