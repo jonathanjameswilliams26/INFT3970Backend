@@ -65,9 +65,8 @@ BEGIN
 		BEGIN
 			SELECT * 
 			FROM 
-				tbl_Player 
+				vw_All_Players
 			WHERE 
-				PlayerIsDeleted = 0 AND
 				GameID = @id
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
@@ -80,10 +79,8 @@ BEGIN
 		BEGIN
 			SELECT * 
 			FROM 
-				tbl_Player 
+				vw_Active_Players
 			WHERE 
-				PlayerIsDeleted = 0 AND 
-				PlayerIsActive = 1 AND
 				GameID = @id
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
@@ -96,12 +93,8 @@ BEGIN
 		BEGIN
 			SELECT * 
 			FROM 
-				tbl_Player 
+				vw_InGame_Players
 			WHERE 
-				PlayerIsDeleted = 0 AND 
-				PlayerIsActive = 1 AND 
-				HasLeftGame = 0 AND 
-				IsVerified = 1 AND
 				GameID = @id
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
@@ -114,11 +107,8 @@ BEGIN
 		BEGIN
 			SELECT * 
 			FROM 
-				tbl_Player 
+				vw_InGameAll_Players
 			WHERE 
-				PlayerIsDeleted = 0 AND 
-				PlayerIsActive = 1 AND 
-				IsVerified = 1 AND
 				GameID = @id
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,

@@ -21,8 +21,8 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Confirm the playerID passed in exists and is active
-	EXEC [dbo].[usp_ConfirmGameExistsAndIsActive] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	--Validate the gameID
+	EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 	UPDATE tbl_Game

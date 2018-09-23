@@ -67,9 +67,9 @@ BEGIN
 
 		--Check to see if the player is okay to join the game, as the player may be attempting to join a game which has already begun
 		DECLARE @canJoin BIT;
-		SELECT @canJoin = IsJoinableAtAnytime FROM tbl_Game WHERE GameID = @gameIDToJoin
+		SELECT @canJoin = IsJoinableAtAnytime FROM vw_Active_Games WHERE GameID = @gameIDToJoin
 		DECLARE @gameState VARCHAR(255);
-		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameIDToJoin
+		SELECT @gameState = GameState FROM vw_Active_Games WHERE GameID = @gameIDToJoin
 
 		--If the player cannot join at anytime and the current game state is currently PLAYING, return an error because the player
 		--is trying to join a game which has already begun and does not allow players to join at anytime
@@ -82,7 +82,8 @@ BEGIN
 
 
 		--Confirm the nickname entered is not already taken by a player in the game
-		IF EXISTS (SELECT * FROM tbl_Player WHERE GameID = @gameIDToJoin AND Nickname = @nickname AND PlayerIsActive = 1)
+		--Checking against verified and unverified players.
+		IF EXISTS (SELECT * FROM vw_Active_Players WHERE GameID = @gameIDToJoin AND Nickname = @nickname)
 		BEGIN
 			SET @result = @EC_JOINGAME_NICKNAMETAKEN;
 			SET @errorMSG = 'The nickname you entered is already taken. Please chose another';
@@ -93,8 +94,8 @@ BEGIN
 		--Confirm if the phone number or email address is not already taken by a player in another active game
 		IF(@isPhone = 1)
 		BEGIN
-			--Confirm the phone number is unique in all active / not complete games
-			IF EXISTS(SELECT Phone FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE Phone LIKE @contact)
+			--Confirm the phone number is unique for all players currently in a game.
+			IF EXISTS(SELECT Phone FROM vw_InGame_Players WHERE Phone LIKE @contact)
 			BEGIN
 				SET @result = @EC_JOINGAME_PHONETAKEN;
 				SET @errorMSG = 'The phone number you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
@@ -103,8 +104,8 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			--Confirm the email is unique in the game
-			IF EXISTS(SELECT Email FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE Email LIKE @contact)
+			--Confirm the email is unique for all players currently in a game.
+			IF EXISTS(SELECT Email FROM vw_InGame_Players WHERE Email LIKE @contact)
 			BEGIN
 				SET @result = @EC_JOINGAME_EMAILTAKEN;
 				SET @errorMSG = 'The email address you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
@@ -125,6 +126,11 @@ BEGIN
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
+
+			--Update the number of players in the game
+			UPDATE tbl_Game
+			SET NumOfPlayers = NumOfPlayers + 1
+			WHERE GameID = @gameIDToJoin
 		COMMIT
 
 		--Set the return variables
@@ -132,7 +138,7 @@ BEGIN
 		SET @errorMSG = ''
 
 		--Read the player record
-		SELECT * FROM vw_PlayerGame WHERE PlayerID = @createdPlayerID
+		SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @createdPlayerID
 
 	END TRY
 

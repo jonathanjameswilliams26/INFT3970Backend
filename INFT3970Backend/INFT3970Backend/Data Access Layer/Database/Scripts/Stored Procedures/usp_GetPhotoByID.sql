@@ -13,7 +13,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	SELECT *
-	FROM vw_PhotoGameAndPlayers
+	FROM vw_Join_PhotoGamePlayers
 	WHERE PhotoID = @photoID
 	
 END

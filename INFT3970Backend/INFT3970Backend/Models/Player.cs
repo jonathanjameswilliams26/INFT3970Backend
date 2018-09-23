@@ -21,10 +21,22 @@ namespace INFT3970Backend.Models
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }
         public string ConnectionID { get; set; }
-        public bool IsConnected { get; set; }
         public bool HasLeftGame { get; set; }
         public int GameID { get; set; }
         public Game Game { get; set; }
+
+
+        public bool IsConnected
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(ConnectionID))
+                    return false;
+                else
+                    return true;
+            }
+        }
+
         public Player()
         {
             

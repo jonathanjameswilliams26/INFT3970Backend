@@ -42,14 +42,24 @@ BEGIN
 
 	BEGIN TRY
 
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+		--Confirm the Game is PLAYING state
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Update the notifications to IsRead = 1
 		UPDATE tbl_Notification
 		SET IsRead = 1
-		WHERE PlayerID = @playerID AND NotificationID IN (
+		WHERE 
+			PlayerID = @playerID AND 
+			NotificationID IN (
 				SELECT notificationID
 				FROM @udtNotifs
 			)
@@ -65,7 +75,7 @@ BEGIN
 		BEGIN
 			ROLLBACK;
 			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
+			SET @errorMSG = 'An error occurred while trying to set notifications to read.'
 		END
 	END CATCH
 END

@@ -35,30 +35,30 @@ BEGIN
 	DECLARE @EC_DATAINVALID INT = 17;
 
 	BEGIN TRY  
-		--Confirm the TakenByID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @takenByID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the takenByID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @takenByID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the PhotoOfID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @photoOfID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the photoOfByID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @photoOfID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Get the GameID of the TakenByPLayerID and PhotoOfPlayerID and confirm they are in the same game
 		DECLARE @takenByGameID INT;
 		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @takenByGameID OUTPUT
 		DECLARE @photoOfGameID INT;
-		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @takenByID, @gameID = @photoOfGameID OUTPUT
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @photoOfID, @gameID = @photoOfGameID OUTPUT
 		IF(@takenByGameID <> @photoOfGameID)
 		BEGIN
 			SET @result = @EC_DATAINVALID;
 			SET @errorMSG = 'The players provided are not in the same game.'
 		END
 
-		--Confirm the game is not completed
-		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @takenByGameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Confirm the Game is PLAYING state
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @takenByGameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		IF (@result = 1) --success
+		IF (@decision = 1) --success
 		BEGIN
 			SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 			BEGIN TRANSACTION
@@ -78,7 +78,7 @@ BEGIN
 				--Create the notifications for all other players in the game
 				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
 				SELECT @msgTxt, 'SUCCESS', 0, 1, @takenByGameID, PlayerID
-				FROM vw_ActiveAndVerifiedPlayers
+				FROM vw_InGame_Players
 				WHERE PlayerID <> @takenByID AND PlayerID <> @photoOfID AND GameID = @takenByGameID						
 			COMMIT
 		END
@@ -103,7 +103,7 @@ BEGIN
 				--Create the notifications for all other players in the game
 				INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
 				SELECT @msgTxt, 'FAIL', 0, 1, @takenByGameID, PlayerID
-				FROM vw_ActiveAndVerifiedPlayers
+				FROM vw_InGame_Players
 				WHERE PlayerID <> @takenByID AND PlayerID <> @photoOfID AND GameID = @takenByGameID						
 			COMMIT
 		END

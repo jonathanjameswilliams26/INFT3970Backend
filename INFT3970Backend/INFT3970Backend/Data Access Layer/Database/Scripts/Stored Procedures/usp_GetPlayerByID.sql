@@ -15,11 +15,11 @@ BEGIN
 	SET NOCOUNT ON;
 
 	--Confirm the PlayerID passed in exists and is active
-	EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 	SELECT *
-	FROM vw_PlayerGame
+	FROM vw_Join_PlayerGame
 	WHERE PlayerID = @playerID
 
 	SET @result = 1;

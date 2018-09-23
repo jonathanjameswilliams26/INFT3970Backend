@@ -29,8 +29,8 @@ BEGIN
 	DECLARE @EC_INSERTERROR INT = 2
 
 	BEGIN TRY  
-		--Confirm the GameID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmGameExistsAndIsActive] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Confirm the GameID passed in exists
+		EXEC [dbo].[usp_ConfirmGameExists] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
@@ -48,7 +48,7 @@ BEGIN
 		BEGIN
 			ROLLBACK;
 			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'An error occurred while trying to update the player record.'
+			SET @errorMSG = 'An error occurred while trying to update the Game record.'
 		END
 	END CATCH
 END

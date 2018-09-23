@@ -31,8 +31,12 @@ BEGIN
 
 	BEGIN TRY  
 		
-		--Confirm the gameID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmGameExistsAndIsActive] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Confirm the gameID passed in exists not complete
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Confirm the Game is PLAYING state
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Update the Game to now be completed.
@@ -59,13 +63,13 @@ BEGIN
 			WHERE IsVotingComplete = 0 AND GameID = @gameID
 
 			--Delete any votes which have not yet been completed in the game
-			UPDATE tbl_PlayerVotePhoto
-			SET PlayerVotePhotoIsDeleted = 1
+			UPDATE tbl_Vote
+			SET VoteIsDeleted = 1
 			WHERE PhotoID IN (SELECT PhotoID FROM tbl_Photo WHERE PhotoIsDeleted = 1 AND GameID = @gameID)
 
 			--Update all votes to not active
-			UPDATE tbl_PlayerVotePhoto
-			SET PlayerVotePhotoIsActive = 0
+			UPDATE tbl_Vote
+			SET VoteIsActive = 0
 			WHERE PlayerID IN (SELECT PlayerID FROM tbl_Player WHERE GameID = @gameID)
 
 			--Update all notifications to not active

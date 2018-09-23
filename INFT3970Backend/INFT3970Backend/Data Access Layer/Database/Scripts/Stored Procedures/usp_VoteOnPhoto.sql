@@ -38,32 +38,37 @@ BEGIN
 
 	BEGIN TRY
 		
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+		--Confirm the Game is PLAYING state
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the vote record exists
-		IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PlayerID = @playerID AND VoteID = @voteID AND PlayerVotePhotoIsActive = 1 AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsDeleted = 0)
+		--Confirm the vote record exists and has not already been voted on.
+		IF NOT EXISTS (SELECT * FROM vw_Incomplete_Votes WHERE VoteID = @voteID)
 		BEGIN
 			SET @result = @EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST;
-			SET @errorMSG = 'The PlayerVotePhoto record does not exist.';
+			SET @errorMSG = 'The PlayerVotePhoto record does not exist or already voted.';
 			RAISERROR('',16,1);
 		END
 
-		--Get the photoID from the PlayerVotePhoto record
+		--Get the photoID from the Vote record
 		DECLARE @photoID INT;
-		SELECT @photoID = PhotoID FROM tbl_PlayerVotePhoto WHERE VoteID = @voteID
+		SELECT @photoID = PhotoID FROM vw_Incomplete_Votes WHERE VoteID = @voteID
 
 		--Confirm the voting is not already complete on the photo record
-		DECLARE @isVotingCompleted BIT;
-		SELECT @isVotingCompleted = IsVotingComplete FROM tbl_Photo WHERE PhotoID = @photoID
-		IF(@isVotingCompleted = 1)
+		IF EXISTS (SELECT * FROM vw_Completed_Photos WHERE PhotoID = @photoID)
 		BEGIN
 			SET @result = @EC_VOTEPHOTO_VOTEALREADYCOMPLETE;
-			SET @errorMSG = 'The PlayerVotePhoto record has already been completed.';
+			SET @errorMSG = 'The Voting on the photo has already been completed.';
 			RAISERROR('',16,1);
 		END
-
 
 		--Confirm the Voting Finish Time has not already passed
 		DECLARE @votingFinishTime DATETIME2;
@@ -83,23 +88,23 @@ BEGIN
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
 			
-			--Update the PlayerVotePhoto record with the decision
-			UPDATE tbl_PlayerVotePhoto
+			--Update the Vote record with the decision
+			UPDATE tbl_Vote
 			SET IsPhotoSuccessful = @isPhotoSuccessful
 			WHERE VoteID = @voteID
 
 			--Update the photo record with the number of Yes or No Votes
 			DECLARE @countYes INT = 0;
 			DECLARE @countNo INT = 0;
-			SELECT @countYes = COUNT(*) FROM tbl_PlayerVotePhoto WHERE PhotoID = @photoID AND IsPhotoSuccessful = 1
-			SELECT @countNo = COUNT(*) FROM tbl_PlayerVotePhoto WHERE PhotoID = @photoID AND IsPhotoSuccessful = 0
+			SELECT @countYes = COUNT(*) FROM vw_Success_Votes WHERE PhotoID = @photoID
+			SELECT @countNo = COUNT(*) FROM vw_Fail_Votes WHERE PhotoID = @photoID
 			UPDATE tbl_Photo
 			SET NumYesVotes = @countYes, NumNoVotes = @countNo
 			WHERE PhotoID = @photoID
 
 
 			--Update the photo's IsVotingComplete field if all the player votes have successfully been completed
-			IF NOT EXISTS (SELECT * FROM tbl_PlayerVotePhoto WHERE PhotoID = @photoID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1 AND PlayerVotePhotoIsDeleted = 0)
+			IF NOT EXISTS (SELECT * FROM vw_Incomplete_Votes WHERE PhotoID = @photoID)
 			BEGIN
 				UPDATE tbl_Photo
 				SET IsVotingComplete = 1
@@ -109,15 +114,26 @@ BEGIN
 				IF (@countYes > @countNo)
 				BEGIN
 					-- updating kills and deaths per players in the photo
-					UPDATE tbl_Player SET NumKills = NumKills +1 WHERE PlayerID = (SELECT TakenByPlayerID FROM tbl_Photo WHERE takenByPlayerID = @playerID)
-					UPDATE tbl_Player SET NumDeaths = NumDeaths +1 WHERE PlayerID = (SELECT PhotoOfPlayerID FROM tbl_Photo WHERE takenByPlayerID = @playerID)
+					UPDATE tbl_Player 
+					SET NumKills = NumKills +1 
+					WHERE PlayerID = 
+						(SELECT TakenByPlayerID
+						FROM tbl_Photo
+						WHERE PhotoID = @photoID)
+
+					UPDATE tbl_Player 
+					SET NumDeaths = NumDeaths +1 
+					WHERE PlayerID = 
+						(SELECT PhotoOfPlayerID 
+						FROM tbl_Photo
+						WHERE PhotoID = @photoID)
 				END
 			END
 		COMMIT
 
 		SET @result = 1;
 		SET @errorMSG = '';
-		SELECT * FROM vw_PlayerVoteJoinTables WHERE VoteID = @voteID
+		SELECT * FROM vw_Join_VotePhotoPlayer WHERE VoteID = @voteID
 	END TRY
 
 	BEGIN CATCH

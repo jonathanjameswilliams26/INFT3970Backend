@@ -15,7 +15,7 @@ GO
 --		1. EC_INSERTERROR - An error occurred while trying to insert the game record
 
 -- =============================================
-ALTER PROCEDURE [dbo].[usp_LeaveGame] 
+CREATE PROCEDURE [dbo].[usp_LeaveGame] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
 	@result INT OUTPUT,
@@ -59,7 +59,7 @@ BEGIN
 		UPDATE tbl_Photo SET PhotoIsDeleted = 1 WHERE TakenByPlayerID = @playerID AND IsVotingComplete = 0
 	
 		-- delete votes submitted by player that have not reached an outcome
-		UPDATE tbl_PlayerVotePhoto SET PlayerVotePhotoIsDeleted = 1 WHERE PlayerID = @playerID AND PlayerVotePhotoIsActive = 0
+		UPDATE tbl_Vote SET VoteIsDeleted = 1 WHERE PlayerID = @playerID AND VoteIsActive = 0
 	
 		-- delete any unread notifications for the player
 		UPDATE tbl_Notification SET NotificationIsDeleted = 1 WHERE PlayerID = @playerID

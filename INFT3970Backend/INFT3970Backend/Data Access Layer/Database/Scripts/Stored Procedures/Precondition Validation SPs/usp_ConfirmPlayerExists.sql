@@ -7,8 +7,7 @@ GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 15/09/18
--- Description:	Confirms the PlayerID exists. If the playerID exists the procedure will return
---				Otherwise the procedure will raise an error.
+-- Description:	Confirms the PlayerID exists.
 -- =============================================
 CREATE PROCEDURE usp_ConfirmPlayerExists
 	@id INT,
@@ -22,7 +21,7 @@ BEGIN
 
 	DECLARE @EC_PLAYERDOESNOTEXIST INT = 12;
 
-    IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @id AND PlayerIsDeleted = 0)
+    IF NOT EXISTS (SELECT * FROM vw_All_Players WHERE PlayerID = @id)
 	BEGIN
 		SELECT @result = @EC_PLAYERDOESNOTEXIST;
 		SET @errorMSG = 'The PlayerID does not exist';

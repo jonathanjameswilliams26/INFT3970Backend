@@ -7,8 +7,7 @@ GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 15/09/18
--- Description:	Confirms the GameID is active. If the GameID active the procedure will return
---				Otherwise the procedure will raise an error.
+-- Description:	Confirms the GameID exists
 -- =============================================
 CREATE PROCEDURE usp_ConfirmGameExists
 	@id INT,

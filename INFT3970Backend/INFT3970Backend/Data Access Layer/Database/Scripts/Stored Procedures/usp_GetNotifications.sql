@@ -28,15 +28,23 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 	BEGIN TRY
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+		--Confirm the Game is PLAYING state
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--The playerID exists, get the notifications associated with that player
 		IF (@all = 1)
-			SELECT * FROM tbl_Notification WHERE PlayerID = @playerID	
+			SELECT * FROM vw_Active_Notifications WHERE PlayerID = @playerID	
 		ELSE
-			SELECT * FROM tbl_Notification WHERE PlayerID = @playerID AND IsRead = 0
+			SELECT * FROM vw_Unread_Notifications WHERE PlayerID = @playerID
 
 		--Set the return variables
 		SET @result = 1;

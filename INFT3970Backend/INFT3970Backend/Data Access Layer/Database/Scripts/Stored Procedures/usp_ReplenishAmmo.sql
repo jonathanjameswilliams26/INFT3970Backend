@@ -28,8 +28,16 @@ BEGIN
 	DECLARE @EC_INSERTERROR INT = 2
 
 	BEGIN TRY  
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+		--Confirm the Game is PLAYING state
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Make the update on the Players ammo count
@@ -42,7 +50,7 @@ BEGIN
 
 		SET @result = 1;
 		SET @errorMSG = '';
-		SELECT * FROM vw_ActiveAndNotCompleteGamesAndPlayers WHERE PlayerID = @playerID
+		SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @playerID
 	END TRY
 
 

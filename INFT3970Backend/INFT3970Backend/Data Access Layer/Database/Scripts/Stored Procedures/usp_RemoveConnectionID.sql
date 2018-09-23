@@ -15,7 +15,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	UPDATE tbl_Player
-	SET IsConnected = 0, ConnectionID = NULL
+	SET ConnectionID = NULL
 	WHERE ConnectionID LIKE @connectionID
 END
 GO

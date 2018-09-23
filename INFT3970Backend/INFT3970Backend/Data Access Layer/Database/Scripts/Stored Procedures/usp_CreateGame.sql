@@ -32,7 +32,7 @@ BEGIN
 
 	BEGIN TRY  
 		--Confirm the game code does not already exist in a game
-		IF EXISTS (SELECT * FROM tbl_Game WHERE GameCode = @gameCode)
+		IF EXISTS (SELECT * FROM vw_All_Games WHERE GameCode = @gameCode)
 		BEGIN
 			SET @result = @EC_ITEMALREADYEXISTS;
 			SET @errorMSG = 'The game code already exists.';
@@ -51,14 +51,12 @@ BEGIN
 		SET @result = 1;
 		SET @errorMSG = '';
 
-
 		--Read the new game record
-		SELECT * FROM tbl_Game WHERE GameID = @createdGameID
+		SELECT * FROM vw_Active_Games WHERE GameID = @createdGameID
 	END TRY
 
 	--An error occurred in the data validation
 	BEGIN CATCH
-		
 		--An error occurred while trying to perform the update on the PLayer table
 		IF @@TRANCOUNT > 0
 		BEGIN
@@ -66,7 +64,6 @@ BEGIN
 			SET @result = @EC_INSERTERROR;
 			SET @errorMSG = 'The an error occurred while trying to create the game record';
 		END
-
 	END CATCH
 END
 GO

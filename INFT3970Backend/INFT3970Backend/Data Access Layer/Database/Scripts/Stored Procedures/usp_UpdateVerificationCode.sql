@@ -18,14 +18,21 @@ BEGIN
 
 	--Declaring the possible error codes returned
 	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
 	DECLARE @EC_VERIFYPLAYER_ALREADYVERIFIED INT = 2002;
 	
 
 	BEGIN TRY
 		
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+		--Confirm the Game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Confirm the playerID is in a non verified state
@@ -47,7 +54,7 @@ BEGIN
 		--Set the success return variables
 		SET @result = 1;
 		SET @errorMSG = ''
-		SELECT * FROM tbl_Player WHERE PlayerID = @playerID
+		SELECT * FROM vw_Active_Players WHERE PlayerID = @playerID
 	END TRY
 
 	BEGIN CATCH

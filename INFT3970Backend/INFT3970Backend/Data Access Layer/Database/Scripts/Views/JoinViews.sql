@@ -1,0 +1,190 @@
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 23/09/18
+-- Description:	View which JOINS the Player and Game tables
+--				Contains all records which are not deleted.
+-- =============================================
+USE udb_CamTag
+GO
+CREATE VIEW vw_Join_PlayerGame
+AS
+SELECT 
+	PlayerID,
+	Nickname,
+	Phone,
+	Email,
+	SelfieDataURL,
+	AmmoCount,
+	NumKills,
+	NumDeaths,
+	NumPhotosTaken,
+	IsHost,
+	IsVerified,
+	VerificationCode,
+	HasLeftGame,
+	PlayerIsActive,
+	PlayerIsDeleted,
+	ConnectionID,
+	g.GameID,
+	GameCode,
+	NumOfPlayers,
+	GameMode,
+	StartTime,
+	EndTime,
+	GameState,
+	IsJoinableAtAnytime,
+	GameIsActive,
+	GameIsDeleted
+FROM
+	vw_All_Players p INNER JOIN
+	vw_All_Games g ON (p.GameID = g.GameID)
+GO
+
+
+
+
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 23/09/18
+-- Description:	View which JOINS the Photo Game and Players table
+--				Contains all records which are not deleted and IS ACTIVE.
+-- =============================================
+USE udb_CamTag
+GO
+CREATE VIEW vw_Join_PhotoGamePlayers
+AS
+SELECT
+	PhotoID,
+	Lat,
+	Long,
+	PhotoDataURL,
+	TimeTaken,
+	VotingFinishTime,
+	NumYesVotes,
+	NumNoVotes,
+	IsVotingComplete,
+	PhotoIsActive,
+	PhotoIsDeleted,
+	p.GameID,
+	GameCode,
+	NumOfPlayers,
+	GameMode,
+	StartTime,
+	EndTime,
+	GameState,
+	IsJoinableAtAnytime,
+	GameIsActive,
+	GameIsDeleted,
+	TakenByPlayerID,
+	takenBy.Nickname AS TakenByPlayerNickname,
+	takenBy.Phone AS TakenByPlayerPhone,
+	takenBy.Email AS TakenByPlayerEmail,
+	takenBy.SelfieDataURL AS TakenByPlayerSelfieDataURL,
+	takenBy.AmmoCount AS TakenByPlayerAmmoCount,
+	takenBy.NumKills AS TakenByPlayerNumKills,
+	takenBy.NumDeaths AS TakenByPlayerNumDeaths,
+	takenBy.NumPhotosTaken AS TakenByPlayerNumPhotosTaken,
+	takenBy.IsHost AS TakenByPlayerIsHost,
+	takenBy.IsVerified AS TakenByPlayerIsVerified,
+	takenBy.ConnectionID AS TakenByPlayerConnectionID,
+	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
+	takenBy.PlayerIsDeleted AS TakenByPlayerIsDeleted,
+	takenBy.HasLeftGame AS TakenByPlayerHasLeftGame,
+	PhotoOfPlayerID,
+	photoOf.Nickname AS PhotoOfPlayerNickname,
+	photoOf.Phone AS PhotoOfPlayerPhone,
+	photoOf.Email AS PhotoOfPlayerEmail,
+	photoOf.SelfieDataURL AS PhotoOfPlayerSelfieDataURL,
+	photoOf.AmmoCount AS PhotoOfPlayerAmmoCount,
+	photoOf.NumKills AS PhotoOfPlayerNumKills,
+	photoOf.NumDeaths AS PhotoOfPlayerNumDeaths,
+	photoOf.NumPhotosTaken AS PhotoOfPlayerNumPhotosTaken,
+	photoOf.IsHost AS PhotoOfPlayerIsHost,
+	photoOf.IsVerified AS PhotoOfPlayerIsVerified,
+	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
+	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive,
+	photoOf.PlayerIsDeleted AS PhotoOfPlayerIsDeleted,
+	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame
+FROM
+	vw_Active_Photos p 
+	INNER JOIN vw_Active_Games g ON (p.GameID = g.GameID)
+	INNER JOIN vw_Active_Players takenBy ON (p.TakenByPlayerID = takenBy.PlayerID)
+	INNER JOIN vw_Active_Players photoOf ON (p.PhotoOfPlayerID = photoOf.PlayerID)
+GO
+
+
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 23/09/18
+-- Description:	View which JOINS the Vote, Photo and Player tables.
+--				Contains all records which are not deleted and IS ACTIVE.
+-- =============================================
+USE udb_CamTag
+GO
+CREATE VIEW vw_Join_VotePhotoPlayer
+AS
+SELECT
+	v.VoteID,
+	v.IsPhotoSuccessful,
+	v.VoteIsActive,
+	v.VoteIsDeleted,
+	pgp.*,
+	pl.PlayerID,
+	pl.Nickname,
+	pl.Phone,
+	pl.Email,
+	pl.SelfieDataURL,
+	pl.AmmoCount,
+	pl.NumKills,
+	pl.NumDeaths,
+	pl.NumPhotosTaken,
+	pl.IsHost,
+	pl.IsVerified,
+	pl.ConnectionID,
+	pl.HasLeftGame,
+	pl.PlayerIsActive,
+	pl.PlayerIsDeleted
+FROM
+	vw_Active_Votes v
+	INNER JOIN vw_Active_Players pl ON (pl.PlayerID = v.PlayerID)
+	INNER JOIN vw_Join_PhotoGamePlayers pgp ON (v.PhotoID = pgp.PhotoID)
+GO
+
+
+
+
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 23/09/18
+-- Description:	View which JOINS the Notifications, Game and Player tables
+--				Contains all records which are not deleted and IS ACTIVE.
+-- =============================================
+USE udb_CamTag
+GO
+CREATE VIEW vw_Join_NotificationGamePlayer
+AS
+SELECT
+	NotificationID,
+	MessageText,
+	NotificationType,
+	IsRead,
+	NotificationIsActive,
+	NotificationIsDeleted,
+	p.*
+FROM 
+	vw_Active_Notifications n
+	INNER JOIN vw_Join_PlayerGame p ON (n.PlayerID = p.PlayerID)
+GO

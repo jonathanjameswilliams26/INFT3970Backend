@@ -307,6 +307,10 @@ namespace INFT3970Backend.Data_Access_Layer
                         //Perform the procedure and get the result
                         Connection.Open();
                         Command.ExecuteNonQuery();
+
+
+                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
+                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
                     }
                 }
             }

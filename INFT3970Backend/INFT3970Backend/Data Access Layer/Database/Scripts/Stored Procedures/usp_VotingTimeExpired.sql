@@ -45,23 +45,34 @@ BEGIN
 			WHERE PhotoID = @photoID
 
 			--Since the voting time has expired the photo is an automatic success photo, set all the votes to successful
-			UPDATE tbl_PlayerVotePhoto
+			UPDATE tbl_Vote
 			SET IsPhotoSuccessful = 1
 			WHERE PhotoID = @photoID
 
 			--Update the counts of the votes
 			DECLARE @countYesVotes INT;
-			SELECT @countYesVotes = COUNT(*) FROM tbl_PlayerVotePhoto WHERE IsPhotoSuccessful = 1 AND PhotoID = @photoID
+			SELECT @countYesVotes = COUNT(*) FROM tbl_Vote WHERE IsPhotoSuccessful = 1 AND PhotoID = @photoID
 			UPDATE tbl_Photo
 			SET NumYesVotes = @countYesVotes, NumNoVotes = 0
 			WHERE PhotoID = @photoID
 
 			-- updating kills and deaths per players in the photo
-			UPDATE tbl_Player SET NumKills = NumKills +1 WHERE PlayerID = (SELECT TakenByPlayerID FROM tbl_Photo WHERE PhotoID = @photoID)
-			UPDATE tbl_Player SET NumDeaths = NumDeaths +1 WHERE PlayerID = (SELECT PhotoOfPlayerID FROM tbl_Photo WHERE PhotoID = @photoID)
+			UPDATE tbl_Player 
+			SET NumKills = NumKills +1 
+			WHERE PlayerID = 
+					(SELECT TakenByPlayerID 
+					FROM tbl_Photo 
+					WHERE PhotoID = @photoID)
+			
+			UPDATE tbl_Player 
+			SET NumDeaths = NumDeaths +1 
+			WHERE PlayerID = 
+				(SELECT PhotoOfPlayerID 
+				FROM tbl_Photo 
+				WHERE PhotoID = @photoID)
 		COMMIT
 
-		SELECT * FROM vw_PhotoGameAndPlayers WHERE PhotoID = @photoID
+		SELECT * FROM vw_Join_PhotoGamePlayers WHERE PhotoID = @photoID
 		SET @result = 1;
 		SET @errorMSG = '';
 

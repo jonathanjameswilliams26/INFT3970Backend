@@ -14,14 +14,29 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Confirm the playerID passed in exists and is active
-	EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	--Validate the playerID
+	EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+	--Get the GameID from the playerID
+	DECLARE @gameID INT;
+	EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+	--Confirm the Game is PLAYING state
+	EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
 
+	--Gets the votes to complete by the player.
 	SELECT *
-	FROM vw_PlayerVoteJoinTables
-	WHERE PlayerID = @playerID AND IsPhotoSuccessful IS NULL AND PlayerVotePhotoIsActive = 1 AND PlayerVotePhotoIsDeleted = 0
-	ORDER BY VoteID
+	FROM 
+		vw_Join_VotePhotoPlayer
+	WHERE
+		PlayerID = @playerID AND 
+		IsPhotoSuccessful IS NULL AND 
+		VoteIsActive = 1 AND 
+		VoteIsDeleted = 0
+	ORDER BY 
+		VoteID
 
 	SET @result = 1;
 	SET @errorMSG = '';

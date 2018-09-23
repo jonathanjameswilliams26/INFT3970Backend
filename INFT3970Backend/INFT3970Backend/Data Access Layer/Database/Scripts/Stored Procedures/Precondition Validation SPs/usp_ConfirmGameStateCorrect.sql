@@ -23,7 +23,7 @@ BEGIN
 	DECLARE @EC_GAMESTATEINVALID INT = 18;
 
 	--Confirm the game exists and is active
-	EXEC [dbo].[usp_ConfirmGameExistsAndIsActive] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	
 	IF(@result = 1)
 	BEGIN

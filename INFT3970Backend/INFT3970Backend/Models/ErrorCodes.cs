@@ -10,6 +10,7 @@ namespace INFT3970Backend.Models
         //General / Global Error Codes
         public const int EC_DATABASECONNECTERROR = 0;
         public const int EC_INSERTERROR = 2;
+        public const int EC_PLAYERNOTINGAME = 8;
         public const int EC_GAMENOTACTIVE = 9;
         public const int EC_PLAYERNOTACTIVE = 10;
         public const int EC_BUILDMODELERROR = 11;
@@ -49,7 +50,6 @@ namespace INFT3970Backend.Models
 
         //GameController - BeginGame Error Codes
         public const int EC_BEGINGAME_NOTHOST = 6000;
-        public const int EC_BEGINGAME_NOTINLOBBY = 6001;
         public const int EC_BEGINGAME_NOTENOUGHPLAYERS = 6002;
     }
 }

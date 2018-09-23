@@ -35,8 +35,8 @@ BEGIN
 
 	BEGIN TRY  
 		
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 		
 		--Get the GameID from the playerID
@@ -50,7 +50,7 @@ BEGIN
 		--Perform the select statement to get the last known locations
 		SELECT * 
 		FROM 
-			vw_PhotoGameAndPlayers p
+			vw_Join_PhotoGamePlayers p
 		WHERE
 			p.GameID = @gameID AND
 			p.PhotoIsActive = 1 AND

@@ -17,12 +17,12 @@ BEGIN
 
 	SET @ammoCount = -1;
 
-	--Confirm the PlayerID passed in exists and is active
-	EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	--Validate the playerID
+	EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 	SELECT @ammoCount = AmmoCount
-	FROM tbl_Player
+	FROM vw_InGame_Players
 	WHERE PlayerID = @playerID
 
 	SET @result = 1;

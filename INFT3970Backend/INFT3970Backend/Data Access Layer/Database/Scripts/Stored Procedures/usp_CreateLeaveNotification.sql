@@ -31,16 +31,16 @@ BEGIN
 	DECLARE @EC_INSERTERROR INT = 2;
 
 	BEGIN TRY  
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 		
 		--Get the GameID from the playerID
 		DECLARE @gameID INT;
 		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
-		--Confirm the game is not completed
-		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Confirm the Game is PLAYING state
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--PlayerID exists and connectionID exists, add the notif
@@ -54,7 +54,7 @@ BEGIN
 			--Create the notifications for all other players in the game
 			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
 			SELECT @msgTxt, 'LEAVE', 0, 1, @gameID, PlayerID
-			FROM vw_ActiveAndVerifiedPlayers
+			FROM vw_InGame_Players
 			WHERE PlayerID <> @playerID AND GameID = @gameID
 		COMMIT
 	END TRY

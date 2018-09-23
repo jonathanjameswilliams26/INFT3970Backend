@@ -190,7 +190,6 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.IsHost = GetBool("IsHost");
                 player.IsVerified = GetBool("IsVerified");
                 player.ConnectionID = SafeGetString("ConnectionID");
-                player.IsConnected = GetBool("IsConnected");
                 player.HasLeftGame = GetBool("HasLeftGame");
                 player.IsActive = GetBool("PlayerIsActive");
                 player.IsDeleted = GetBool("PlayerIsDeleted");
@@ -261,7 +260,6 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.IsHost = GetBool("TakenByPlayerIsHost");
                     player.IsVerified = GetBool("TakenByPlayerIsVerified");
                     player.ConnectionID = SafeGetString("TakenByPlayerConnectionID");
-                    player.IsConnected = GetBool("TakenByPlayerIsConnected");
                     player.HasLeftGame = GetBool("TakenByPlayerHasLeftGame");
                     player.IsActive = GetBool("TakenByPlayerIsActive");
                     player.IsDeleted = GetBool("TakenByPlayerIsDeleted");
@@ -286,7 +284,6 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.IsHost = GetBool("PhotoOfPlayerIsHost");
                     player.IsVerified = GetBool("PhotoOfPlayerIsVerified");
                     player.ConnectionID = SafeGetString("PhotoOfPlayerConnectionID");
-                    player.IsConnected = GetBool("PhotoOfPlayerIsConnected");
                     player.HasLeftGame = GetBool("PhotoOfPlayerHasLeftGame");
                     player.IsActive = GetBool("PhotoOfPlayerIsActive");
                     player.IsDeleted = GetBool("PhotoOfPlayerIsDeleted");
@@ -352,10 +349,10 @@ namespace INFT3970Backend.Data_Access_Layer
                 PlayerVotePhoto playerVotePhoto = new PlayerVotePhoto();
                 playerVotePhoto.VoteID = GetInt("VoteID");
                 playerVotePhoto.IsPhotoSuccessful = SafeGetBool("IsPhotoSuccessful");
-                playerVotePhoto.IsActive = GetBool("PlayerVotePhotoIsActive");
+                playerVotePhoto.IsActive = GetBool("VoteIsActive");
                 playerVotePhoto.PlayerID = GetInt("PlayerID");
                 playerVotePhoto.PhotoID = GetInt("PhotoID");
-                playerVotePhoto.IsDeleted = GetBool("PlayerVotePhotoIsDeleted");
+                playerVotePhoto.IsDeleted = GetBool("VoteIsDeleted");
 
                 if (doGetPlayer)
                     player = PlayerFactory(true);

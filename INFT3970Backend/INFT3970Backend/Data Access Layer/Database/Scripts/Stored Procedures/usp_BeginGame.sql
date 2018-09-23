@@ -32,19 +32,18 @@ BEGIN
 
 	DECLARE @EC_INSERTERROR INT = 2;
 	DECLARE @EC_BEGINGAME_NOTHOST INT = 6000;
-	DECLARE @EC_BEGINGAME_NOTINLOBBY INT = 6001;
 	DECLARE @EC_BEGINGAME_NOTENOUGHPLAYERS INT = 6002;
 
 	BEGIN TRY  
 		
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 		
 
 		--Confirm the playerID passed in Is the host of the Game because only the host can begin the game
 		DECLARE @isHost BIT;
-		SELECT @isHost = IsHost FROM tbl_Player WHERE PlayerID = @playerID
+		SELECT @isHost = IsHost FROM vw_InGame_Players WHERE PlayerID = @playerID
 		IF(@isHost = 0)
 		BEGIN
 			SET @result = @EC_BEGINGAME_NOTHOST;
@@ -58,14 +57,8 @@ BEGIN
 
 
 		--Confirm the Game is IN LOBBY state
-		DECLARE @gameState VARCHAR(255);
-		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameID
-		IF(@gameState NOT LIKE 'IN LOBBY')
-		BEGIN
-			SET @result = @EC_BEGINGAME_NOTINLOBBY;
-			SET @errorMSG = 'The game state is not IN LOBBY, the must be in the lobby to begin the game.';
-			RAISERROR('',16,1);
-		END
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'IN LOBBY', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 
 		--Confirm there is enough players in the Game to Start

@@ -8,8 +8,6 @@ GO
 -- Author:		Jonathan Williams
 -- Create date: 15/09/18
 -- Description:	Confirms the Game is not already completed.
---				If the game is not complete it will run normally,
---				otherwise, if the game is completed an error will be raised
 -- =============================================
 CREATE PROCEDURE usp_ConfirmGameNotCompleted
 	@id INT,
@@ -21,17 +19,25 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--The error code returned if the game is already completed
 	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
 
-	IF EXISTS (SELECT * FROM tbl_Game WHERE GameID = @id AND GameState = 'COMPLETED')
+	--Confirm the game exists
+	EXEC [dbo].[usp_ConfirmGameExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+
+	--If the game exists check to see if the game is completed.
+	IF(@result = 1)
 	BEGIN
-		SELECT @result = @EC_GAMEALREADYCOMPLETE;
-		SET @errorMSG = 'The game is already completed.';
-	END
-	ELSE
-	BEGIN
-		SELECT @result = 1;
-		SET @errorMSG = '';
+		IF NOT EXISTS (SELECT * FROM vw_Active_Games WHERE GameID = @id)
+		BEGIN
+			SELECT @result = @EC_GAMEALREADYCOMPLETE;
+			SET @errorMSG = 'The game is already completed.';
+		END
+		ELSE
+		BEGIN
+			SELECT @result = 1;
+			SET @errorMSG = '';
+		END
 	END
 END
 GO

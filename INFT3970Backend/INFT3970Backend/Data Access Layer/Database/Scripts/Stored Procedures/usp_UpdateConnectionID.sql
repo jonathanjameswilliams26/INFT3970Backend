@@ -33,7 +33,7 @@ BEGIN
 
 	BEGIN TRY  
 		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Confirm the new connectionID does not already exists
@@ -48,7 +48,7 @@ BEGIN
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
 			UPDATE tbl_Player
-			SET ConnectionID = @connectionID, IsConnected = 1
+			SET ConnectionID = @connectionID
 			WHERE PlayerID = @playerID
 		COMMIT
 	END TRY

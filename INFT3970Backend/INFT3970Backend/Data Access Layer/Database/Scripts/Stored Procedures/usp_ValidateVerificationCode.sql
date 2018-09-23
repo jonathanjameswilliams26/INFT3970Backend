@@ -25,12 +25,20 @@ BEGIN
 
 	BEGIN TRY
 		
-		--Confirm the playerID passed in exists and is active
-		EXEC [dbo].[usp_ConfirmPlayerExistsAndIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+		--Confirm the Game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Confirm the playerID is in a non verified state
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
+		IF EXISTS (SELECT * FROM vw_InGame_Players WHERE PlayerID = @playerID)
 		BEGIN
 			SET @result = @EC_VERIFYPLAYER_ALREADYVERIFIED;
 			SET @errorMSG = 'The playerID is already verified.';
@@ -53,13 +61,6 @@ BEGIN
 			UPDATE tbl_Player
 			SET IsVerified = 1
 			WHERE PlayerID = @playerID
-
-			--Update the player count in the game which the player belongs to
-			DECLARE @gameID INT;
-			EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
-			UPDATE tbl_Game
-			SET NumOfPlayers = NumOfPlayers + 1
-			WHERE GameID = @gameID
 		COMMIT
 
 		--Set the success return variables

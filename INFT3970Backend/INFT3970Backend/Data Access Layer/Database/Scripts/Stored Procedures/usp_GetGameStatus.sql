@@ -34,7 +34,7 @@ BEGIN
 
 
 	BEGIN TRY  
-		--Confirm the playerID passed in exists and is active
+		--Confirm the playerID passed in exists
 		EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 		
@@ -57,12 +57,9 @@ BEGIN
 			--Check to see if the player has any votes they need to complete
 			DECLARE @countVotes INT = 0;
 			SELECT @countVotes = COUNT(*)
-			FROM tbl_PlayerVotePhoto
+			FROM vw_Incomplete_Votes
 			WHERE 
-				PlayerID = @playerID AND
-				IsPhotoSuccessful IS NULL AND
-				PlayerVotePhotoIsDeleted = 0 AND
-				PlayerVotePhotoIsActive = 1	
+				PlayerID = @playerID
 			IF(@countVotes > 0)
 			BEGIN
 				SET @hasVotesToComplete = 1;
@@ -71,19 +68,16 @@ BEGIN
 			--Check to see if the player has any new notifications
 			DECLARE @countNotifs INT = 0;
 			SELECT @countNotifs = COUNT(*)
-			FROM tbl_Notification
+			FROM vw_Unread_Notifications
 			WHERE
-				PlayerID = @playerID AND
-				IsRead = 0 AND
-				NotificationIsActive = 1 AND
-				NotificationIsDeleted = 0		
+				PlayerID = @playerID	
 			IF(@countNotifs > 0)
 			BEGIN
 				SET @hasNotifications = 1;
 			END
 			
 			--Get the player record
-			SELECT * FROM vw_PlayerGame WHERE PlayerID = @playerID
+			SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @playerID
 		END
 		
 		SET @result = 1;
