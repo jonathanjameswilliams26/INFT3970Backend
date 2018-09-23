@@ -396,7 +396,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="filter">The filter value, ALL, ACTIVE, INGAME, INGAMEALL</param>
         /// <param name="orderBy">The order by value, AZ, ZA, KILLS</param>
         /// <returns>The list of all players in the game</returns>
-        public Response<GamePlayerListResponse> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        public Response<Game> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             StoredProcedure = "usp_GetAllPlayersInGame";
             List<Player> players = new List<Player>();
@@ -431,7 +431,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
                             //If an error occurred while trying to build the player list
                             if (player == null)
-                                return new Response<GamePlayerListResponse>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
 
                             players.Add(player);
                         }
@@ -444,29 +444,30 @@ namespace INFT3970Backend.Data_Access_Layer
 
                         //If the response was not successful return the empty response
                         if(Result != 1)
-                            return new Response<GamePlayerListResponse>(null, Result, ErrorMSG, Result);
+                            return new Response<Game>(null, Result, ErrorMSG, Result);
                     }
                 }
 
                 //If the players list is empty, return an error
                 if(players.Count == 0)
-                    return new Response<GamePlayerListResponse>(null, "ERROR", "The players list is empty.", ErrorCodes.EC_PLAYERLIST_EMPTYLIST);
+                    return new Response<Game>(null, "ERROR", "The players list is empty.", ErrorCodes.EC_PLAYERLIST_EMPTYLIST);
 
                 //Get the Game object
                 Response<Game> gameResponse = GetGameByID(players[0].GameID);
 
                 //If the Game response was not successful, return an error
                 if(!gameResponse.IsSuccessful())
-                    return new Response<GamePlayerListResponse>(null, gameResponse.Type, gameResponse.ErrorMessage, gameResponse.ErrorCode);
+                    return new Response<Game>(null, gameResponse.Type, gameResponse.ErrorMessage, gameResponse.ErrorCode);
 
                 //Otherwise, create the successful response with the game and player list
-                return new Response<GamePlayerListResponse>(new GamePlayerListResponse(gameResponse.Data, players), Result, ErrorMSG, Result);
+                gameResponse.Data.Players = players;
+                return new Response<Game>(gameResponse.Data, Result, ErrorMSG, Result);
             }
 
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<GamePlayerListResponse>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<Game>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 

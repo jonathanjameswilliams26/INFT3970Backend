@@ -29,7 +29,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players currently in the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAME", "AZ");
+            Response<Game> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -40,7 +40,7 @@ namespace INFT3970Backend.Hubs
 
             //Create notifications of new player joining, if the game has started
             GameBL gameBL = new GameBL();
-            if (response.Data.Game.GameState == "PLAYING" || response.Data.Game.GameState == "STARTING")
+            if (response.Data.GameState == "PLAYING" || response.Data.GameState == "STARTING")
                 gameBL.CreateJoinNotification(joinedPlayer.PlayerID);
 
             //Loop through each of the players and update any player currently connected to the hub
@@ -54,7 +54,7 @@ namespace INFT3970Backend.Hubs
                 if(player.IsConnected)
                 {
                     //If the game state is STARTING then the players are in the Lobby, update the lobby list
-                    if(response.Data.Game.GameState == "IN LOBBY")
+                    if(response.Data.GameState == "IN LOBBY")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
                     //Send a notification to the players in the game.
@@ -67,7 +67,7 @@ namespace INFT3970Backend.Hubs
                 {
                     //Don't send a notification when the game is in a STARTING state (in lobby)
                     //Send a notification when a new player joins when the game is currently playing.
-                    if (response.Data.Game.GameState == "PLAYING")
+                    if (response.Data.GameState == "PLAYING")
                     {
                         string message = joinedPlayer.Nickname + " has joined your game of CamTag.";
                         if (player.HasEmail())
@@ -121,7 +121,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players currently in the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
+            Response<Game> response = gameDAL.GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -229,7 +229,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get all the players currently in the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAMEALL", "AZ");
+            Response<Game> response = gameDAL.GetAllPlayersInGame(playerID, true, "INGAMEALL", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -240,7 +240,7 @@ namespace INFT3970Backend.Hubs
 
             //Create notifications of new player joining, if the game has started
             GameBL gameBL = new GameBL();
-            if (response.Data.Game.GameState == "PLAYING")
+            if (response.Data.GameState == "PLAYING")
                 gameBL.CreateLeaveNotification(playerID);
 
             //Loop through each of the players and update any player currently connected to the hub
@@ -254,11 +254,11 @@ namespace INFT3970Backend.Hubs
                 if (player.IsConnected)
                 {
                     //If the game state is STARTING then the players are in the Lobby, update the lobby list
-                    if (response.Data.Game.GameState == "IN LOBBY")
+                    if (response.Data.GameState == "IN LOBBY")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
                     //If the game state is PLAYING - Send a notification to the players in the game.
-                    if (response.Data.Game.GameState == "PLAYING")
+                    if (response.Data.GameState == "PLAYING")
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                 }
 
@@ -267,7 +267,7 @@ namespace INFT3970Backend.Hubs
                 {
                     //Don't send a notification when the game is IN LOBBY state
                     //Send a notification when a new player joins when the game is currently playing.
-                    if (response.Data.Game.GameState == "PLAYING")
+                    if (response.Data.GameState == "PLAYING")
                     {
                         string message = leftPlayer.Nickname + " has left your game of CamTag.";
                         if (player.HasEmail())
@@ -293,7 +293,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
+            Response<Game> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -373,7 +373,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+            Response<Game> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -410,7 +410,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
-            Response<GamePlayerListResponse> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+            Response<Game> response = gameDAL.GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
             if (!response.IsSuccessful())
                 return;

@@ -186,11 +186,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="filter">The filter value, ALL, ACTIVE, INGAME, INGAMEALL</param>
         /// <param name="orderBy">The order by value, AZ, ZA, KILLS</param>
         /// <returns>The list of all players in the game</returns>
-        public Response<GamePlayerListResponse> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        public Response<Game> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             //Validate the filer and orderby value is a valid value
             if (string.IsNullOrWhiteSpace(filter) || string.IsNullOrWhiteSpace(orderBy))
-                return new Response<GamePlayerListResponse>(null, "ERROR", "The filter or orderBy value is null or empty.", ErrorCodes.EC_DATAINVALID);
+                return new Response<Game>(null, "ERROR", "The filter or orderBy value is null or empty.", ErrorCodes.EC_DATAINVALID);
 
             //Confirm the filter value passed in is a valid value
             bool isFilterValid = false;

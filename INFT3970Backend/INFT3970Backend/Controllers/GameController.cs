@@ -95,7 +95,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>The list of all players in the game</returns>
         [HttpGet]
         [Route("api/game/getAllPlayersInGame/{id:int}/{isPlayerID:bool}/{filter}/{orderBy}")]
-        public ActionResult<Response<GamePlayerListResponse>> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
+        public ActionResult<Response<Game>> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
             //Example request
             //https://localhost:5000/api/game/getAllPlayersInGame/100000/true/INGAME/AZ
