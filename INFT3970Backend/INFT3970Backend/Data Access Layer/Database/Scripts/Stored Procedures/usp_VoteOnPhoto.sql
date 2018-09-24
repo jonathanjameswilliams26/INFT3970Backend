@@ -93,42 +93,10 @@ BEGIN
 			SET IsPhotoSuccessful = @isPhotoSuccessful
 			WHERE VoteID = @voteID
 
-			--Update the photo record with the number of Yes or No Votes
-			DECLARE @countYes INT = 0;
-			DECLARE @countNo INT = 0;
-			SELECT @countYes = COUNT(*) FROM vw_Success_Votes WHERE PhotoID = @photoID
-			SELECT @countNo = COUNT(*) FROM vw_Fail_Votes WHERE PhotoID = @photoID
-			UPDATE tbl_Photo
-			SET NumYesVotes = @countYes, NumNoVotes = @countNo
-			WHERE PhotoID = @photoID
-
-
-			--Update the photo's IsVotingComplete field if all the player votes have successfully been completed
-			IF NOT EXISTS (SELECT * FROM vw_Incomplete_Votes WHERE PhotoID = @photoID)
-			BEGIN
-				UPDATE tbl_Photo
-				SET IsVotingComplete = 1
-				WHERE PhotoID = @photoID
-
-				-- if successful vote
-				IF (@countYes > @countNo)
-				BEGIN
-					-- updating kills and deaths per players in the photo
-					UPDATE tbl_Player 
-					SET NumKills = NumKills +1 
-					WHERE PlayerID = 
-						(SELECT TakenByPlayerID
-						FROM tbl_Photo
-						WHERE PhotoID = @photoID)
-
-					UPDATE tbl_Player 
-					SET NumDeaths = NumDeaths +1 
-					WHERE PlayerID = 
-						(SELECT PhotoOfPlayerID 
-						FROM tbl_Photo
-						WHERE PhotoID = @photoID)
-				END
-			END
+			--Call a procedure to update the number of yes/no votes and check to see
+			--if the photo voting has now been completed. If completed update the kills/deaths
+			EXEC [dbo].[usp_UpdateVotingCountOnPhoto] @photoID = @photoID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+			EXEC [dbo].[usp_DoRaiseError] @result = @result
 		COMMIT
 
 		SET @result = 1;

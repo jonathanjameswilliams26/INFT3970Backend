@@ -63,7 +63,7 @@ BEGIN
 
 		--Confirm there is enough players in the Game to Start
 		DECLARE @activePlayerCount INT = 0;
-		SELECT @activePlayerCount = COUNT(*) FROM tbl_Player WHERE GameID = @gameID AND IsVerified = 1 AND PlayerIsActive = 1 AND PlayerIsDeleted = 0 AND HasLeftGame = 0
+		SELECT @activePlayerCount = COUNT(*) FROM vw_InGame_Players WHERE GameID = @gameID
 		IF(@activePlayerCount < 3)
 		BEGIN
 			SET @result = @EC_BEGINGAME_NOTENOUGHPLAYERS;

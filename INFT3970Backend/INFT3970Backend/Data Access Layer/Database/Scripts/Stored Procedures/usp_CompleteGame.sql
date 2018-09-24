@@ -35,9 +35,16 @@ BEGIN
 		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the Game is PLAYING state
-		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		--Confirm the Game is STARTING state
+		--Can be in a starting state because players could leave while the game is starting.
+		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'STARTING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		
+		--If the game is not in SATRTING state, check if its in PLAYING
+		IF(@result <> 1)
+		BEGIN
+			EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+			EXEC [dbo].[usp_DoRaiseError] @result = @result
+		END
 
 		--Update the Game to now be completed.
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
@@ -52,25 +59,25 @@ BEGIN
 			SET PlayerIsActive = 0
 			WHERE GameID = @gameID
 
-			--Update all photos in the game to not active
-			UPDATE tbl_Photo
-			SET PhotoIsActive = 0
-			WHERE GameID = @gameID
+			--Delete any votes on a photo which have not yet been completed in the game
+			UPDATE tbl_Vote
+			SET VoteIsDeleted = 1
+			WHERE PhotoID IN (SELECT PhotoID FROM vw_Incompleted_Photos WHERE GameID = @gameID)
+
+			--Update all votes to not active
+			UPDATE tbl_Vote
+			SET VoteIsActive = 0
+			WHERE PlayerID IN (SELECT PlayerID FROM tbl_Player WHERE GameID = @gameID)
 
 			--Delete any photos which voting has not yet been completed
 			UPDATE tbl_Photo
 			SET PhotoIsDeleted = 1
 			WHERE IsVotingComplete = 0 AND GameID = @gameID
 
-			--Delete any votes which have not yet been completed in the game
-			UPDATE tbl_Vote
-			SET VoteIsDeleted = 1
-			WHERE PhotoID IN (SELECT PhotoID FROM tbl_Photo WHERE PhotoIsDeleted = 1 AND GameID = @gameID)
-
-			--Update all votes to not active
-			UPDATE tbl_Vote
-			SET VoteIsActive = 0
-			WHERE PlayerID IN (SELECT PlayerID FROM tbl_Player WHERE GameID = @gameID)
+			--Update all photos in the game to not active
+			UPDATE tbl_Photo
+			SET PhotoIsActive = 0
+			WHERE GameID = @gameID
 
 			--Update all notifications to not active
 			UPDATE tbl_Notification

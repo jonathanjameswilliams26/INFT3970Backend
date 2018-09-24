@@ -397,9 +397,12 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
         /// <returns>A response status.</returns>
-        public Response<object> LeaveGame(int playerID)
+        public Response<List<Photo>> LeaveGame(int playerID, ref bool isGameCompleted, ref bool isPhotosCompleted)
         {
             StoredProcedure = "usp_LeaveGame";
+            List<Photo> photos = new List<Photo>();
+            isGameCompleted = false;
+            isPhotosCompleted = false;
             try
             {
                 //Create the connection and command for the stored procedure
@@ -410,6 +413,8 @@ namespace INFT3970Backend.Data_Access_Layer
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
                         Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.Add("@isGameCompleted", SqlDbType.Bit);
+                        Command.Parameters["@isGameCompleted"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -417,15 +422,32 @@ namespace INFT3970Backend.Data_Access_Layer
 
                         //Perform the procedure and get the result
                         Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Reader = Command.ExecuteReader();
+                        ModelFactory factory = new ModelFactory(Reader);
+                        while (Reader.Read())
+                        {
+                            var photo = factory.PhotoFactory(true, true, true);
+                            if (photo == null)
+                                return new Response<List<Photo>>(null, "ERROR", "An error occurred while trying to build the list photo model.", ErrorCodes.EC_BUILDMODELERROR);
+
+                            photos.Add(photo);
+                        }
+                        Reader.Close();
 
                         //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
                         //The data reader will be closed after the last row of the results have been read.
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        isGameCompleted = Convert.ToBoolean(Command.Parameters["@isGameCompleted"].Value);
 
                         //Format the results into a response object
-                        return new Response<object>(1, Result, ErrorMSG, Result);
+                        Response<List<Photo>> response = new Response<List<Photo>>(photos, Result, ErrorMSG, Result);
+
+                        //If there is photos in the list then photo voting has been completed since the player left.
+                        if (photos.Count != 0)
+                            isPhotosCompleted = true;
+
+                        return response;
                     }
                 }
             }
@@ -433,7 +455,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<List<Photo>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 

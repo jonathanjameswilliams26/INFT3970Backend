@@ -289,7 +289,7 @@ namespace INFT3970Backend.Hubs
         /// If the players are connected to the hub a hub method will be invoked.
         /// </summary>
         /// <param name="gameID">The gameID which was completed</param>
-        public async void UpdateGameCompleted(Game game)
+        public async void UpdateGameCompleted(Game game, bool isNotEnoughPlayers)
         {
             //Get the list of players from the game
             GameDAL gameDAL = new GameDAL();
@@ -313,6 +313,9 @@ namespace INFT3970Backend.Hubs
                 else
                 {
                     string message = "Your game of CamTag has been completed. Thanks for playing.";
+                    if (isNotEnoughPlayers)
+                        message = "Your game of CamTag has been completed because there is no longer enough players in your game. Thanks for playing";
+
                     if (player.HasEmail())
                         EmailSender.SendInBackground(player.Email, "Game Completed", message, false);
                     else

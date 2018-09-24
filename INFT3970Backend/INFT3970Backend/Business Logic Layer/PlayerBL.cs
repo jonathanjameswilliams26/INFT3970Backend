@@ -263,22 +263,46 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
         /// <summary>
-        /// Leaves a player from their active game
+        /// Leaves a player from their active game.
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
-        /// <returns>A response status.</returns>
+        /// <returns>A response which indicates success or failure.</returns>
         public Response<object> LeaveGame(int playerID, IHubContext<ApplicationHub> hubContext)
         {
             //Call the Data Access Layer to remove a player from the game.
             PlayerDAL playerDAL = new PlayerDAL();
+            bool isGameComplete = false;
+            bool isPhotosComplete = false;
+            var response = playerDAL.LeaveGame(playerID, ref isGameComplete, ref isPhotosComplete);
 
-            var result = playerDAL.LeaveGame(playerID);
-            if (result.Data != null)
+            //Return the error response if an error occurred
+            if (!response.IsSuccessful())
+                return new Response<object>(null, response.Type, response.ErrorMessage, response.ErrorCode);
+
+            //Get the player object from the database
+            var playerResponse = playerDAL.GetPlayerByID(playerID);
+            if(!playerResponse.IsSuccessful())
+                return new Response<object>(null, playerResponse.Type, playerResponse.ErrorMessage, playerResponse.ErrorCode);
+
+            //Create the hub interface which will be used to send live updates to clients
+            HubInterface hubInterface = new HubInterface(hubContext);
+
+            //Call the hub method to send out notifications to players that the game is now complete
+            if (isGameComplete)
+                hubInterface.UpdateGameCompleted(playerResponse.Data.Game, true);
+
+            //Otherwise, if the photo list is not empty then photos have been completed and need to send out updates
+            else if(isPhotosComplete)
             {
-                HubInterface hubInterface = new HubInterface(hubContext);
-                hubInterface.UpdatePlayerLeft(playerID);
+                foreach(var photo in response.Data)
+                    hubInterface.UpdatePhotoVotingCompleted(photo);
             }
-            return result;
+
+            //If the game is not completed send out the player left notification
+            if (!isGameComplete)
+                hubInterface.UpdatePlayerLeft(playerID);
+
+            return new Response<object>(null, response.Type, response.ErrorMessage, response.ErrorCode);
         }
 
 

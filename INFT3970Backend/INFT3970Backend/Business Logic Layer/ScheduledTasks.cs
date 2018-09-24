@@ -44,8 +44,18 @@ namespace INFT3970Backend.Business_Logic_Layer
             //Sleep the thread until the game has reached the playing state
             Thread.Sleep(timeToWait);
 
-            //Call the DataAccessLayer to update the Game record
+            //Get the updated game record
             GameDAL gameDAL = new GameDAL();
+            var gameResponse = gameDAL.GetGameByID(game.GameID);
+            if (!gameResponse.IsSuccessful())
+                return;
+
+            //Confirm the game is in a starting state and the start time has elapsed
+            if (gameResponse.Data.GameState != "STARTING")
+                return;
+            if (gameResponse.Data.StartTime.Value > DateTime.Now)
+                return;
+
             Response<object> response = gameDAL.SetGameState(game.GameID, "PLAYING");
 
             //Send updates to clients that the game has now officially begun
@@ -102,7 +112,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
             //If the response was successful send out the game completed messages to players
             if (response.IsSuccessful())
-                hubInterface.UpdateGameCompleted(game);
+                hubInterface.UpdateGameCompleted(game, false);
         }
 
 
