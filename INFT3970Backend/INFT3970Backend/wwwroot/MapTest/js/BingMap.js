@@ -60,7 +60,7 @@ function getLastKnownLocation() {
                 // The Date and time of the photo when it was taken  
                 var timestamp = new Date(photoData[i].timeTaken);
                 // Calling the function to format the time into a more user friendly format
-                var correctTime = formatDate(timestamp);
+                var correctTime = timestamp.toLocaleTimeString('en-US');
                 // Calls the function to create the information box for the pin
                 createInfoBox(photoData[i].lat, photoData[i].long, photoData[i].takenByPlayer.nickname, pin, correctTime);
 
@@ -88,44 +88,4 @@ function createInfoBox(lattitude, longitude, nickname, pin, timestamp)
     });
 }
 
-// Formats the Date pulled from the database into a time thats more user friendly
-function formatDate(date)
-{
-    var uncorrectedHours = parseInt(date.getHours());
-    var minutes = String(date.getMinutes());
-    var seconds = date.getSeconds();
-    var timeOfDay; 
-    var correctHours;
- 
 
-    // Time is past 12 
-    if (uncorrectedHours > 12) {
-        timeOfDay = 'PM';
-        correctHours = uncorrectedHours % 12;
-    }
-    // The time is before 12
-    else {
-        timeOfDay = 'AM';
-        correctHours = uncorrectedHours;
-    }
-   
-    var correctMinutes = updateTime(minutes);
-
-    // Outputs the correct time format
-    var time = correctHours + ':' + correctMinutes + '.' + seconds + timeOfDay;
-    return time;
-
-}
-
-function updateTime(time)
-{
-    var correctTime;
-    if (String(time).length = 1) {
-        correctTime = '0' + time;
-    }
-    else {
-        correctTime = time;
-    }
-
-    return correctTime;
-}
