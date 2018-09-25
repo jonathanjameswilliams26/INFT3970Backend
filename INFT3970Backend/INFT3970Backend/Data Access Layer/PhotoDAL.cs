@@ -289,10 +289,10 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID">The playerID which PlayerVotePhotoRecords to get</param>
         /// <returns></returns>
-        public Response<List<PlayerVotePhoto>> GetVotesToComplete(int playerID)
+        public Response<List<Vote>> GetVotesToComplete(Player player)
         {
             StoredProcedure = "usp_GetVotesToComplete";
-            List<PlayerVotePhoto> list = new List<PlayerVotePhoto>();
+            List<Vote> list = new List<Vote>();
             try
             {
                 //Create the connection and command for the stored procedure
@@ -302,7 +302,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -314,9 +314,9 @@ namespace INFT3970Backend.Data_Access_Layer
 
                         while (Reader.Read())
                         {
-                            PlayerVotePhoto playerVotePhoto = new ModelFactory(Reader).PlayerVotePhotoFactory(true, true);
+                            Vote playerVotePhoto = new ModelFactory(Reader).PlayerVotePhotoFactory(true, true);
                             if (playerVotePhoto == null)
-                                return new Response<List<PlayerVotePhoto>>(null, "ERROR", "An error occurred while trying to build the model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<List<Vote>>(null, "ERROR", "An error occurred while trying to build the model.", ErrorCodes.EC_BUILDMODELERROR);
                             else
                                 list.Add(playerVotePhoto);
                         }
@@ -328,23 +328,23 @@ namespace INFT3970Backend.Data_Access_Layer
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
 
                         //Format the results into a response object
-                        return new Response<List<PlayerVotePhoto>>(list, Result, ErrorMSG, Result);
+                        return new Response<List<Vote>>(list, Result, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<List<PlayerVotePhoto>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<List<Vote>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
 
 
 
-        public Response<PlayerVotePhoto> VoteOnPhoto(PlayerVotePhoto playerVote)
+        public Response<Vote> VoteOnPhoto(Vote playerVote)
         {
             StoredProcedure = "usp_VoteOnPhoto";
-            PlayerVotePhoto playerVotePhoto = null;
+            Vote playerVotePhoto = null;
             try
             {
                 //Create the connection and command for the stored procedure
@@ -370,7 +370,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         {
                             playerVotePhoto = new ModelFactory(Reader).PlayerVotePhotoFactory(true, true);
                             if (playerVotePhoto == null)
-                                return new Response<PlayerVotePhoto>(null, "ERROR", "An error occurred while trying to build the model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Vote>(null, "ERROR", "An error occurred while trying to build the model.", ErrorCodes.EC_BUILDMODELERROR);
                         }
                         Reader.Close();
 
@@ -380,13 +380,13 @@ namespace INFT3970Backend.Data_Access_Layer
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
 
                         //Format the results into a response object
-                        return new Response<PlayerVotePhoto>(playerVotePhoto, Result, ErrorMSG, Result);
+                        return new Response<Vote>(playerVotePhoto, Result, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<PlayerVotePhoto>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<Vote>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }

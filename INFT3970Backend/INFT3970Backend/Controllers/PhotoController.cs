@@ -2,6 +2,7 @@
 using INFT3970Backend.Business_Logic_Layer;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
+using INFT3970Backend.Models.Errors;
 using INFT3970Backend.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -36,10 +37,23 @@ namespace INFT3970Backend.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("api/photo/upload")]
-        public ActionResult<Response<object>> Upload(PhotoUploadRequest request)
+        public ActionResult<Response> Upload(PhotoUploadRequest request)
         {
-            PhotoBL photoBL = new PhotoBL();
-            return photoBL.SavePhoto(request.imgUrl, request.takenByID, request.photoOfID, _hubContext, request.latitude, request.longitude);
+            try
+            {
+                var uploadedPhoto = new Photo(request.latitude, request.longitude, request.imgUrl, request.takenByID, request.photoOfID);
+                return new PhotoBL().SavePhoto(uploadedPhoto, _hubContext);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -54,11 +68,23 @@ namespace INFT3970Backend.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("api/photo/vote")]
-        public ActionResult<Response<List<PlayerVotePhoto>>> GetVotesToComplete([FromHeader] int playerID)
+        public ActionResult<Response<List<Vote>>> GetVotesToComplete([FromHeader] int playerID)
         {
-            //Call the business logic layer to get the list of votes the player needs to complete
-            PhotoBL photoBL = new PhotoBL();
-            return photoBL.GetVotesToComplete(playerID);
+            try
+            {
+                var player = new Player(playerID);
+                return new PhotoBL().GetVotesToComplete(player);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<List<Vote>>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -76,11 +102,23 @@ namespace INFT3970Backend.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("api/photo/vote")]
-        public ActionResult<Response<object>> VoteOnPhoto([FromHeader] int playerID, [FromHeader] int voteID, [FromForm] string decision)
+        public ActionResult<Response> VoteOnPhoto([FromHeader] int playerID, [FromHeader] int voteID, [FromForm] string decision)
         {
-            //Call the business logic layer to cast the vote on the photo
-            PhotoBL photoBL = new PhotoBL();
-            return photoBL.VoteOnPhoto(playerID, voteID, decision, _hubContext);
+            try
+            {
+                var vote = new Vote(voteID, decision, playerID);
+                return new PhotoBL().VoteOnPhoto(vote, _hubContext);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<List<Vote>>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -90,10 +128,21 @@ namespace INFT3970Backend.Controllers
         [Route("api/photo/lastKnownLocations")]
         public ActionResult<Response<List<Photo>>> GetLastKnownLocations([FromHeader] int playerID)
         {
-            //Call the business logic layer to cast the vote on the photo
-            PhotoBL photoBL = new PhotoBL();
-            return photoBL.GetLastKnownLocations(playerID);
+            try
+            {
+                var player = new Player(playerID);
+                return new PhotoBL().GetLastKnownLocations(player);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<List<Photo>> (e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
-
     }
 }

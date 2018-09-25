@@ -31,49 +31,19 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="tempLatitude">A string of the latitude value</param>
         /// <param name="tempLongitude">A string of the longitude value</param>
         /// <returns></returns>
-        public Response<object> SavePhoto(string imgUrl, string tempTakenByID, string tempPhotoOfID, IHubContext<ApplicationHub> hubContext, string tempLatitude, string tempLongitude)
+        public Response SavePhoto(Photo photo, IHubContext<ApplicationHub> hubContext)
         {
-            //Confirm the data is in the correct format
-            int takenByID = 0;
-            int photoOfID = 0;
-            double latitude = 0;
-            double longitude = 0;
-            try
-            {
-                takenByID = int.Parse(tempTakenByID);
-                photoOfID = int.Parse(tempPhotoOfID);
-                latitude = double.Parse(tempLatitude);
-                longitude = double.Parse(tempLongitude);
-                var base64Data = imgUrl.Replace("data:image/jpeg;base64,", "");
-                var binData = Convert.FromBase64String(base64Data);
-            }
-            catch
-            {
-                return new Response<object>(null, "ERROR", "The data provided is invalid, check the takenByID, PhotoOfID, lat, long and DataURL values to ensure they are in the correct format.", ErrorCodes.EC_DATAINVALID);
-            }
-
-            //Save the DataURL to the database
-            Photo photo = new Photo
-            {
-                PhotoDataURL = imgUrl,
-                TakenByPlayerID = takenByID,
-                PhotoOfPlayerID = photoOfID,
-                Lat = latitude,
-                Long = longitude
-            };
-            PhotoDAL photoDAL = new PhotoDAL();
-            Response<Photo> response = photoDAL.SavePhoto(photo);
+            Response<Photo> response = new PhotoDAL().SavePhoto(photo);
 
             //If the response is successful we want to send live updates to clients and
             //email or text message notifications to not connected players
-            if(response.Type == "SUCCESS")
+            if(response.IsSuccessful())
             {
                 HubInterface hubInterface = new HubInterface(hubContext);
                 hubInterface.UpdatePhotoUploaded(response.Data);
                 ScheduledTasks.ScheduleCheckPhotoVotingCompleted(response.Data, hubInterface);
             }
-            return new Response<object>(null, response.Type, response.ErrorMessage, response.ErrorCode);
-            
+            return new Response(response.ErrorMessage, response.ErrorCode);
         }
 
 
@@ -86,11 +56,10 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// </summary>
         /// <param name="playerID">The PlayerID who's incomplete voting records will be returned</param>
         /// <returns></returns>
-        public Response<List<PlayerVotePhoto>> GetVotesToComplete(int playerID)
+        public Response<List<Vote>> GetVotesToComplete(Player player)
         {
             //Call the Data Access Layer to get the photos require voting to be completed
-            PhotoDAL photoDAL = new PhotoDAL();
-            return photoDAL.GetVotesToComplete(playerID);
+            return new PhotoDAL().GetVotesToComplete(player);
         }
 
 
@@ -105,31 +74,12 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="decision">The decision, true = successful, false = unsuccessful</param>
         /// <param name="hubContext">The hub context used to send out live updates to players.</param>
         /// <returns></returns>
-        public Response<object> VoteOnPhoto(int playerID, int voteID, string decision, IHubContext<ApplicationHub> hubContext)
+        public Response VoteOnPhoto(Vote vote, IHubContext<ApplicationHub> hubContext)
         {
-            //Confirm the decision is in the correct format
-            bool isPhotoSuccessful = false;
-            try
-            {
-                isPhotoSuccessful = bool.Parse(decision);
-            }
-            catch
-            {
-                return new Response<object>(null, "ERROR", "The decision data is invalid. Should only be TRUE or FALSE.", ErrorCodes.EC_DATAINVALID);
-            }
-
-            //Update the Vote record in the database
-            PlayerVotePhoto playerVotePhoto = new PlayerVotePhoto
-            {
-                PlayerID = playerID,
-                VoteID = voteID,
-                IsPhotoSuccessful = isPhotoSuccessful
-            };
             PhotoDAL photoDAL = new PhotoDAL();
-            Response<PlayerVotePhoto> response = photoDAL.VoteOnPhoto(playerVotePhoto);
+            Response<Vote> response = photoDAL.VoteOnPhoto(vote);
 
-
-            if(response.Type == "SUCCESS")
+            if(response.IsSuccessful())
             {
                 //If the Photo's voting has now been completed send the notifications / updates
                 if(response.Data.Photo.IsVotingComplete)
@@ -139,7 +89,7 @@ namespace INFT3970Backend.Business_Logic_Layer
                 }
             }
 
-            return new Response<object>(null, response.Type, response.ErrorMessage, response.ErrorCode);
+            return new Response(response.ErrorMessage, response.ErrorCode);
         }
 
 

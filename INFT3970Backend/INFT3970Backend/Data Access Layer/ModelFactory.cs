@@ -338,7 +338,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="doGetPlayer">A flag which outlines if also building the Player model.</param>
         /// <param name="doGetPhoto">A flag which outlines if also building the Photo model.</param>
         /// <returns></returns>
-        public PlayerVotePhoto PlayerVotePhotoFactory(bool doGetPlayer, bool doGetPhoto)
+        public Vote PlayerVotePhotoFactory(bool doGetPlayer, bool doGetPhoto)
         {
             try
             {
@@ -346,7 +346,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 Photo photo = null;
 
                 //Build the PlayerVotePhoto object
-                PlayerVotePhoto playerVotePhoto = new PlayerVotePhoto();
+                Vote playerVotePhoto = new Vote();
                 playerVotePhoto.VoteID = GetInt("VoteID");
                 playerVotePhoto.IsPhotoSuccessful = SafeGetBool("IsPhotoSuccessful");
                 playerVotePhoto.IsActive = GetBool("VoteIsActive");

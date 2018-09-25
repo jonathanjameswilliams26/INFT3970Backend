@@ -29,5 +29,8 @@ namespace INFT3970Backend.Models.Errors
         public const string EM_GAME_MODE = "Game mode is invalid.";
         public const string EM_GAME_STATE = "Game state is invalid.";
         public const string EM_GAME_DATES = "The game start time or end time is invalid.";
+
+        //Photo Model Error Message - Invalid Model
+        public const string EM_PHOTO_MODELINVALID = "The Photo model is invalid. ";
     }
 }
