@@ -16,7 +16,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// Returns the created Game object. NULL data if successful.
         /// </summary>
         /// <returns>Returns the created Game object. NULL data if successful.</returns>
-        public Response<Player> CreateGame(string nickname, string contact, string imgUrl)
+        public Response<Player> CreateGame(Player hostPlayer)
         {
             GameDAL gameDAL = new GameDAL();
             Response<Game> response = null;
@@ -29,7 +29,7 @@ namespace INFT3970Backend.Business_Logic_Layer
                 response = gameDAL.CreateGame(GenerateCode());
 
                 //If the response is successful the game was successfully created
-                if (response.Type == "ERROR")
+                if (!response.IsSuccessful())
                     doRun = false;
 
                 //If the response contains an error code of ITEMALREADYEXISTS then the game code is not unique,
@@ -43,35 +43,22 @@ namespace INFT3970Backend.Business_Logic_Layer
                     doRun = false;
             }
 
-
             //If the create game failed, return the error message and code from that response
             if (!response.IsSuccessful())
-                return new Response<Player>(null, "ERROR", response.ErrorMessage, response.ErrorCode);
+                return new Response<Player>(response.ErrorMessage, response.ErrorCode);
 
             //Call the Player Business Logic to join the player to the game
             PlayerBL playerBL = new PlayerBL();
-            createdPlayer = playerBL.JoinGame(response.Data.GameCode, nickname, contact, imgUrl, true);
+            createdPlayer = playerBL.JoinGame(response.Data, hostPlayer);
 
             //If the Host player failed to join the game deleted the created game
             if (!createdPlayer.IsSuccessful())
             {
-                DeactivateGameAfterHostJoinError(response.Data.GameID);
-                return new Response<Player>(null, "ERROR", createdPlayer.ErrorMessage, createdPlayer.ErrorCode);
+                gameDAL.DeactivateGameAfterHostJoinError(response.Data);
+                return new Response<Player>(createdPlayer.ErrorMessage, createdPlayer.ErrorCode);
             }
 
             return createdPlayer;
-        }
-
-
-
-
-        /// <summary>
-        /// Deactivates the game created by the host player because an unexpected error occurred while the host player tried to join the game
-        /// </summary>
-        /// <param name="gameCode">The game code to deactivate</param>
-        public void DeactivateGameAfterHostJoinError(int gameID)
-        {
-            new GameDAL().DeactivateGameAfterHostJoinError(gameID);
         }
 
 
@@ -150,24 +137,6 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
         /// <summary>
-        /// Gets the Game object matching the specified ID.
-        /// </summary>
-        /// <param name="gameID">The gameID to return.</param>
-        /// <returns>A Game object if the ID exists, NULL if the ID does not exist.</returns>
-        public Response<Game> GetGame(int gameID)
-        {
-            GameDAL gameDAL = new GameDAL();
-            return gameDAL.GetGameByID(gameID);
-        }
-
-
-
-        
-
-
-
-
-        /// <summary>
         /// Gets all the players in a game with multiple filter parameters
         /// 
         /// FILTER
@@ -226,11 +195,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="playerID">The ID of the host player beginning the game, only the host player can begin the game.</param>
         /// <param name="hubContext">The hub context used to send live updates to clients</param>
         /// <returns>The updated Game object after being updated in the database.</returns>
-        public Response<Game> BeginGame(int playerID, IHubContext<ApplicationHub> hubContext)
+        public Response<Game> BeginGame(Player player, IHubContext<ApplicationHub> hubContext)
         {
             //Call the data access layer to begin the game, set the Game to a STARTING state
             GameDAL gameDAL = new GameDAL();
-            Response<Game> response = gameDAL.BeginGame(playerID);
+            Response<Game> response = gameDAL.BeginGame(player);
 
             if(response.IsSuccessful())
             {
@@ -260,11 +229,11 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// if the player has votes to complete, if the player has any new notifications 
         /// and the most recent player record. NULL if an error occurred.
         /// </returns>
-        public Response<GameStatusResponse> GetGameStatus(int playerID)
+        public Response<GameStatusResponse> GetGameStatus(Player player)
         {
             //Call the data access layer to get the status of the game / player
             GameDAL gameDAL = new GameDAL();
-            return gameDAL.GetGameStatus(playerID);
+            return gameDAL.GetGameStatus(player);
         }
     }
 }

@@ -68,7 +68,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// error such as invalid contact details or the contact details are already taken by another player in an active playing game.
         /// </summary>
         /// <param name="gameCode">The game code being deactivated</param>
-        public void DeactivateGameAfterHostJoinError(int gameID)
+        public void DeactivateGameAfterHostJoinError(Game game)
         {
             StoredProcedure = "usp_DeactivateGameAfterHostJoinError";
             try
@@ -80,7 +80,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameID", gameID);
+                        Command.Parameters.AddWithValue("@gameID", game.GameID);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -484,7 +484,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="playerID">The ID of the host player of the game. Only the host player can begin the game.</param>
         /// <returns>The updated game object, NULL if an error occurred</returns>
-        public Response<Game> BeginGame(int playerID)
+        public Response<Game> BeginGame(Player player)
         {
             StoredProcedure = "usp_BeginGame";
             Game game = null;
@@ -497,7 +497,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -517,14 +517,14 @@ namespace INFT3970Backend.Data_Access_Layer
                         //Format the results into a response object
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<Game>(game, Result, ErrorMSG, Result);
+                        return new Response<Game>(game, ErrorMSG, Result);
                     }
                 }
             }
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<Game>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<Game>(DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 
@@ -592,7 +592,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// if the player has votes to complete, if the player has any new notifications 
         /// and the most recent player record. NULL if an error occurred.
         /// </returns>
-        public Response<GameStatusResponse> GetGameStatus(int playerID)
+        public Response<GameStatusResponse> GetGameStatus(Player player)
         {
             StoredProcedure = "usp_GetGameStatus";
             Response<GameStatusResponse> response = null;
@@ -605,7 +605,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
                         Command.Parameters.Add("@gameState", SqlDbType.VarChar, 255);
                         Command.Parameters["@gameState"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@hasVotesToComplete", SqlDbType.Bit);
@@ -621,10 +621,10 @@ namespace INFT3970Backend.Data_Access_Layer
                         Connection.Open();
                         Reader = Command.ExecuteReader();
 
-                        Player player = null;
+                        Player updatedPlayer = null;
                         while(Reader.Read())
                         {
-                            player = new ModelFactory(Reader).PlayerFactory(true);
+                            updatedPlayer = new ModelFactory(Reader).PlayerFactory(true);
                             if(player == null)
                                 return new Response<GameStatusResponse>(null, "ERROR", "An error occurred while trying to build the Player model.", ErrorCodes.EC_BUILDMODELERROR);
                         }
@@ -641,7 +641,7 @@ namespace INFT3970Backend.Data_Access_Layer
                             string gameState = Convert.ToString(Command.Parameters["@gameState"].Value);
                             bool hasVotesToComplete = Convert.ToBoolean(Command.Parameters["@hasVotesToComplete"].Value);
                             bool hasNotifications = Convert.ToBoolean(Command.Parameters["@hasNotifications"].Value);
-                            GameStatusResponse gsr = new GameStatusResponse(gameState, hasVotesToComplete, hasNotifications, player);
+                            GameStatusResponse gsr = new GameStatusResponse(gameState, hasVotesToComplete, hasNotifications, updatedPlayer);
                             response.Data = gsr;
                         }
 
@@ -652,7 +652,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<GameStatusResponse>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<GameStatusResponse>(DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
     }

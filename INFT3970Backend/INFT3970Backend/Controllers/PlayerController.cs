@@ -5,6 +5,7 @@ using INFT3970Backend.Models.Requests;
 using INFT3970Backend.Business_Logic_Layer;
 using Microsoft.AspNetCore.SignalR;
 using INFT3970Backend.Hubs;
+using INFT3970Backend.Models.Errors;
 
 namespace INFT3970Backend.Controllers
 {
@@ -34,16 +35,25 @@ namespace INFT3970Backend.Controllers
         [Route("api/player/joinGame")]
         public ActionResult<Response<Player>> JoinGame(JoinGameRequest request)
         {
-            //Example request:
-            //Use POSTMAN and POST 'Form-Data' using the following values
-            //Key               Value
-            //gameCode          tcf124
-            //nickname          billy
-            //contact           enter an email or phone (NOTE: if using a phone it will send a text message to my number cause the twilio trial can only send to one number)
-            //imgUrl            the imgUrl string of the players profile picture
-
-            //Call the business logic layer to validate the form data and create a new player
-            return new PlayerBL().JoinGame(request.gameCode, request.nickname, request.contact, request.imgUrl, false);
+            try
+            {
+                //Create the player object who will be joining the game
+                var playerToJoin = new Player(request.nickname, request.imgUrl, request.contact);
+                var gameToJoin = new Game(request.gameCode);
+                
+                //Call the business logic layer to create a new player and join the game
+                return new PlayerBL().JoinGame(gameToJoin, playerToJoin);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<Player>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 

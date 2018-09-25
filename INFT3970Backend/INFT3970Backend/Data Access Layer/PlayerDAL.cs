@@ -120,7 +120,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="contact">The email or phone number entered by the player to receive notifications</param>
         /// <param name="isPhone">Flag value which outlines if the contact passed in is a phone number or email. TRUE = phone number, FALSE = email</param>
         /// <returns>The created Player object or NULL data if error occurred.</returns>
-        public Response<Player> JoinGame(string gameCode, string nickname, string contact, string imgUrl, bool isPhone, int verificationCode, bool isHost)
+        public Response<Player> JoinGame(Game game, Player playerToJoin, int verificationCode)
         {
             StoredProcedure = "usp_JoinGame";
             Player player = null;
@@ -133,13 +133,13 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameCode", gameCode);
-                        Command.Parameters.AddWithValue("@nickname", nickname);
-                        Command.Parameters.AddWithValue("@contact", contact);
-                        Command.Parameters.AddWithValue("@imgURL", imgUrl);
-                        Command.Parameters.AddWithValue("@isPhone", isPhone);
+                        Command.Parameters.AddWithValue("@gameCode", game.GameCode);
+                        Command.Parameters.AddWithValue("@nickname", playerToJoin.Nickname);
+                        Command.Parameters.AddWithValue("@contact", playerToJoin.GetContact());
+                        Command.Parameters.AddWithValue("@imgURL", playerToJoin.SelfieDataURL);
+                        Command.Parameters.AddWithValue("@isPhone", playerToJoin.HasPhone());
                         Command.Parameters.AddWithValue("@verificationCode", verificationCode);
-                        Command.Parameters.AddWithValue("@isHost", isHost);
+                        Command.Parameters.AddWithValue("@isHost", playerToJoin.IsHost);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -159,7 +159,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         //Format the results into a response object
                         Result = Convert.ToInt32(Command.Parameters["@result"].Value);
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<Player>(player, Result, ErrorMSG, Result);
+                        return new Response<Player>(player, ErrorMSG, Result);
                     }
                 }
             }
@@ -167,7 +167,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<Player>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<Player>(DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 

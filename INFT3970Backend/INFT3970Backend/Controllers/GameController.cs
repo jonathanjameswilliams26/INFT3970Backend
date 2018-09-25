@@ -3,8 +3,10 @@ using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
 using INFT3970Backend.Models.Responses;
+using INFT3970Backend.Models.Errors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using System;
 using System.Collections.Generic;
 
 namespace INFT3970Backend.Controllers
@@ -30,42 +32,27 @@ namespace INFT3970Backend.Controllers
         /// <returns>Response including the created Player object, including Game data. NULL data if error occurred.</returns>
         [HttpPost]
         [Route("api/game/createGame")]
-        public ActionResult<Response<Player>> CreateGame(CreateGameRequest request) //settings?
+        public ActionResult<Response<Player>> CreateGame(CreateGameRequest request)
         {
-            //Example request:
-            //Use POSTMAN and POST 'Form-Data' using the following values
-            //Key               Value
-            //nickname          billy
-            //contact           enter an email or phone (NOTE: if using a phone it will send a text message to my number cause the twilio trial can only send to one number)
-            //imgUrl            the imgUrl string of the players profile picture
-            //various settings??
-
-            GameBL gameBL = new GameBL();
-            return gameBL.CreateGame(request.nickname, request.contact, request.imgUrl);
-        }
-
-
-
-
-
-
-
-
-        /// <summary>
-        /// Gets the Game information matching the specified ID
-        /// </summary>
-        /// <param name="gameID">The GameID</param>
-        /// <returns>A Game object, NULL if error occurred</returns>
-        [HttpGet]
-        [Route("api/game/getGame/{gameID:int}")]
-        public ActionResult<Response<Game>> GetGame(int gameID)
-        {
-            //Example request
-            //https://localhost:5000/api/game/getGame/100000
-
-      
-            GameBL gameBL = new GameBL();
-            return gameBL.GetGame(gameID);
+            //Create the player object from the request and validate
+            Player hostPlayer = null;
+            try
+            {
+                hostPlayer = new Player(request.nickname, request.imgUrl, request.contact);
+                hostPlayer.IsHost = true;
+                GameBL gameBL = new GameBL();
+                return gameBL.CreateGame(hostPlayer);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<Player>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -100,9 +87,21 @@ namespace INFT3970Backend.Controllers
             //Example request
             //https://localhost:5000/api/game/getAllPlayersInGame/100000/true/INGAME/AZ
 
-
-            GameBL gameBL = new GameBL();
-            return gameBL.GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+            try
+            {
+                GameBL gameBL = new GameBL();
+                return gameBL.GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<Game>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -121,11 +120,22 @@ namespace INFT3970Backend.Controllers
         [Route("api/game/begin")]
         public ActionResult<Response<Game>> BeginGame([FromHeader] int playerID)
         {
-            //Example request
-            //https://localhost:5000/api/game/begin
-
-            GameBL gameBL = new GameBL();
-            return gameBL.BeginGame(playerID, _hubContext);
+            try
+            {
+                var hostPlayer = new Player(playerID);
+                GameBL gameBL = new GameBL();
+                return gameBL.BeginGame(hostPlayer, _hubContext);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<Game>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -148,11 +158,22 @@ namespace INFT3970Backend.Controllers
         [Route("api/game/status")]
         public ActionResult<Response<GameStatusResponse>> GetGameStatus([FromHeader] int playerID)
         {
-            //Example request
-            //https://localhost:5000/api/game/status
-
-            GameBL gameBL = new GameBL();
-            return gameBL.GetGameStatus(playerID);
+            try
+            {
+                var player = new Player(playerID);
+                GameBL gameBL = new GameBL();
+                return gameBL.GetGameStatus(player);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<GameStatusResponse>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
     }
 }

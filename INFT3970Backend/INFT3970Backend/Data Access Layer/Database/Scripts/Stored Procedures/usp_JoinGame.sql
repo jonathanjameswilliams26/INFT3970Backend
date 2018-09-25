@@ -95,7 +95,7 @@ BEGIN
 		IF(@isPhone = 1)
 		BEGIN
 			--Confirm the phone number is unique for all players currently in a game.
-			IF EXISTS(SELECT Phone FROM vw_InGame_Players WHERE Phone LIKE @contact)
+			IF EXISTS(SELECT Phone FROM vw_Active_Players WHERE Phone LIKE @contact)
 			BEGIN
 				SET @result = @EC_JOINGAME_PHONETAKEN;
 				SET @errorMSG = 'The phone number you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
@@ -105,7 +105,7 @@ BEGIN
 		ELSE
 		BEGIN
 			--Confirm the email is unique for all players currently in a game.
-			IF EXISTS(SELECT Email FROM vw_InGame_Players WHERE Email LIKE @contact)
+			IF EXISTS(SELECT Email FROM vw_Active_Players WHERE Email LIKE @contact)
 			BEGIN
 				SET @result = @EC_JOINGAME_EMAILTAKEN;
 				SET @errorMSG = 'The email address you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';

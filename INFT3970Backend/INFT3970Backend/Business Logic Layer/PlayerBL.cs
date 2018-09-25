@@ -40,79 +40,23 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="contact">The players contact either phone or email where the player will be contacted throughout the game.</param>
         /// <param name="isHost">A flag which outlines if the player joining the game is the host of the game.</param>
         /// <returns>Returns the created Player object. NULL data if error occurred.</returns>
-        public Response<Player> JoinGame(string gameCode, string nickname, string contact, string imgUrl, bool isHost)
+        public Response<Player> JoinGame(Game game, Player player)
         {
-            //Confirm the input parameters are not empty or null
-            if (string.IsNullOrWhiteSpace(nickname) || string.IsNullOrWhiteSpace(gameCode) || string.IsNullOrWhiteSpace(contact) || string.IsNullOrWhiteSpace(imgUrl))
-                return new Response<Player>(null, "ERROR", "Missing request data, nickname, contact, gamecode or imgURL is empty or null.", ErrorCodes.EC_MISSINGORBLANKDATA);
-
-            //Confirm the imgURL is a base64 string
-            try
-            {
-                if(!imgUrl.Contains("data:image/jpeg;base64,"))
-                    throw new Exception();
-
-                var base64Data = imgUrl.Replace("data:image/jpeg;base64,", "");
-                var binData = Convert.FromBase64String(base64Data);
-            }
-            catch
-            {
-                return new Response<Player>(null, "ERROR", "imgURL is not a base64 string.", ErrorCodes.EC_DATAINVALID);
-            }
-
-
-            //Confirm the game code is 6 characters in length and only contains letters and numbers
-            Regex gameCodeRegex = new Regex(@"^[a-zA-Z0-9]{6,6}$");
-            if (!gameCodeRegex.IsMatch(gameCode))
-                return new Response<Player>(null, "ERROR", "The game code is incorrect, it must be 6 characters long and only contain letters and numbers.", ErrorCodes.EC_JOINGAME_INVALIDGAMECODE);
-
-            //Confirm the nickname is only numbers and letters (no spaces allowed)
-            Regex nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
-            bool march = nicknameRegex.IsMatch(nickname);
-            if (!nicknameRegex.IsMatch(nickname))
-                return new Response<Player>(null, "ERROR", "The nickname you entered is invalid, please only enter letters and numbers (no spaces).", ErrorCodes.EC_JOINGAME_NICKNAMEINVALID);
-
-            //Confirm the contact, check if it is an email or phone number
-            bool isPhone = false;
-            bool isEmail = false;
-
-            //Check to see if the contact is a phone number
-            Regex phoneRegex = new Regex(@"^[0-9]{10,10}$");
-            isPhone = phoneRegex.IsMatch(contact);
-
-            //Check to see if the contact is an email address
-            //REFERENCE: http://emailregex.com/
-            Regex emailRegex = new Regex(@"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$");
-            isEmail = emailRegex.IsMatch(contact);
-            if (contact.Contains("@gmail.com")){// check if gmail address and remove any periods as they all are the same address.
-                string[] p = contact.Split('@');
-                p[0] = p[0].Replace(".", "");
-                contact = p[0] + "@" + p[1];
-            }
-
-            //If the contact is not either a phone or email address return an error
-            if (!isEmail && !isPhone)
-                return new Response<Player>(null, "ERROR", "The contact information entered is invalid. Please enter a phone number or an email address.", ErrorCodes.EC_JOINGAME_CONTACTINVALID);
-
-            //If the contact is a phone number, reformat the number to use +61 since that is needed for twilio
-            if(isPhone)
-                contact = "+61" + contact.Substring(1);
-
             //Call the data access layer to add the player to the database
             int verificationCode = GenerateVerificationCode();
             PlayerDAL playerDAL = new PlayerDAL();
-            Response<Player> response = playerDAL.JoinGame(gameCode, nickname, contact, imgUrl, isPhone, verificationCode, isHost);
+            Response<Player> response = playerDAL.JoinGame(game, player, verificationCode);
 
             //If the response was successful, send the verification code to the player
-            if(response.Type == "SUCCESS")
+            if(response.IsSuccessful())
             {
                 //Send the verification code to the players email
-                if(isEmail)
-                    EmailSender.SendInBackground(contact, "CamTag Verification Code", "Your CamTag verification code is: " + verificationCode, false);
+                if(response.Data.HasEmail())
+                    EmailSender.SendInBackground(response.Data.Email, "CamTag Verification Code", "Your CamTag verification code is: " + verificationCode, false);
 
                 //otherwise, send the verification code to the players phone number
                 else
-                    TextMessageSender.SendInBackground("Your CamTag verification code is: " + verificationCode, contact);
+                    TextMessageSender.SendInBackground("Your CamTag verification code is: " + verificationCode, response.Data.Phone);
             }
 
             return response;

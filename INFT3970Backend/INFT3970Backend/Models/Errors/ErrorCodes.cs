@@ -22,6 +22,34 @@ namespace INFT3970Backend.Models
         public const int EC_DATAINVALID = 17;
         public const int EC_GAMESTATEINVALID = 18;
 
+
+        //Player Class Error Codes - Invalid Properties
+        public const int EC_PLAYER_ID = 50;
+        public const int EC_PLAYER_NICKNAME = 51;
+        public const int EC_PLAYER_PHONE= 52;
+        public const int EC_PLAYER_EMAIL = 53;
+        public const int EC_PLAYER_SELFIE = 54;
+        public const int EC_PLAYER_AMMO = 55;
+        public const int EC_PLAYER_KILLS = 56;
+        public const int EC_PLAYER_DEATHS = 57;
+        public const int EC_PLAYER_PHOTOS = 58;
+        public const int EC_PLAYER_GAMEID = 58;
+
+
+
+
+        //Game Class Error Codes - Invalid Properties
+        public const int EC_GAME_ID = 60;
+        public const int EC_GAME_CODE = 61;
+        public const int EC_GAME_PLAYERCOUNT = 62;
+        public const int EC_GAME_MODE = 63;
+        public const int EC_GAME_STATE = 64;
+        public const int EC_GAME_DATES = 65;
+
+
+
+
+
         //PlayerController - Join Game Error Codes
         public const int EC_JOINGAME_INVALIDGAMECODE = 1000;
         public const int EC_JOINGAME_NICKNAMEINVALID = 1002;
