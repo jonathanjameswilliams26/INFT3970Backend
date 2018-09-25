@@ -146,11 +146,10 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
-        public Response<List<Photo>> GetLastKnownLocations(int playerID)
+        public Response<List<Photo>> GetLastKnownLocations(Player player)
         {
             //Call the data access layer to get the last known locations
-            PhotoDAL photoDAL = new PhotoDAL();
-            return photoDAL.GetLastKnownLocations(playerID);
+            return new PhotoDAL().GetLastKnownLocations(player);
         }
     }
 }

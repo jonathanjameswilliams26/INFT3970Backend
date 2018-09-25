@@ -126,7 +126,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-        public Response<List<Photo>> GetLastKnownLocations(int playerID)
+        public Response<List<Photo>> GetLastKnownLocations(Player player)
         {
             StoredProcedure = "usp_GetLastKnownLocations";
             List<Photo> photos = new List<Photo>();
@@ -139,7 +139,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", playerID);
+                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
                         Command.Parameters.Add("@result", SqlDbType.Int);
                         Command.Parameters["@result"].Direction = ParameterDirection.Output;
                         Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
@@ -165,13 +165,13 @@ namespace INFT3970Backend.Data_Access_Layer
                         ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
 
                         //Format the results into a response object
-                        return new Response<List<Photo>>(photos, Result, ErrorMSG, Result);
+                        return new Response<List<Photo>>(photos, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<List<Photo>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return new Response<List<Photo>>(DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
             }
         }
 

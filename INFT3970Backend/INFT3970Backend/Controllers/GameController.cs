@@ -35,10 +35,9 @@ namespace INFT3970Backend.Controllers
         public ActionResult<Response<Player>> CreateGame(CreateGameRequest request)
         {
             //Create the player object from the request and validate
-            Player hostPlayer = null;
             try
             {
-                hostPlayer = new Player(request.nickname, request.imgUrl, request.contact);
+                var hostPlayer = new Player(request.nickname, request.imgUrl, request.contact);
                 hostPlayer.IsHost = true;
                 GameBL gameBL = new GameBL();
                 return gameBL.CreateGame(hostPlayer);
