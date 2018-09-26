@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using INFT3970Backend.Models;
-using System.Data;
 using System.Data.SqlClient;
 
 namespace INFT3970Backend.Data_Access_Layer
@@ -24,41 +20,31 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@photoID", photoID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("photoID", photoID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
-                     
+                        RunReader();
                         while (Reader.Read())
                         {
                             ModelFactory factory = new ModelFactory(Reader);
                             Photo photo = factory.PhotoFactory(false, false, false);
                             if (photo == null)
-                                return new Response<List<Photo>>(null, "ERROR", "An error occurred while trying to build the photo list.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<List<Photo>>("An error occurred while trying to build the photo list.", ErrorCodes.BUILD_MODEL_ERROR);
 
                             photos.Add(photo);
                         }
-                        Reader.Close(); //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
-                        //The data reader will be closed after the last row of the results have been read.
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-
+                        Reader.Close();
+                        
                         //Format the results into a response object
-                        return new Response<List<Photo>>(photos, Result, ErrorMSG, Result);
-
-
+                        ReadDefaultParams();
+                        return new Response<List<Photo>>(photos, ErrorMSG, Result);
                     } 
                 }
             }
             catch
             {
-                return new Response<List<Photo>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<List<Photo>>.DatabaseErrorResponse();
             }
         }
 
@@ -82,43 +68,33 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@dataURL", photoToSave.PhotoDataURL);
-                        Command.Parameters.AddWithValue("@takenByID", photoToSave.TakenByPlayerID);
-                        Command.Parameters.AddWithValue("@photoOfID", photoToSave.PhotoOfPlayerID);
-                        Command.Parameters.AddWithValue("@lat", photoToSave.Lat);
-                        Command.Parameters.AddWithValue("@long", photoToSave.Long);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("dataURL", photoToSave.PhotoDataURL);
+                        AddParam("takenByID", photoToSave.TakenByPlayerID);
+                        AddParam("photoOfID", photoToSave.PhotoOfPlayerID);
+                        AddParam("lat", photoToSave.Lat);
+                        AddParam("long", photoToSave.Long);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
-
+                        RunReader();
                         while (Reader.Read())
                         {
                             ModelFactory factory = new ModelFactory(Reader);
                             photo = factory.PhotoFactory(false, false, false);
                             if (photo == null)
-                                return new Response<Photo>(null, "ERROR", "An error occurred while trying to build the photo model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Photo>("An error occurred while trying to build the photo model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }
-                        Reader.Close(); 
+                        Reader.Close();
                         
-                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
-                        //The data reader will be closed after the last row of the results have been read.
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-
                         //Format the results into a response object
-                        return new Response<Photo>(photo, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response<Photo>(photo, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<Photo>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<Photo>.DatabaseErrorResponse();
             }
         }
 
@@ -138,40 +114,31 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
+                        RunReader();
                         ModelFactory factory = new ModelFactory(Reader);
                         while (Reader.Read())
                         {
                             var photo = factory.PhotoFactory(false, true, false);
                             if (photo == null)
-                                return new Response<List<Photo>>(null, "ERROR", "An error occurred while trying to build the list photo model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<List<Photo>>("An error occurred while trying to build the list photo model.", ErrorCodes.BUILD_MODEL_ERROR);
 
                             photos.Add(photo);
                         }
                         Reader.Close();
-
-                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
-                        //The data reader will be closed after the last row of the results have been read.
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-
+                        
                         //Format the results into a response object
+                        ReadDefaultParams();
                         return new Response<List<Photo>>(photos, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<List<Photo>>(DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<List<Photo>>.DatabaseErrorResponse();
             }
         }
 
@@ -198,12 +165,12 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@photoID", id);
+                        
+                        AddParam("photoID", id);
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
+                        RunReader();
+                        
 
                         while (Reader.Read())
                         {
@@ -246,37 +213,27 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@photoID", photoID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("photoID", photoID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
-
+                        RunReader();
                         while (Reader.Read())
                         {
                             ModelFactory factory = new ModelFactory(Reader);
                             photo = factory.PhotoFactory(true, true, true);
                         }
                         Reader.Close();
-
-                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
-                        //The data reader will be closed after the last row of the results have been read.
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-
+                        
                         //Format the results into a response object
-                        return new Response<Photo>(photo, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response<Photo>(photo, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<Photo>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<Photo>.DatabaseErrorResponse();
             }
         }
 
@@ -301,40 +258,30 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
-
+                        RunReader();
                         while (Reader.Read())
                         {
                             Vote playerVotePhoto = new ModelFactory(Reader).PlayerVotePhotoFactory(true, true);
                             if (playerVotePhoto == null)
-                                return new Response<List<Vote>>(null, "ERROR", "An error occurred while trying to build the model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<List<Vote>>("An error occurred while trying to build the model.", ErrorCodes.BUILD_MODEL_ERROR);
                             else
                                 list.Add(playerVotePhoto);
                         }
                         Reader.Close();
-
-                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
-                        //The data reader will be closed after the last row of the results have been read.
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-
+                        
                         //Format the results into a response object
-                        return new Response<List<Vote>>(list, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response<List<Vote>>(list, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<List<Vote>>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<List<Vote>>.DatabaseErrorResponse();
             }
         }
 
@@ -353,40 +300,30 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@voteID", playerVote.VoteID);
-                        Command.Parameters.AddWithValue("@playerID", playerVote.PlayerID);
-                        Command.Parameters.AddWithValue("@isPhotoSuccessful", playerVote.IsPhotoSuccessful);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("voteID", playerVote.VoteID);
+                        AddParam("playerID", playerVote.PlayerID);
+                        AddParam("isPhotoSuccessful", playerVote.IsPhotoSuccessful);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
-
+                        RunReader();
                         while (Reader.Read())
                         {
                             playerVotePhoto = new ModelFactory(Reader).PlayerVotePhotoFactory(true, true);
                             if (playerVotePhoto == null)
-                                return new Response<Vote>(null, "ERROR", "An error occurred while trying to build the model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Vote>("An error occurred while trying to build the model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }
                         Reader.Close();
-
-                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
-                        //The data reader will be closed after the last row of the results have been read.
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-
+                        
                         //Format the results into a response object
-                        return new Response<Vote>(playerVotePhoto, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response<Vote>(playerVotePhoto, ErrorMSG, Result);
                     }
                 }
             }
             catch
             {
-                return new Response<Vote>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<Vote>.DatabaseErrorResponse();
             }
         }
     }

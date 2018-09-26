@@ -16,10 +16,19 @@ namespace INFT3970Backend.Hubs
         /// <returns></returns>
         public override Task OnConnectedAsync()
         {
-            int playerID = int.Parse(Context.GetHttpContext().Request.Query["playerID"]);
-            PlayerDAL playerDAL = new PlayerDAL();
-            playerDAL.UpdateConnectionID(playerID, Context.ConnectionId);
-            return base.OnConnectedAsync();
+            try
+            {
+                int playerID = int.Parse(Context.GetHttpContext().Request.Query["playerID"]);
+                var player = new Player(playerID);
+                player.ConnectionID = Context.ConnectionId;
+                PlayerDAL playerDAL = new PlayerDAL();
+                playerDAL.UpdateConnectionID(player);
+                return base.OnConnectedAsync();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
 

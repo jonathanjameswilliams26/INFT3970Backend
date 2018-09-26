@@ -4,7 +4,7 @@ using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
-namespace INFT3970Backend.Business_Logic_Layer
+namespace INFT3970Backend.Helpers
 {
     public static class TextMessageSender
     {
@@ -13,7 +13,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         private const string TwilioNumber = "+61408929181";
 
 
-        public static bool Send(string messageText, string sendTo)
+        private static bool SendMessage(string messageText, string sendTo)
         {
             try
             {
@@ -34,10 +34,10 @@ namespace INFT3970Backend.Business_Logic_Layer
         }
 
 
-        public static void SendInBackground(string msgTxt, string sendTo)
+        public static void Send(string msgTxt, string sendTo)
         {
             Thread txtMsgThread = new Thread(
-                () => Send(msgTxt, sendTo)
+                () => SendMessage(msgTxt, sendTo)
                 );
             txtMsgThread.Start();
         }

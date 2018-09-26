@@ -1,19 +1,15 @@
 ﻿using INFT3970Backend.Models.Errors;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace INFT3970Backend.Models
 {
     public class Photo
     {
+        //Private backing stores of public properites which have business logic behind them.
         private int photoID;
         private double lat;
         private double longitude;
         private string photoDataURL;
-        private DateTime? timeTaken;
-        private DateTime? votingFinishTime;
         private int numYesVotes;
         private int numNoVotes;
         private int gameID;
@@ -26,14 +22,13 @@ namespace INFT3970Backend.Models
             get { return photoID; }
             set
             {
-                var errorMessage =  ErrorMessages.EM_PHOTO_MODELINVALID 
-                                    + "PhotoID must be atleast 100000.";
+                var errorMessage =  "PhotoID must be atleast 100000.";
 
                 if (value == -1 || value >= 100000)
                     photoID = value;
 
                 else
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_ID);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
 
@@ -44,14 +39,13 @@ namespace INFT3970Backend.Models
             get { return lat; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "Latitude is not within the valid range. Must be -90 to +90";
+                var errorMessage = "Latitude is not within the valid range. Must be -90 to +90";
 
                 if (value >= -90 || value <= 90)
                     lat = value;
 
                 else
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_ID);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
 
@@ -62,14 +56,13 @@ namespace INFT3970Backend.Models
             get { return longitude; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "Latitude is not within the valid range. Must be -180 to +180";
+                var errorMessage = "Longitude is not within the valid range. Must be -180 to +180";
 
                 if (value >= -180 || value <= 180)
                     longitude = value;
 
                 else
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_ID);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
 
@@ -80,8 +73,7 @@ namespace INFT3970Backend.Models
             get { return photoDataURL; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "PhotoDataURL is not a base64 string.";
+                var errorMessage = "PhotoDataURL is not a base64 string.";
 
                 if (value == "empty")
                 {
@@ -90,74 +82,21 @@ namespace INFT3970Backend.Models
                 }
 
                 if (string.IsNullOrWhiteSpace(value))
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_SELFIE);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
 
                 //Confirm the imgURL is a base64 string
                 try
                 {
                     if (!value.Contains("data:image/jpeg;base64,"))
-                        throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_SELFIE);
+                        throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
+
                     var base64Data = value.Replace("data:image/jpeg;base64,", "");
                     var byteData = Convert.FromBase64String(base64Data);
                     photoDataURL = value;
                 }
                 catch
                 {
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_SELFIE, ErrorCodes.EC_PLAYER_SELFIE);
-                }
-            }
-        }
-
-
-
-        public DateTime? TimeTaken
-        {
-            get { return timeTaken; }
-            set
-            {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "TimeTaken is greater than VotingFinishTime.";
-
-                if (value == null)
-                    timeTaken = null;
-
-                else if (VotingFinishTime.Value == null)
-                    timeTaken = value;
-
-                //If an voting finish time exists, confirm the time taken is less than
-                else
-                {
-                    if (value.Value > VotingFinishTime.Value)
-                        throw new InvalidModelException(errorMessage, ErrorCodes.EC_GAME_DATES);
-                    else
-                        timeTaken = value;
-                }
-            }
-        }
-
-
-
-        public DateTime? VotingFinishTime
-        {
-            get { return votingFinishTime; }
-            set
-            {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "VotingFinishTime is less than TimeTaken.";
-
-                if (value == null)
-                    votingFinishTime = null;
-
-                else if (TimeTaken.Value == null)
-                    votingFinishTime = value;
-
-                //If a time taken exists, confirm the voting finish time is greater
-                else
-                {
-                    if (TimeTaken.Value > value.Value)
-                        throw new InvalidModelException(errorMessage, ErrorCodes.EC_GAME_DATES);
-                    else
-                        votingFinishTime = value;
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
                 }
             }
         }
@@ -169,11 +108,10 @@ namespace INFT3970Backend.Models
             get { return numYesVotes; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "Number of yes votes cannot be below 0.";
+                var errorMessage = "Number of yes votes cannot be below 0.";
 
                 if (value < 0)
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_AMMO);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
                 else
                     numYesVotes = value;
             }
@@ -186,18 +124,15 @@ namespace INFT3970Backend.Models
             get { return numNoVotes; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "Number of no votes cannot be below 0.";
+                var errorMessage = "Number of no votes cannot be below 0.";
 
                 if (value < 0)
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_AMMO);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
                 else
                     numNoVotes = value;
             }
         }
-        public bool IsVotingComplete { get; set; }
-        public bool IsActive { get; set; }
-        public bool IsDeleted { get; set; }
+        
 
 
 
@@ -206,14 +141,13 @@ namespace INFT3970Backend.Models
             get { return gameID; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "GameID must be atleast 100000.";
+                var errorMessage = "GameID must be atleast 100000.";
 
                 if (value == -1 || value >= 100000)
                     gameID = value;
 
                 else
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_ID);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
 
@@ -224,14 +158,13 @@ namespace INFT3970Backend.Models
             get { return takenByPlayerID; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "TakenByPlayerID must be atleast 100000.";
+                var errorMessage = "TakenByPlayerID must be atleast 100000.";
 
                 if (value == -1 || value >= 100000)
                     takenByPlayerID = value;
 
                 else
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_ID);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
 
@@ -242,24 +175,45 @@ namespace INFT3970Backend.Models
             get { return photoOfPlayerID; }
             set
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "photoOfPlayerID must be atleast 100000.";
+                var errorMessage = "photoOfPlayerID must be atleast 100000.";
 
                 if (value == -1 || value >= 100000)
                     photoOfPlayerID = value;
 
                 else
-                    throw new InvalidModelException(errorMessage, ErrorCodes.EC_PLAYER_ID);
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
 
 
 
+        public bool IsSuccessful
+        {
+            get
+            {
+                if (!IsVotingComplete)
+                    return false;
+                else
+                    return NumYesVotes > NumNoVotes;
+            }
+        }
+
+
+
+        public DateTime TimeTaken { get; set; }
+        public DateTime VotingFinishTime { get; set; }
+        public bool IsVotingComplete { get; set; }
+        public bool IsActive { get; set; }
+        public bool IsDeleted { get; set; }
         public Game Game { get; set; }
         public Player TakenByPlayer { get; set; }
         public Player PhotoOfPlayer { get; set; }
+        
 
 
+        /// <summary>
+        /// Creates a Photo with default values
+        /// </summary>
         public Photo()
         {
             PhotoID = -1;
@@ -267,12 +221,23 @@ namespace INFT3970Backend.Models
             TakenByPlayerID = -1;
             PhotoOfPlayerID = -1;
             PhotoDataURL = "empty";
+            TimeTaken = DateTime.Now;
+            VotingFinishTime = DateTime.Now.AddMinutes(15);
+            IsActive = true;
         }
 
-        public Photo(double lat, double longitude, string photoDataURL, int takenByPlayerID, int photoOfPlayerID)
+
+
+        /// <summary>
+        /// Creates a photo with default values and sets the following properties.
+        /// </summary>
+        /// <param name="lat">Latitude</param>
+        /// <param name="longitude">Longitude</param>
+        /// <param name="photoDataURL">The DataURL of the photo, base64 string</param>
+        /// <param name="takenByPlayerID">The ID of the player who took the photo</param>
+        /// <param name="photoOfPlayerID">The ID of the player who the photo is of</param>
+        public Photo(double lat, double longitude, string photoDataURL, int takenByPlayerID, int photoOfPlayerID) : this()
         {
-            PhotoID = -1;
-            GameID = -1;
             Lat = lat;
             Long = longitude;
             PhotoDataURL = photoDataURL;
@@ -280,10 +245,18 @@ namespace INFT3970Backend.Models
             PhotoOfPlayerID = photoOfPlayerID;
         }
 
-        public Photo(string lat, string longitude, string photoDataURL, string takenByPlayerID, string photoOfPlayerID)
+
+
+        /// <summary>
+        /// Creates a photo with default values and sets the following properties.
+        /// </summary>
+        /// <param name="lat">Latitude</param>
+        /// <param name="longitude">Longitude</param>
+        /// <param name="photoDataURL">The DataURL of the photo, base64 string</param>
+        /// <param name="takenByPlayerID">The ID of the player who took the photo</param>
+        /// <param name="photoOfPlayerID">The ID of the player who the photo is of</param>
+        public Photo(string lat, string longitude, string photoDataURL, string takenByPlayerID, string photoOfPlayerID) :this()
         {
-            PhotoID = -1;
-            GameID = -1;
             PhotoDataURL = photoDataURL;
 
             try
@@ -295,9 +268,8 @@ namespace INFT3970Backend.Models
             }
             catch(FormatException)
             {
-                var errorMessage = ErrorMessages.EM_PHOTO_MODELINVALID
-                                    + "Lat, long, takenByPlayerID or photoOfID is invalid format. Must be numbers.";
-                throw new InvalidModelException(errorMessage, 0);
+                var errorMessage = "Lat, long, takenByPlayerID or photoOfID is invalid format. Must be numbers.";
+                throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
     }

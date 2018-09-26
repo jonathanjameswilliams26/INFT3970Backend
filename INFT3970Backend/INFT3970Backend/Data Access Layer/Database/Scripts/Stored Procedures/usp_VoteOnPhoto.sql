@@ -10,12 +10,6 @@ GO
 -- Description:	Updates a PlayerVotePhoto record with a players vote decision
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The PlayerVotePhoto record does not exist with the specified VoteID and PlayerID
---		2. The Photo record voting is already completed
---		3. The photo voting finish time has already passed
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_VoteOnPhoto] 
 	-- Add the parameters for the stored procedure here 
@@ -30,11 +24,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST INT = 4000;
-	DECLARE @EC_VOTEPHOTO_VOTEALREADYCOMPLETE INT = 4001;
-	DECLARE @EC_VOTEPHOTO_VOTEFINISHTIMEPASSED INT = 4002;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 		
@@ -53,7 +58,7 @@ BEGIN
 		--Confirm the vote record exists and has not already been voted on.
 		IF NOT EXISTS (SELECT * FROM vw_Incomplete_Votes WHERE VoteID = @voteID)
 		BEGIN
-			SET @result = @EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST;
+			SET @result = @ITEM_DOES_NOT_EXIST;
 			SET @errorMSG = 'The PlayerVotePhoto record does not exist or already voted.';
 			RAISERROR('',16,1);
 		END
@@ -65,22 +70,10 @@ BEGIN
 		--Confirm the voting is not already complete on the photo record
 		IF EXISTS (SELECT * FROM vw_Completed_Photos WHERE PhotoID = @photoID)
 		BEGIN
-			SET @result = @EC_VOTEPHOTO_VOTEALREADYCOMPLETE;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'The Voting on the photo has already been completed.';
 			RAISERROR('',16,1);
 		END
-
-		--Confirm the Voting Finish Time has not already passed
-		DECLARE @votingFinishTime DATETIME2;
-		SELECT @votingFinishTime = VotingFinishTime FROM tbl_Photo WHERE PhotoID = @photoID
-		IF(@votingFinishTime < GETDATE())
-		BEGIN
-			SET @result = @EC_VOTEPHOTO_VOTEFINISHTIMEPASSED;
-			SET @errorMSG = 'The voting finish time has already passed.';
-			RAISERROR('',16,1);
-		END
-
-
 
 		--If reaching this point all pre-condition checks have passed successfully
 
@@ -108,7 +101,7 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to cast your vote.'
 		END
 	END CATCH

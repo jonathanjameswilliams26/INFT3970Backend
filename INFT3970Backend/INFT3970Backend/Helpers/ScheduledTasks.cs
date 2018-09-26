@@ -4,12 +4,10 @@ using INFT3970Backend.Models;
 using System;
 using System.Threading;
 
-namespace INFT3970Backend.Business_Logic_Layer
+namespace INFT3970Backend.Helpers
 {
     public class ScheduledTasks
     {
-
-
         /// <summary>
         /// Schedules code to run in a new thread after the game start time has passed in order
         /// to updated a started game to a PLAYING game state.
@@ -56,7 +54,7 @@ namespace INFT3970Backend.Business_Logic_Layer
             if (gameResponse.Data.StartTime.Value > DateTime.Now)
                 return;
 
-            Response<object> response = gameDAL.SetGameState(game.GameID, "PLAYING");
+            Response response = gameDAL.SetGameState(game.GameID, "PLAYING");
 
             //Send updates to clients that the game has now officially begun
             if (response.IsSuccessful())
@@ -108,7 +106,7 @@ namespace INFT3970Backend.Business_Logic_Layer
 
             //Call the DataAccessLayer to complete the game in the DB
             GameDAL gameDAL = new GameDAL();
-            Response<object> response = gameDAL.CompleteGame(game.GameID);
+            Response response = gameDAL.CompleteGame(game.GameID);
 
             //If the response was successful send out the game completed messages to players
             if (response.IsSuccessful())
@@ -129,14 +127,14 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// </summary>
         /// <param name="playerID">The ID of the player being updated.</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
-        public static void ScheduleReplenishAmmo(int playerID, HubInterface hubInterface)
+        public static void ScheduleReplenishAmmo(Player player, HubInterface hubInterface)
         {
             //Get how long to wait for the task to run
             int timeToWait = GetTimeToWait(DateTime.Now.AddMinutes(10));
 
             //Start the Method in a new thread
             Thread ScheduleReplenishAmmoThread = new Thread(
-                () => Run_ReplenishAmmo(playerID, timeToWait, hubInterface)
+                () => Run_ReplenishAmmo(player, timeToWait, hubInterface)
                 );
             ScheduleReplenishAmmoThread.Start();
         }
@@ -156,13 +154,13 @@ namespace INFT3970Backend.Business_Logic_Layer
         /// <param name="playerID">The ID of the player being updated.</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
         /// <param name="timeToWait">The number of milliseconds to sleep before the thread starts.</param>
-        private static void Run_ReplenishAmmo(int playerID, int timeToWait, HubInterface hubInterface)
+        private static void Run_ReplenishAmmo(Player player, int timeToWait, HubInterface hubInterface)
         {
             Thread.Sleep(timeToWait);
 
             //Call the DataAccessLayer to increment the ammo count in the database
             PlayerDAL playerDAL = new PlayerDAL();
-            Response<Player> response = playerDAL.ReplenishAmmo(playerID);
+            Response<Player> response = playerDAL.ReplenishAmmo(player);
 
             if (response.IsSuccessful())
             {
@@ -191,7 +189,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         public static void ScheduleCheckPhotoVotingCompleted(Photo uploadedPhoto, HubInterface hubInterface)
         {
             //Get how long to wait for the task to run
-            int timeToWait = GetTimeToWait(uploadedPhoto.VotingFinishTime.Value);
+            int timeToWait = GetTimeToWait(uploadedPhoto.VotingFinishTime);
 
             //Start the Method in a new thread
             Thread ScheduleReplenishAmmoThread = new Thread(

@@ -11,13 +11,6 @@ GO
 --				Business Logic Code is scheduled to Run at start time to start the game and update the Game State to PLAYING.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. @EC_BEGINGAME_NOTHOST - The playerID is not the host of the game
---		3. @EC_BEGINGAME_NOTINLOBBY - The game is not currently IN LOBBY
---		4. @EC_BEGINGAME_NOTENOUGHPLAYERS - Trying to start a game with less than 3 active and verified players.
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_BeginGame] 
 	-- Add the parameters for the stored procedure here
@@ -30,9 +23,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_BEGINGAME_NOTHOST INT = 6000;
-	DECLARE @EC_BEGINGAME_NOTENOUGHPLAYERS INT = 6002;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		
@@ -46,7 +52,7 @@ BEGIN
 		SELECT @isHost = IsHost FROM vw_InGame_Players WHERE PlayerID = @playerID
 		IF(@isHost = 0)
 		BEGIN
-			SET @result = @EC_BEGINGAME_NOTHOST;
+			SET @result = @DATA_INVALID;
 			SET @errorMSG = 'The playerID passed in is not the host player. Only the host can begin the game.';
 			RAISERROR('',16,1);
 		END
@@ -66,7 +72,7 @@ BEGIN
 		SELECT @activePlayerCount = COUNT(*) FROM vw_InGame_Players WHERE GameID = @gameID
 		IF(@activePlayerCount < 3)
 		BEGIN
-			SET @result = @EC_BEGINGAME_NOTENOUGHPLAYERS;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'Not enough players to start the game, need a minimum of 3.';
 			RAISERROR('',16,1);
 		END
@@ -91,7 +97,7 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'The an error occurred while trying to create the game record';
 		END
 	END CATCH

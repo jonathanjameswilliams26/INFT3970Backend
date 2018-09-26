@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Threading.Tasks;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Responses;
 
@@ -16,10 +14,9 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="gameCode">The gamecode of the new game</param>
         /// <returns>Returns the created Game object. NULL data if error</returns>
-        public Response<Game> CreateGame(string gameCode)
+        public Response<Game> CreateGame(Game game)
         {
             StoredProcedure = "usp_CreateGame";
-            Game game = null;
             try
             {
                 //Create the connection and command for the stored procedure
@@ -28,36 +25,29 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameCode", gameCode);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("gameCode", game.GameCode);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
+                        RunReader();
                         while (Reader.Read())
                         {
                             game = new ModelFactory(Reader).GameFactory();
                             if (game == null)
-                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the Game model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Game>("An error occurred while trying to build the Game model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }
                         Reader.Close();
 
                         //Format the results into a response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<Game>(game, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response<Game>(game, ErrorMSG, Result);
                     }
                 }
             }
-
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<Game>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<Game>.DatabaseErrorResponse();
             }
         }
 
@@ -79,20 +69,14 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameID", game.GameID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
-
+                        AddParam("gameID", game.GameID);
+                        AddDefaultParams();
+                        
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Run();
                     }
                 }
             }
-
             //A database exception was thrown, return an error response
             catch
             {
@@ -119,36 +103,29 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameID", gameID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("gameID", gameID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
+                        RunReader();
                         while(Reader.Read())
                         {
                             game = new ModelFactory(Reader).GameFactory();
                             if(game == null)
-                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the Game model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Game>("An error occurred while trying to build the Game model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }
                         Reader.Close();
 
                         //Format the results into a response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<Game>(game, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response<Game>(game, ErrorMSG, Result);
                     }
                 }
             }
-
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<Game>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<Game>.DatabaseErrorResponse();
             }
         }
 
@@ -160,7 +137,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="gameID">The gameID of the game</param>
         /// <param name="playerID">The playerID of who joined the game.</param>
         /// <returns>void</returns>
-        public void CreateJoinNotification(int playerID)
+        public void CreateJoinNotification(Player player)
         {
             StoredProcedure = "usp_CreateJoinNotification";
             try
@@ -171,20 +148,14 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", playerID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Run();
                     }
                 }
             }
-
             //A database exception was thrown, return an error response
             catch
             {
@@ -199,7 +170,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="gameID">The gameID of the game</param>
         /// <param name="playerID">The playerID of who left the game.</param>
         /// <returns>void</returns>
-        public void CreateLeaveNotification(int playerID)
+        public void CreateLeaveNotification(Player player)
         {
             StoredProcedure = "usp_CreateLeaveNotification";
             try
@@ -210,16 +181,12 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", playerID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Run();
+                        
                     }
                 }
             }
@@ -239,7 +206,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="gameID">The gameID of the game</param>
         /// <param name="playerID">The playerID of the receiver.</param>
         /// <returns>void</returns>
-        public Response<object> CreateAmmoNotification(int playerID)
+        public Response CreateAmmoNotification(Player player)
         {
             StoredProcedure = "usp_CreateAmmoNotification";
             try
@@ -250,29 +217,22 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", playerID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
-
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
+                        
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Command.ExecuteNonQuery();
-
+                        Run();
+                        
                         //Format the results into a response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<object>(null, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response(ErrorMSG, Result);
                     }
                 }
             }
-
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response.DatabaseErrorResponse();
             }
         }
 
@@ -284,7 +244,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="gameID">The gameID of the game</param>
         /// <param name="playerID">The playerID of the receiver.</param>
         /// <returns>void</returns>
-        public void CreateTagResultNotification(int takenByID, int photoOfID, bool decision)
+        public void CreateTagResultNotification(Photo photo)
         {
             StoredProcedure = "usp_CreateTagResultNotification";
             try
@@ -295,22 +255,14 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@takenByID", takenByID);
-                        Command.Parameters.AddWithValue("@photoOfID", photoOfID);
-                        Command.Parameters.AddWithValue("@decision", decision);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("takenByID", photo.TakenByPlayerID);
+                        AddParam("photoOfID", photo.PhotoOfPlayerID);
+                        AddParam("decision", photo.IsSuccessful);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Command.ExecuteNonQuery();
-
-
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        Run();
+                        ReadDefaultParams();
                     }
                 }
             }
@@ -333,7 +285,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="gameID">The ID of the Game to Complete</param>
         /// <returns></returns>
-        public Response<object> CompleteGame(int gameID)
+        public Response CompleteGame(int gameID)
         {
             StoredProcedure = "usp_CompleteGame";
             try
@@ -344,29 +296,22 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameID", gameID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("gameID", gameID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Run();
 
                         //Build the response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<object>(null, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response(ErrorMSG, Result);
                     }
                 }
             }
-
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response.DatabaseErrorResponse();
             }
         }
 
@@ -408,19 +353,14 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@id", id);
-                        Command.Parameters.AddWithValue("@isPlayerID", isPlayerID);
-                        Command.Parameters.AddWithValue("@filter", filter);
-                        Command.Parameters.AddWithValue("@orderBy", orderBy);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("id", id);
+                        AddParam("isPlayerID", isPlayerID);
+                        AddParam("filter", filter);
+                        AddParam("orderBy", orderBy);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
+                        RunReader();
 
                         //read the player list, if an error occurred in the stored procedure there will be no results to read an this will be skipped
                         ModelFactory factory = new ModelFactory(Reader);
@@ -431,43 +371,40 @@ namespace INFT3970Backend.Data_Access_Layer
 
                             //If an error occurred while trying to build the player list
                             if (player == null)
-                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the player list.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Game>("An error occurred while trying to build the player list.", ErrorCodes.BUILD_MODEL_ERROR);
 
                             players.Add(player);
                         }
                         Reader.Close();
-
-                        //Get the output results from the stored procedure, Can only get the output results after the DataReader has been close
-                        //The data reader will be closed after the last row of the results have been read.
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        
+                        ReadDefaultParams();
 
                         //If the response was not successful return the empty response
-                        if(Result != 1)
-                            return new Response<Game>(null, Result, ErrorMSG, Result);
+                        if(IsError)
+                            return new Response<Game>(ErrorMSG, Result);
                     }
                 }
 
                 //If the players list is empty, return an error
                 if(players.Count == 0)
-                    return new Response<Game>(null, "ERROR", "The players list is empty.", ErrorCodes.EC_PLAYERLIST_EMPTYLIST);
+                    return new Response<Game>("The players list is empty.", ErrorCodes.ITEM_DOES_NOT_EXIST);
 
                 //Get the Game object
                 Response<Game> gameResponse = GetGameByID(players[0].GameID);
 
                 //If the Game response was not successful, return an error
                 if(!gameResponse.IsSuccessful())
-                    return new Response<Game>(null, gameResponse.Type, gameResponse.ErrorMessage, gameResponse.ErrorCode);
+                    return new Response<Game>(gameResponse.ErrorMessage, gameResponse.ErrorCode);
 
                 //Otherwise, create the successful response with the game and player list
                 gameResponse.Data.Players = players;
-                return new Response<Game>(gameResponse.Data, Result, ErrorMSG, Result);
+                return new Response<Game>(gameResponse.Data, ErrorMSG, Result);
             }
 
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<Game>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<Game>.DatabaseErrorResponse();
             }
         }
 
@@ -496,27 +433,21 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
+                        RunReader();
                         while (Reader.Read())
                         {
                             game = new ModelFactory(Reader).GameFactory();
                             if(game == null)
-                                return new Response<Game>(null, "ERROR", "An error occurred while trying to build the Game model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<Game>("An error occurred while trying to build the Game model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }
                         Reader.Close();
 
                         //Format the results into a response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
+                        ReadDefaultParams();
                         return new Response<Game>(game, ErrorMSG, Result);
                     }
                 }
@@ -524,7 +455,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<Game>(DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<Game>.DatabaseErrorResponse();
             }
         }
 
@@ -537,7 +468,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="gameID">The ID of the game to update</param>
         /// <param name="gameState">The new state to set.</param>
         /// <returns></returns>
-        public Response<object> SetGameState(int gameID, string gameState)
+        public Response SetGameState(int gameID, string gameState)
         {
             StoredProcedure = "usp_SetGameState";
             try
@@ -548,29 +479,23 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@gameID", gameID);
-                        Command.Parameters.AddWithValue("@gameState", gameState);
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("gameID", gameID);
+                        AddParam("gameState", gameState);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Command.ExecuteNonQuery();
+                        Run();
 
                         //Format the results into a response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        return new Response<object>(null, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        return new Response(ErrorMSG, Result);
                     }
                 }
             }
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<object>(null, "ERROR", DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response.DatabaseErrorResponse();
             }
         }
 
@@ -604,36 +529,26 @@ namespace INFT3970Backend.Data_Access_Layer
                     using (Command = new SqlCommand(StoredProcedure, Connection))
                     {
                         //Add the procedure input and output params
-                        Command.CommandType = CommandType.StoredProcedure;
-                        Command.Parameters.AddWithValue("@playerID", player.PlayerID);
-                        Command.Parameters.Add("@gameState", SqlDbType.VarChar, 255);
-                        Command.Parameters["@gameState"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@hasVotesToComplete", SqlDbType.Bit);
-                        Command.Parameters["@hasVotesToComplete"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@hasNotifications", SqlDbType.Bit);
-                        Command.Parameters["@hasNotifications"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@result", SqlDbType.Int);
-                        Command.Parameters["@result"].Direction = ParameterDirection.Output;
-                        Command.Parameters.Add("@errorMSG", SqlDbType.VarChar, 255);
-                        Command.Parameters["@errorMSG"].Direction = ParameterDirection.Output;
+                        AddParam("playerID", player.PlayerID);
+                        AddOutput("gameState", SqlDbType.VarChar);
+                        AddOutput("hasVotesToComplete", SqlDbType.Bit);
+                        AddOutput("hasNotifications", SqlDbType.Bit);
+                        AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Connection.Open();
-                        Reader = Command.ExecuteReader();
-
+                        RunReader();
                         Player updatedPlayer = null;
                         while(Reader.Read())
                         {
                             updatedPlayer = new ModelFactory(Reader).PlayerFactory(true);
                             if(player == null)
-                                return new Response<GameStatusResponse>(null, "ERROR", "An error occurred while trying to build the Player model.", ErrorCodes.EC_BUILDMODELERROR);
+                                return new Response<GameStatusResponse>("An error occurred while trying to build the Player model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }
                         Reader.Close();
 
                         //Format the results into a response object
-                        Result = Convert.ToInt32(Command.Parameters["@result"].Value);
-                        ErrorMSG = Convert.ToString(Command.Parameters["@errorMSG"].Value);
-                        response = new Response<GameStatusResponse>(null, Result, ErrorMSG, Result);
+                        ReadDefaultParams();
+                        response = new Response<GameStatusResponse>(null, ErrorMSG, Result);
 
                         //If the result is not an error build the GameStatus object and assign it to the response
                         if(!IsError)
@@ -644,7 +559,6 @@ namespace INFT3970Backend.Data_Access_Layer
                             GameStatusResponse gsr = new GameStatusResponse(gameState, hasVotesToComplete, hasNotifications, updatedPlayer);
                             response.Data = gsr;
                         }
-
                         return response;
                     }
                 }
@@ -652,7 +566,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return new Response<GameStatusResponse>(DatabaseErrorMSG, ErrorCodes.EC_DATABASECONNECTERROR);
+                return Response<GameStatusResponse>.DatabaseErrorResponse();
             }
         }
     }

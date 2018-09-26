@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using INFT3970Backend.Models;
-using INFT3970Backend.Business_Logic_Layer;
 using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models.Errors;
+using INFT3970Backend.Data_Access_Layer;
 
 namespace INFT3970Backend.Controllers
 {
@@ -19,7 +16,9 @@ namespace INFT3970Backend.Controllers
             try
             {
                 var player = new Player(playerID);
-                return new PhotoBL().GetLastKnownLocations(player);
+                
+                //Call the data access layer to get the last known locations
+                return new PhotoDAL().GetLastKnownLocations(player);
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)

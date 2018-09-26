@@ -17,6 +17,8 @@ BEGIN
 
 	SET @ammoCount = -1;
 
+	BEGIN TRY
+
 	--Validate the playerID
 	EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
@@ -27,5 +29,11 @@ BEGIN
 
 	SET @result = 1;
 	SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+		SET @ammoCount = -1;
+	END CATCH
 END
 GO

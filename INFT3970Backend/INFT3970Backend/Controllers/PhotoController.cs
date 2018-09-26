@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
-using INFT3970Backend.Business_Logic_Layer;
+using INFT3970Backend.Data_Access_Layer;
+using INFT3970Backend.Helpers;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Errors;
@@ -29,11 +30,7 @@ namespace INFT3970Backend.Controllers
         /// Uploads a photo to the database. Sends out notifications to players that a photo must now be voted on.
         /// Returns a response which indicates success or error. NULL data is returned.
         /// </summary>
-        /// <param name="imgUrl">The base64 dataURL of the image captured and to be saved in the DB</param>
-        /// <param name="takenByID">The ID of the player who took the photo</param>
-        /// <param name="photoOfID">The ID of the player who the photo is of.</param>
-        /// <param name="latitude">The latitude the photo was captured at</param>
-        /// <param name="longitude">The longitude the photo was captured at.</param>
+        /// <param name="request">The request which contains all the photo information</param>
         /// <returns></returns>
         [HttpPost]
         [Route("api/photo/upload")]
@@ -42,7 +39,19 @@ namespace INFT3970Backend.Controllers
             try
             {
                 var uploadedPhoto = new Photo(request.latitude, request.longitude, request.imgUrl, request.takenByID, request.photoOfID);
-                return new PhotoBL().SavePhoto(uploadedPhoto, _hubContext);
+
+                //Call the DAL to save the photo to the DB
+                var response = new PhotoDAL().SavePhoto(uploadedPhoto);
+                
+                //If the response is successful we want to send live updates to clients and
+                //email or text message notifications to not connected players
+                if (response.IsSuccessful())
+                {
+                    var hubInterface = new HubInterface(_hubContext);
+                    hubInterface.UpdatePhotoUploaded(response.Data);
+                    ScheduledTasks.ScheduleCheckPhotoVotingCompleted(response.Data, hubInterface);
+                }
+                return new Response(response.ErrorMessage, response.ErrorCode);
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -73,7 +82,8 @@ namespace INFT3970Backend.Controllers
             try
             {
                 var player = new Player(playerID);
-                return new PhotoBL().GetVotesToComplete(player);
+                //Call the Data Access Layer to get the photos require voting to be completed
+                return new PhotoDAL().GetVotesToComplete(player);
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -107,36 +117,23 @@ namespace INFT3970Backend.Controllers
             try
             {
                 var vote = new Vote(voteID, decision, playerID);
-                return new PhotoBL().VoteOnPhoto(vote, _hubContext);
+                var response = new PhotoDAL().VoteOnPhoto(vote);
+
+                if (response.IsSuccessful())
+                {
+                    //If the Photo's voting has now been completed send the notifications / updates
+                    if (response.Data.Photo.IsVotingComplete)
+                    {
+                        var hubInterface = new HubInterface(_hubContext);
+                        hubInterface.UpdatePhotoVotingCompleted(response.Data.Photo);
+                    }
+                }
+                return new Response(response.ErrorMessage, response.ErrorCode);
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
             {
-                return new Response<List<Vote>>(e.Msg, e.Code);
-            }
-            //Catch any unhandled / unexpected server errrors
-            catch
-            {
-                return StatusCode(500);
-            }
-        }
-
-
-
-
-        [HttpGet]
-        [Route("api/photo/lastKnownLocations")]
-        public ActionResult<Response<List<Photo>>> GetLastKnownLocations([FromHeader] int playerID)
-        {
-            try
-            {
-                var player = new Player(playerID);
-                return new PhotoBL().GetLastKnownLocations(player);
-            }
-            //Catch any error associated with invalid model data
-            catch (InvalidModelException e)
-            {
-                return new Response<List<Photo>> (e.Msg, e.Code);
+                return new Response(e.Msg, e.Code);
             }
             //Catch any unhandled / unexpected server errrors
             catch

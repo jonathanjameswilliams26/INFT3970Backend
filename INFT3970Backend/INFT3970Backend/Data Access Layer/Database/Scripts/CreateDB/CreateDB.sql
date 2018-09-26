@@ -124,8 +124,8 @@ GO
 CREATE TABLE tbl_Photo 
 (
 	PhotoID INT NOT NULL IDENTITY(100000, 1),
-	Lat FLOAT,
-	Long FLOAT,
+	Lat FLOAT NOT NULL DEFAULT 0,
+	Long FLOAT NOT NULL DEFAULT 0,
 	PhotoDataURL VARCHAR(MAX) NOT NULL,
 	TimeTaken DATETIME2 NOT NULL DEFAULT GETDATE(),
 	VotingFinishTime DATETIME2 NOT NULL DEFAULT DATEADD(MINUTE, 15, GETDATE()),
@@ -761,26 +761,189 @@ GO
 
 
 
-USE [udb_CamTag]
+
+
+USE udb_CamTag
 GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE PROCEDURE [dbo].[usp_DoRaiseError] 
-	@result INT
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the GameID exists
+-- =============================================
+CREATE PROCEDURE usp_ConfirmGameExists
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 	
-	IF(@result <> 1)
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+
+    IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @id AND GameIsDeleted = 0)
 	BEGIN
-		RAISERROR('',16,1);
-	END	
+		SELECT @result = @GAME_DOES_NOT_EXIST;
+		SET @errorMSG = 'The Game does not exist.';
+	END
+	ELSE
+	BEGIN
+		SELECT @result = 1;
+		SET @errorMSG = '';
+	END
 END
 GO
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirms the Game is not already completed.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmGameNotCompleted
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+
+	--Confirm the game exists
+	EXEC [dbo].[usp_ConfirmGameExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+
+	--If the game exists check to see if the game is completed.
+	IF(@result = 1)
+	BEGIN
+		IF NOT EXISTS (SELECT * FROM vw_Active_Games WHERE GameID = @id)
+		BEGIN
+			SELECT @result = @GAME_STATE_INVALID;
+			SET @errorMSG = 'The game is already completed.';
+		END
+		ELSE
+		BEGIN
+			SELECT @result = 1;
+			SET @errorMSG = '';
+		END
+	END
+END
+GO
+
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 15/09/18
+-- Description:	Confirm the GameState of the GameID passed in is as expected.
+-- =============================================
+CREATE PROCEDURE [dbo].[usp_ConfirmGameStateCorrect]
+	@gameID INT,
+	@correctGameState VARCHAR(255),
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+
+	--Confirm the game exists
+	EXEC [dbo].[usp_ConfirmGameExists] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	
+	IF(@result = 1)
+	BEGIN
+		--Get the actual current game state and confirm the game state is correct
+		DECLARE @actualGameState VARCHAR(255);
+		SELECT @actualGameState = GameState FROM tbl_Game WHERE GameID = @gameID
+
+		--Confirm the game state matches the game state passed in
+		IF(@correctGameState NOT LIKE @actualGameState)
+		BEGIN
+			SET @result = @GAME_STATE_INVALID;
+			SET @errorMSG = 'The game state is invalid for this operation. Expecting game state to be ' + @correctGameState + ' but the actual game state is ' + @actualGameState;
+		END
+		ELSE
+		BEGIN
+			SET @result = 1;
+			SET @errorMSG = '';
+		END
+	END
+END
+GO
+
 
 
 
@@ -807,17 +970,95 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_PLAYERDOESNOTEXIST INT = 12;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
     IF NOT EXISTS (SELECT * FROM vw_All_Players WHERE PlayerID = @id)
 	BEGIN
-		SELECT @result = @EC_PLAYERDOESNOTEXIST;
+		SELECT @result = @PLAYER_DOES_NOT_EXIST;
 		SET @errorMSG = 'The PlayerID does not exist';
 	END
 	ELSE
 	BEGIN
 		SELECT @result = 1;
 		SET @errorMSG = '';
+	END
+END
+GO
+
+
+
+
+
+
+
+USE udb_CamTag
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 23/09/18
+-- Description:	Confirms the PlayerID passed in has not left the game.
+-- =============================================
+CREATE PROCEDURE usp_ConfirmPlayerInGame
+	@id INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+
+	EXEC [dbo].[usp_ConfirmPlayerExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+
+	--If the player exists and isactive, check to see if the player is in the game.
+	IF(@result = 1)
+	BEGIN
+		IF NOT EXISTS (SELECT * FROM vw_InGame_Players WHERE PlayerID = @id)
+		BEGIN
+			SELECT @result = @PLAYER_INVALID;
+			SET @errorMSG = 'The PlayerID is not in the game.';
+		END
+		ELSE
+		BEGIN
+			SELECT @result = 1;
+			SET @errorMSG = '';
+		END
 	END
 END
 GO
@@ -847,8 +1088,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--The error code returned if the player is not active
-	DECLARE @EC_PLAYERNOTACTIVE INT = 10;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	--Confirm the playerID passed in exists
 	EXEC [dbo].[usp_ConfirmPlayerExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
@@ -858,7 +1113,7 @@ BEGIN
 	BEGIN
 		IF NOT EXISTS (SELECT * FROM vw_Active_Players WHERE PlayerID = @id)
 		BEGIN
-			SELECT @result = @EC_PLAYERNOTACTIVE;
+			SELECT @result = @PLAYER_INVALID;
 			SET @errorMSG = 'The PlayerID is not active.';
 		END
 		ELSE
@@ -874,200 +1129,31 @@ GO
 
 
 
-USE udb_CamTag
+
+USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 23/09/18
--- Description:	Confirms the PlayerID passed in has not left the game.
--- =============================================
-CREATE PROCEDURE usp_ConfirmPlayerInGame
-	@id INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
+CREATE PROCEDURE [dbo].[usp_DoRaiseError] 
+	@result INT
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
-
-	DECLARE @EC_PLAYERNOTINGAME INT = 8;
-
-	--Confirm the PlayerID exists and isActive
-	EXEC [dbo].[usp_ConfirmPlayerIsActive] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-
-	--If the player exists and isactive, check to see if the player is in the game.
-	IF(@result = 1)
-	BEGIN
-		IF NOT EXISTS (SELECT * FROM vw_InGame_Players WHERE PlayerID = @id)
-		BEGIN
-			SELECT @result = @EC_PLAYERNOTINGAME;
-			SET @errorMSG = 'The PlayerID is not in the game.';
-		END
-		ELSE
-		BEGIN
-			SELECT @result = 1;
-			SET @errorMSG = '';
-		END
-	END
-END
-GO
-
-
-
-
-
-
-
-
-
-
-
-USE udb_CamTag
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 15/09/18
--- Description:	Confirms the GameID exists
--- =============================================
-CREATE PROCEDURE usp_ConfirmGameExists
-	@id INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-	DECLARE @EC_GAMEDOESNOTEXIST INT = 13;
-
-    IF NOT EXISTS (SELECT * FROM tbl_Game WHERE GameID = @id AND GameIsDeleted = 0)
-	BEGIN
-		SELECT @result = @EC_GAMEDOESNOTEXIST;
-		SET @errorMSG = 'The Game does not exist.';
-	END
-	ELSE
-	BEGIN
-		SELECT @result = 1;
-		SET @errorMSG = '';
-	END
-END
-GO
-
-
-
-
-
-
-
-
-
-USE udb_CamTag
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 15/09/18
--- Description:	Confirms the Game is not already completed.
--- =============================================
-CREATE PROCEDURE usp_ConfirmGameNotCompleted
-	@id INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--The error code returned if the game is already completed
-	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
-
-	--Confirm the game exists
-	EXEC [dbo].[usp_ConfirmGameExists] @id = @id, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-
-	--If the game exists check to see if the game is completed.
-	IF(@result = 1)
-	BEGIN
-		IF NOT EXISTS (SELECT * FROM vw_Active_Games WHERE GameID = @id)
-		BEGIN
-			SELECT @result = @EC_GAMEALREADYCOMPLETE;
-			SET @errorMSG = 'The game is already completed.';
-		END
-		ELSE
-		BEGIN
-			SELECT @result = 1;
-			SET @errorMSG = '';
-		END
-	END
-END
-GO
-
-
-
-
-
-
-
-
-USE udb_CamTag
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 15/09/18
--- Description:	Confirm the GameState of the GameID passed in is as expected.
--- =============================================
-CREATE PROCEDURE [dbo].[usp_ConfirmGameStateCorrect]
-	@gameID INT,
-	@correctGameState VARCHAR(255),
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	DECLARE @EC_GAMESTATEINVALID INT = 18;
-
-	--Confirm the game exists and is active
-	EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	
-	IF(@result = 1)
+	IF(@result <> 1)
 	BEGIN
-		--Get the actual current game state and confirm the game state is correct
-		DECLARE @actualGameState VARCHAR(255);
-		SELECT @actualGameState = GameState FROM tbl_Game WHERE GameID = @gameID
-
-		--Confirm the game state matches the game state passed in
-		IF(@correctGameState NOT LIKE @actualGameState)
-		BEGIN
-			SET @result = @EC_GAMESTATEINVALID;
-			SET @errorMSG = 'The game state is invalid for this operation. Expecting game state to be ' + @correctGameState + ' but the actual game state is ' + @actualGameState;
-		END
-		ELSE
-		BEGIN
-			SET @result = 1;
-			SET @errorMSG = '';
-		END
-	END
+		RAISERROR('',16,1);
+	END	
 END
 GO
+
+
+
+
 
 
 
@@ -1085,13 +1171,6 @@ GO
 --				Business Logic Code is scheduled to Run at start time to start the game and update the Game State to PLAYING.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. @EC_BEGINGAME_NOTHOST - The playerID is not the host of the game
---		3. @EC_BEGINGAME_NOTINLOBBY - The game is not currently IN LOBBY
---		4. @EC_BEGINGAME_NOTENOUGHPLAYERS - Trying to start a game with less than 3 active and verified players.
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_BeginGame] 
 	-- Add the parameters for the stored procedure here
@@ -1104,9 +1183,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_BEGINGAME_NOTHOST INT = 6000;
-	DECLARE @EC_BEGINGAME_NOTENOUGHPLAYERS INT = 6002;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		
@@ -1120,7 +1212,7 @@ BEGIN
 		SELECT @isHost = IsHost FROM vw_InGame_Players WHERE PlayerID = @playerID
 		IF(@isHost = 0)
 		BEGIN
-			SET @result = @EC_BEGINGAME_NOTHOST;
+			SET @result = @DATA_INVALID;
 			SET @errorMSG = 'The playerID passed in is not the host player. Only the host can begin the game.';
 			RAISERROR('',16,1);
 		END
@@ -1140,7 +1232,7 @@ BEGIN
 		SELECT @activePlayerCount = COUNT(*) FROM vw_InGame_Players WHERE GameID = @gameID
 		IF(@activePlayerCount < 3)
 		BEGIN
-			SET @result = @EC_BEGINGAME_NOTENOUGHPLAYERS;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'Not enough players to start the game, need a minimum of 3.';
 			RAISERROR('',16,1);
 		END
@@ -1165,12 +1257,13 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'The an error occurred while trying to create the game record';
 		END
 	END CATCH
 END
 GO
+
 
 
 
@@ -1206,7 +1299,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+	DECLARE @INSERT_ERROR INT = 2;
+	DECLARE @BUILD_MODEL_ERROR INT = 3;
+	DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+	DECLARE @DATA_INVALID INT = 5;
+	DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+	DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+	DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+	DECLARE @GAME_STATE_INVALID INT = 9;
+	DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+	DECLARE @PLAYER_INVALID INT = 11;
+	DECLARE @MODELINVALID_PLAYER INT = 12;
+	DECLARE @MODELINVALID_GAME INT = 13;
+	DECLARE @MODELINVALID_PHOTO INT = 14;
+	DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		
@@ -1274,7 +1382,7 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'The an error occurred while trying to complete the game.';
 		END
 
@@ -1320,7 +1428,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+	DECLARE @INSERT_ERROR INT = 2;
+	DECLARE @BUILD_MODEL_ERROR INT = 3;
+	DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+	DECLARE @DATA_INVALID INT = 5;
+	DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+	DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+	DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+	DECLARE @GAME_STATE_INVALID INT = 9;
+	DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+	DECLARE @PLAYER_INVALID INT = 11;
+	DECLARE @MODELINVALID_PLAYER INT = 12;
+	DECLARE @MODELINVALID_GAME INT = 13;
+	DECLARE @MODELINVALID_PHOTO INT = 14;
+	DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Validate the playerID
@@ -1349,12 +1472,16 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SELECT @result = @EC_INSERTERROR;
+			SELECT @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to create the ammo notification.'
 		END
 	END CATCH
 END
 GO
+
+
+
+
 
 
 
@@ -1390,14 +1517,28 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Confirm the game code does not already exist in a game
 		IF EXISTS (SELECT * FROM vw_All_Games WHERE GameCode = @gameCode)
 		BEGIN
-			SET @result = @EC_ITEMALREADYEXISTS;
+			SET @result = @ITEM_ALREADY_EXISTS;
 			SET @errorMSG = 'The game code already exists.';
 			RAISERROR('',16,1);
 		END;
@@ -1424,12 +1565,15 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'The an error occurred while trying to create the game record';
 		END
 	END CATCH
 END
 GO
+
+
+
 
 
 
@@ -1449,12 +1593,6 @@ GO
 -- Description:	Adds a Join notification to each player in the game.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. EC_PLAYERNOTACTIVE - The playerID passed in is not active
---		2. EC_PLAYERDOESNOTEXIST - The playerID passed in does not exist
---		3. EC_INSERTERROR - When performing the update in the DB an error occurred
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateJoinNotification] 
 	-- Add the parameters for the stored procedure here
@@ -1467,7 +1605,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+	DECLARE @INSERT_ERROR INT = 2;
+	DECLARE @BUILD_MODEL_ERROR INT = 3;
+	DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+	DECLARE @DATA_INVALID INT = 5;
+	DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+	DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+	DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+	DECLARE @GAME_STATE_INVALID INT = 9;
+	DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+	DECLARE @PLAYER_INVALID INT = 11;
+	DECLARE @MODELINVALID_PLAYER INT = 12;
+	DECLARE @MODELINVALID_GAME INT = 13;
+	DECLARE @MODELINVALID_PHOTO INT = 14;
+	DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Validate the playerID
@@ -1510,12 +1663,18 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
 	END CATCH
 END
 GO
+
+
+
+
+
+
 
 
 
@@ -1552,7 +1711,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+	DECLARE @INSERT_ERROR INT = 2;
+	DECLARE @BUILD_MODEL_ERROR INT = 3;
+	DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+	DECLARE @DATA_INVALID INT = 5;
+	DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+	DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+	DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+	DECLARE @GAME_STATE_INVALID INT = 9;
+	DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+	DECLARE @PLAYER_INVALID INT = 11;
+	DECLARE @MODELINVALID_PLAYER INT = 12;
+	DECLARE @MODELINVALID_GAME INT = 13;
+	DECLARE @MODELINVALID_PHOTO INT = 14;
+	DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Validate the playerID
@@ -1589,12 +1763,19 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
 	END CATCH
 END
 GO
+
+
+
+
+
+
+
 
 
 
@@ -1634,8 +1815,23 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @msgTxt VARCHAR(255)
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_DATAINVALID INT = 17;
+	
+	--Declare the error codes
+    DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Validate the takenByID
@@ -1653,7 +1849,7 @@ BEGIN
 		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @photoOfID, @gameID = @photoOfGameID OUTPUT
 		IF(@takenByGameID <> @photoOfGameID)
 		BEGIN
-			SET @result = @EC_DATAINVALID;
+			SET @result = @DATA_INVALID;
 			SET @errorMSG = 'The players provided are not in the same game.'
 		END
 
@@ -1719,12 +1915,17 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to create the join notification.'
 		END
 	END CATCH
 END
 GO
+
+
+
+
+
 
 
 
@@ -1770,6 +1971,7 @@ GO
 
 
 
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -1807,6 +2009,24 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+
 	BEGIN TRY
 		
 		--If the id is a playerID get the GameID from the Player record
@@ -1922,6 +2142,8 @@ BEGIN
 
 	SET @ammoCount = -1;
 
+	BEGIN TRY
+
 	--Validate the playerID
 	EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
@@ -1932,8 +2154,17 @@ BEGIN
 
 	SET @result = 1;
 	SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+		SET @ammoCount = -1;
+	END CATCH
 END
 GO
+
+
+
 
 
 
@@ -1955,6 +2186,8 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	BEGIN TRY
+
 	--Confirm the GameID passed in exists
 	EXEC [dbo].[usp_ConfirmGameExists] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
@@ -1965,8 +2198,16 @@ BEGIN
 
 	SET @result = 1;
 	SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
 END
 GO
+
+
 
 
 
@@ -2003,6 +2244,12 @@ GO
 
 
 
+
+
+
+
+
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -2017,11 +2264,6 @@ GO
 --				when a user returns to the web application.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. EC_PLAYERNOTACTIVE - The playerID passed in is not active
---		2. EC_PLAYERDOESNOTEXIST - The playerID passed in does not exist
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_GetGameStatus] 
 	-- Add the parameters for the stored procedure here
@@ -2037,6 +2279,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Confirm the playerID passed in exists
@@ -2102,6 +2360,9 @@ GO
 
 
 
+
+
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -2116,13 +2377,6 @@ GO
 --				location.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. @EC_BEGINGAME_NOTHOST - The playerID is not the host of the game
---		3. @EC_BEGINGAME_NOTINLOBBY - The game is not currently IN LOBBY
---		4. @EC_BEGINGAME_NOTENOUGHPLAYERS - Trying to start a game with less than 3 active and verified players.
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_GetLastKnownLocations] 
 	-- Add the parameters for the stored procedure here
@@ -2135,7 +2389,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		
@@ -2188,6 +2457,8 @@ GO
 
 
 
+
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -2199,12 +2470,7 @@ GO
 -- Create date: 06/09/18
 -- Description:	Returns all the notifications for a player
 
--- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The playerID of the recipient does not exist
---		2. When performing the update in the DB an error occurred
-
+-- Returns: 1 = Successful, or anything else = An error occurred
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_GetNotifications] 
 	-- Add the parameters for the stored procedure here
@@ -2217,6 +2483,24 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+
 	BEGIN TRY
 		--Validate the playerID
 		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
@@ -2253,6 +2537,10 @@ GO
 
 
 
+
+
+
+
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 10/09/18
@@ -2278,6 +2566,12 @@ GO
 
 
 
+
+
+
+
+
+
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 18/09/18
@@ -2293,6 +2587,7 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+	BEGIN TRY
 
 	--Confirm the PlayerID passed in exists and is active
 	EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
@@ -2304,12 +2599,26 @@ BEGIN
 
 	SET @result = 1;
 	SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
 END
 GO
 
 
 
 
+
+
+
+
+
+
+USE udb_CamTag
+GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 10/09/18
@@ -2325,6 +2634,25 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+
+	BEGIN TRY
 
 	--Validate the playerID
 	EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
@@ -2352,9 +2680,18 @@ BEGIN
 
 	SET @result = 1;
 	SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
 	
 END
 GO
+
+
+
 
 
 
@@ -2374,16 +2711,6 @@ GO
 -- Description:	Joins a player to a game.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. @EC_GAMEDOESNOTEXIST - The game code passed in does not exist in the database or is not an active game.
---		3. @EC_GAMEALREADYCOMPLETE - The game code passed in trying to join is already completed
---		4. @EC_JOINGAME_NICKNAMETAKEN - The nickname passed is already taken in the game
---		5. @EC_JOINGAME_PHONETAKEN - The phone number is already taken in another active game
---		6. @EC_JOINGAME_EMAILTAKEN - The email is already taken in another active game
---		7. @EC_JOINGAME_UNABLETOJOIN - The game the player is trying to join is already playing and does not allow players to join mid game
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_JoinGame] 
 	-- Add the parameters for the stored procedure here
@@ -2402,14 +2729,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_GAMEDOESNOTEXIST INT = 13;
-	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
-	DECLARE @EC_JOINGAME_NICKNAMETAKEN INT = 1005;
-	DECLARE @EC_JOINGAME_PHONETAKEN INT = 1006;
-	DECLARE @EC_JOINGAME_EMAILTAKEN INT = 1007;
-	DECLARE @EC_JOINGAME_UNABLETOJOIN INT = 1008;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 		
@@ -2420,14 +2755,10 @@ BEGIN
 		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1 AND GameIsDeleted = 0
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
-			SET @result = @EC_GAMEDOESNOTEXIST;
+			SET @result = @GAME_DOES_NOT_EXIST;
 			SET @errorMSG = 'The game code does not exist';
 			RAISERROR('',16,1);
 		END
-
-		--Confirm the game you are trying to join is not completed
-		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameIDToJoin, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Check to see if the player is okay to join the game, as the player may be attempting to join a game which has already begun
 		DECLARE @canJoin BIT;
@@ -2439,7 +2770,7 @@ BEGIN
 		--is trying to join a game which has already begun and does not allow players to join at anytime
 		IF(@canJoin = 0 AND @gameState IN ('STARTING','PLAYING'))
 		BEGIN
-			SET @result = @EC_JOINGAME_UNABLETOJOIN;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'The game you are trying to join is already playing and does not allow you to join after the game has started.';
 			RAISERROR('',16,1);
 		END
@@ -2449,7 +2780,7 @@ BEGIN
 		--Checking against verified and unverified players.
 		IF EXISTS (SELECT * FROM vw_Active_Players WHERE GameID = @gameIDToJoin AND Nickname = @nickname)
 		BEGIN
-			SET @result = @EC_JOINGAME_NICKNAMETAKEN;
+			SET @result = @ITEM_ALREADY_EXISTS;
 			SET @errorMSG = 'The nickname you entered is already taken. Please chose another';
 			RAISERROR('',16,1);
 		END
@@ -2461,7 +2792,7 @@ BEGIN
 			--Confirm the phone number is unique for all players currently in a game.
 			IF EXISTS(SELECT Phone FROM vw_Active_Players WHERE Phone LIKE @contact)
 			BEGIN
-				SET @result = @EC_JOINGAME_PHONETAKEN;
+				SET @result = @ITEM_ALREADY_EXISTS;
 				SET @errorMSG = 'The phone number you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -2471,7 +2802,7 @@ BEGIN
 			--Confirm the email is unique for all players currently in a game.
 			IF EXISTS(SELECT Email FROM vw_Active_Players WHERE Email LIKE @contact)
 			BEGIN
-				SET @result = @EC_JOINGAME_EMAILTAKEN;
+				SET @result = @ITEM_ALREADY_EXISTS;
 				SET @errorMSG = 'The email address you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -2510,12 +2841,17 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to add the player to the game'
 		END
 	END CATCH
 END
 GO
+
+
+
+
+
 
 
 
@@ -2530,15 +2866,11 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
--- Author:		Dylan Levin
+-- Author:		Jonathan Williams
 -- Create date: 13/09/18
 -- Description:	Removes a player to a game.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_LeaveGame] 
 	-- Add the parameters for the stored procedure here
@@ -2552,17 +2884,30 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 		
 		SET @isGameCompleted = 0;
 
 		--Validate the playerID
-		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_ConfirmPlayerIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
-
 
 		--Get the GameID from the playerID
 		DECLARE @gameID INT;
@@ -2692,12 +3037,17 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to remove the player from the game'
 		END
 	END CATCH
 END
 GO
+
+
+
+
+
 
 
 
@@ -2724,6 +3074,8 @@ BEGIN
 	WHERE ConnectionID LIKE @connectionID
 END
 GO
+
+
 
 
 
@@ -2760,7 +3112,23 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
-	DECLARE @EC_INSERTERROR INT = 2
+	
+	--Declare the error codes
+    DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Validate the playerID
@@ -2795,13 +3163,12 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to update the player record.'
 		END
 	END CATCH
 END
 GO
-
 
 
 
@@ -2831,11 +3198,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_DATAINVALID INT = 17;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 		--Validate the takenByID
@@ -2854,7 +3232,7 @@ BEGIN
 		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @photoOfID, @gameID = @photoOfGameID OUTPUT
 		IF(@takenByGameID <> @photoOfGameID)
 		BEGIN
-			SET @result = @EC_DATAINVALID;
+			SET @result = @DATA_INVALID;
 			SET @errorMSG = 'The players provided are not in the same game.'
 		END
 
@@ -2895,7 +3273,7 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to save the photo.'
 		END
 	END CATCH
@@ -2973,6 +3351,7 @@ GO
 
 
 
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -3012,8 +3391,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 
@@ -3049,7 +3442,7 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to set notifications to read.'
 		END
 	END CATCH
@@ -3095,7 +3488,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
+	--Declare the error codes
+    DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Confirm the playerID passed in exists and is active
@@ -3105,7 +3513,7 @@ BEGIN
 		--Confirm the new connectionID does not already exists
 		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
 		BEGIN
-			SET @result = @EC_ITEMALREADYEXISTS;
+			SET @result = @ITEM_ALREADY_EXISTS;
 			SET @errorMSG = 'The connectionID already exists.';
 			RAISERROR('',16,1);
 		END;
@@ -3125,10 +3533,103 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
+			SET @result = @INSERT_ERROR;
+			SET @errorMSG = 'Insert error.';
 		END
 	END CATCH
 END
 GO
+
+
+
+
+
+
+
+
+USE [udb_CamTag]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[usp_UpdateVerificationCode] 
+	-- Add the parameters for the stored procedure here
+	@verificationCode INT,
+	@playerID INT,
+	@result INT OUTPUT,
+	@errorMSG VARCHAR(255) OUTPUT
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
+	
+
+	BEGIN TRY
+		
+		--Validate the playerID
+		EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+		
+		--Get the GameID from the playerID
+		DECLARE @gameID INT;
+		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
+
+		--Confirm the Game is not completed
+		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
+
+		--Confirm the playerID is in a non verified state
+		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
+		BEGIN
+			SET @result = @CANNOT_PERFORM_ACTION;
+			SET @errorMSG = 'The playerID is already verified.';
+			RAISERROR('',16,1);
+		END
+
+		--Update the players verfication code
+		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+		BEGIN TRANSACTION
+			UPDATE tbl_Player
+			SET VerificationCode = @verificationCode
+			WHERE PlayerID = @playerID
+		COMMIT
+
+		--Set the success return variables
+		SET @result = 1;
+		SET @errorMSG = ''
+		SELECT * FROM vw_Active_Players WHERE PlayerID = @playerID
+	END TRY
+
+	BEGIN CATCH
+		IF(@@TRANCOUNT > 0)
+		BEGIN
+			ROLLBACK;
+			SET @result = @INSERT_ERROR;
+			SET @errorMSG = 'An error occurred while trying update the player record';
+		END
+	END CATCH
+END
+GO
+
 
 
 
@@ -3162,8 +3663,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
+	--Declare the error codes
+    DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
@@ -3212,90 +3727,12 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to update the photo record.'
 		END
 	END CATCH
 END
 GO
-
-
-
-
-
-
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[usp_UpdateVerificationCode] 
-	-- Add the parameters for the stored procedure here
-	@verificationCode INT,
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_VERIFYPLAYER_ALREADYVERIFIED INT = 2002;
-	
-
-	BEGIN TRY
-		
-		--Validate the playerID
-		EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-		
-		--Get the GameID from the playerID
-		DECLARE @gameID INT;
-		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
-
-		--Confirm the Game is not completed
-		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-
-		--Confirm the playerID is in a non verified state
-		IF NOT EXISTS (SELECT * FROM tbl_Player WHERE PlayerID = @playerID AND IsVerified = 0)
-		BEGIN
-			SET @result = @EC_VERIFYPLAYER_ALREADYVERIFIED;
-			SET @errorMSG = 'The playerID is already verified.';
-			RAISERROR('',16,1);
-		END
-
-		--Update the players verfication code
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			UPDATE tbl_Player
-			SET VerificationCode = @verificationCode
-			WHERE PlayerID = @playerID
-		COMMIT
-
-		--Set the success return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-		SELECT * FROM vw_Active_Players WHERE PlayerID = @playerID
-	END TRY
-
-	BEGIN CATCH
-		IF(@@TRANCOUNT > 0)
-		BEGIN
-			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
-			SET @errorMSG = 'An error occurred while trying update the player record';
-		END
-	END CATCH
-END
-GO
-
-
 
 
 
@@ -3317,11 +3754,6 @@ GO
 --				their ammo is decremented and their number of photos taken is increased.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. @EC_DATAINVALID - The player's ammo is already at 0, cannot decrease ammo
---		2. @EC_INSERTERROR - An error occurred while trying to update the player record.
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_UseAmmo] 
 	-- Add the parameters for the stored procedure here
@@ -3333,8 +3765,23 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
-	DECLARE @EC_DATAINVALID INT = 17;
-	DECLARE @EC_INSERTERROR INT = 2
+
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Validate the playerID
@@ -3354,7 +3801,7 @@ BEGIN
 		SELECT @ammoCount = AmmoCount FROM tbl_Player WHERE PlayerID = @playerID
 		IF(@ammoCount = 0)
 		BEGIN
-			SET @result = @EC_DATAINVALID;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'The players ammo count is already at 0, cannot use ammo.';
 			RAISERROR('', 16, 1);
 		END
@@ -3379,7 +3826,7 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to update the player record.'
 		END
 	END CATCH
@@ -3412,11 +3859,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_PLAYERIDDOESNOTEXIST INT = 12;
-	DECLARE @EC_VERIFYPLAYER_CODEINCORRECT INT = 2001;
-	DECLARE @EC_VERIFYPLAYER_ALREADYVERIFIED INT = 2002;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 	
 
 	BEGIN TRY
@@ -3436,7 +3894,7 @@ BEGIN
 		--Confirm the playerID is in a non verified state
 		IF EXISTS (SELECT * FROM vw_InGame_Players WHERE PlayerID = @playerID)
 		BEGIN
-			SET @result = @EC_VERIFYPLAYER_ALREADYVERIFIED;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'The playerID is already verified.';
 			RAISERROR('',16,1);
 		END
@@ -3446,7 +3904,7 @@ BEGIN
 		SELECT @actualVerificationCode = VerificationCode FROM tbl_Player WHERE PlayerID = @playerID
 		IF(@actualVerificationCode <> @verificationCode)
 		BEGIN
-			SET @result = @EC_VERIFYPLAYER_CODEINCORRECT;
+			SET @result = @ITEM_DOES_NOT_EXIST;
 			SET @errorMSG = 'The verification code is not correct.';
 			RAISERROR('',16,1);
 		END
@@ -3468,12 +3926,16 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying update the player record';
 		END
 	END CATCH
 END
 GO
+
+
+
+
 
 
 
@@ -3491,12 +3953,6 @@ GO
 -- Description:	Updates a PlayerVotePhoto record with a players vote decision
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The PlayerVotePhoto record does not exist with the specified VoteID and PlayerID
---		2. The Photo record voting is already completed
---		3. The photo voting finish time has already passed
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_VoteOnPhoto] 
 	-- Add the parameters for the stored procedure here 
@@ -3511,11 +3967,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST INT = 4000;
-	DECLARE @EC_VOTEPHOTO_VOTEALREADYCOMPLETE INT = 4001;
-	DECLARE @EC_VOTEPHOTO_VOTEFINISHTIMEPASSED INT = 4002;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 		
@@ -3534,7 +4001,7 @@ BEGIN
 		--Confirm the vote record exists and has not already been voted on.
 		IF NOT EXISTS (SELECT * FROM vw_Incomplete_Votes WHERE VoteID = @voteID)
 		BEGIN
-			SET @result = @EC_VOTEPHOTO_VOTERECORDDOESNOTEXIST;
+			SET @result = @ITEM_DOES_NOT_EXIST;
 			SET @errorMSG = 'The PlayerVotePhoto record does not exist or already voted.';
 			RAISERROR('',16,1);
 		END
@@ -3546,22 +4013,10 @@ BEGIN
 		--Confirm the voting is not already complete on the photo record
 		IF EXISTS (SELECT * FROM vw_Completed_Photos WHERE PhotoID = @photoID)
 		BEGIN
-			SET @result = @EC_VOTEPHOTO_VOTEALREADYCOMPLETE;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'The Voting on the photo has already been completed.';
 			RAISERROR('',16,1);
 		END
-
-		--Confirm the Voting Finish Time has not already passed
-		DECLARE @votingFinishTime DATETIME2;
-		SELECT @votingFinishTime = VotingFinishTime FROM tbl_Photo WHERE PhotoID = @photoID
-		IF(@votingFinishTime < GETDATE())
-		BEGIN
-			SET @result = @EC_VOTEPHOTO_VOTEFINISHTIMEPASSED;
-			SET @errorMSG = 'The voting finish time has already passed.';
-			RAISERROR('',16,1);
-		END
-
-
 
 		--If reaching this point all pre-condition checks have passed successfully
 
@@ -3589,12 +4044,14 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to cast your vote.'
 		END
 	END CATCH
 END
 GO
+
+
 
 
 
@@ -3701,21 +4158,22 @@ GO
 
 
 
+
 --Dummy Data
 INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 4, 'IN LOBBY')
 GO
 
-INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified, IsHost) VALUES ('Jono', 'team6.camtag@gmail.com', 'localhost', 100000, 0, 1, 1)
+INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified, IsHost) VALUES ('Jono', 'team6.camtag@gmail.com', 'data:image/jpeg;base64,', 100000, 0, 1, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Dylan', 'team6.camtag@gmail.com', 'localhost', 100000, 0 ,1)
+INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Dylan', 'team6.camtag@gmail.com', 'data:image/jpeg;base64,', 100000, 0 ,1)
 GO
-INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Mathew', 'team6.camtag@gmail.com', 'localhost', 100000, 0, 1)
+INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Mathew', 'team6.camtag@gmail.com', 'data:image/jpeg;base64,', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Harry', 'team6.camtag@gmail.com', 'localhost', 100000, 0, 0)
+INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Harry', 'team6.camtag@gmail.com', 'data:image/jpeg;base64,', 100000, 0, 0)
 GO
-INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('David', 'team6.camtag@gmail.com', 'localhost', 100000, 0, 1)
+INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('David', 'team6.camtag@gmail.com', 'data:image/jpeg;base64,', 100000, 0, 1)
 GO
-INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Sheridan', 'team6.camtag@gmail.com', 'localhost', 100000, 0, 0)
+INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified) VALUES ('Sheridan', 'team6.camtag@gmail.com', 'data:image/jpeg;base64,', 100000, 0, 0)
 GO
 INSERT INTO tbl_Notification (MessageText, NotificationType, IsRead, NotificationIsActive, NotificationIsDeleted, GameID, PlayerID) VALUES ('ScoMo has joined the game.', 'JOIN', 0, 1, 0, 100000, 100000)
 GO

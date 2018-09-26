@@ -10,16 +10,6 @@ GO
 -- Description:	Joins a player to a game.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. @EC_GAMEDOESNOTEXIST - The game code passed in does not exist in the database or is not an active game.
---		3. @EC_GAMEALREADYCOMPLETE - The game code passed in trying to join is already completed
---		4. @EC_JOINGAME_NICKNAMETAKEN - The nickname passed is already taken in the game
---		5. @EC_JOINGAME_PHONETAKEN - The phone number is already taken in another active game
---		6. @EC_JOINGAME_EMAILTAKEN - The email is already taken in another active game
---		7. @EC_JOINGAME_UNABLETOJOIN - The game the player is trying to join is already playing and does not allow players to join mid game
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_JoinGame] 
 	-- Add the parameters for the stored procedure here
@@ -38,14 +28,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	--Declaring the possible error codes returned
-	DECLARE @EC_INSERTERROR INT = 2;
-	DECLARE @EC_GAMEDOESNOTEXIST INT = 13;
-	DECLARE @EC_GAMEALREADYCOMPLETE INT = 16;
-	DECLARE @EC_JOINGAME_NICKNAMETAKEN INT = 1005;
-	DECLARE @EC_JOINGAME_PHONETAKEN INT = 1006;
-	DECLARE @EC_JOINGAME_EMAILTAKEN INT = 1007;
-	DECLARE @EC_JOINGAME_UNABLETOJOIN INT = 1008;
+	--Declare the error codes
+	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY
 		
@@ -56,14 +54,10 @@ BEGIN
 		SELECT @gameIDToJoin = GameID FROM tbl_Game WHERE GameCode = @gameCode AND GameIsActive = 1 AND GameIsDeleted = 0
 		IF(@gameIDToJoin IS NULL)
 		BEGIN
-			SET @result = @EC_GAMEDOESNOTEXIST;
+			SET @result = @GAME_DOES_NOT_EXIST;
 			SET @errorMSG = 'The game code does not exist';
 			RAISERROR('',16,1);
 		END
-
-		--Confirm the game you are trying to join is not completed
-		EXEC [dbo].[usp_ConfirmGameNotCompleted] @id = @gameIDToJoin, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
 		--Check to see if the player is okay to join the game, as the player may be attempting to join a game which has already begun
 		DECLARE @canJoin BIT;
@@ -75,7 +69,7 @@ BEGIN
 		--is trying to join a game which has already begun and does not allow players to join at anytime
 		IF(@canJoin = 0 AND @gameState IN ('STARTING','PLAYING'))
 		BEGIN
-			SET @result = @EC_JOINGAME_UNABLETOJOIN;
+			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'The game you are trying to join is already playing and does not allow you to join after the game has started.';
 			RAISERROR('',16,1);
 		END
@@ -85,7 +79,7 @@ BEGIN
 		--Checking against verified and unverified players.
 		IF EXISTS (SELECT * FROM vw_Active_Players WHERE GameID = @gameIDToJoin AND Nickname = @nickname)
 		BEGIN
-			SET @result = @EC_JOINGAME_NICKNAMETAKEN;
+			SET @result = @ITEM_ALREADY_EXISTS;
 			SET @errorMSG = 'The nickname you entered is already taken. Please chose another';
 			RAISERROR('',16,1);
 		END
@@ -97,7 +91,7 @@ BEGIN
 			--Confirm the phone number is unique for all players currently in a game.
 			IF EXISTS(SELECT Phone FROM vw_Active_Players WHERE Phone LIKE @contact)
 			BEGIN
-				SET @result = @EC_JOINGAME_PHONETAKEN;
+				SET @result = @ITEM_ALREADY_EXISTS;
 				SET @errorMSG = 'The phone number you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -107,7 +101,7 @@ BEGIN
 			--Confirm the email is unique for all players currently in a game.
 			IF EXISTS(SELECT Email FROM vw_Active_Players WHERE Email LIKE @contact)
 			BEGIN
-				SET @result = @EC_JOINGAME_EMAILTAKEN;
+				SET @result = @ITEM_ALREADY_EXISTS;
 				SET @errorMSG = 'The email address you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
 				RAISERROR('',16,1);
 			END
@@ -146,7 +140,7 @@ BEGIN
 		IF(@@TRANCOUNT > 0)
 		BEGIN
 			ROLLBACK;
-			SET @result = @EC_INSERTERROR;
+			SET @result = @INSERT_ERROR;
 			SET @errorMSG = 'An error occurred while trying to add the player to the game'
 		END
 	END CATCH

@@ -2,14 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
-using INFT3970Backend.Business_Logic_Layer;
 using Microsoft.AspNetCore.SignalR;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models.Errors;
+using INFT3970Backend.Data_Access_Layer;
+using INFT3970Backend.Helpers;
 
 namespace INFT3970Backend.Controllers
 {
-    //[Route("api/[controller]")]
     [ApiController]
     public class PlayerController : ControllerBase
     {
@@ -23,26 +23,37 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// POST: api/player/joinGame - Joins a player to a game matching the gameCode value, 
-        /// creating a new Player record and returning the created Player object.
+        /// Joins a new player to a game matching the game code passed in. Stores their player details 
+        /// and sends them a verification code once they have joined the game.
+        /// Returns the created Player object. NULL data if error occurred.
         /// </summary>
-        /// <param name="gameCode">The gamecode the player is trying to join</param>
-        /// <param name="nickname">The players nickname in the game</param>
-        /// <param name="contact">The players contact info, either phone or email</param>
-        /// <param name="imgUrl">The imgUrl of the players profile picture</param>
-        /// <returns>Response including the created Player object. NULL data if an error occurred.</returns>
+        /// <param name="request">The request which contains the player information and the GameCode to join.</param>
+        /// <returns>Returns the created Player object. NULL data if error occurred.</returns>
         [HttpPost]
         [Route("api/player/joinGame")]
         public ActionResult<Response<Player>> JoinGame(JoinGameRequest request)
         {
+            //TODO: Notification for joining game during STARTING state
+            //TODO: Update the lobby list after joining game if the game state is IN LOBBY, unverified player
             try
             {
                 //Create the player object who will be joining the game
                 var playerToJoin = new Player(request.nickname, request.imgUrl, request.contact);
                 var gameToJoin = new Game(request.gameCode);
-                
-                //Call the business logic layer to create a new player and join the game
-                return new PlayerBL().JoinGame(gameToJoin, playerToJoin);
+
+                //Generate a verification code 
+                var verificationCode = Player.GenerateVerificationCode();
+
+                //Call the data access layer to add the player to the database
+                var response = new PlayerDAL().JoinGame(gameToJoin, playerToJoin, verificationCode);
+
+                //If the response was successful, send the verification code to the player
+                var message = "Your CamTag verification code is: " + verificationCode;
+                var subject = "CamTag Verification Code";
+                if (response.IsSuccessful())
+                    response.Data.ReceiveMessage(message, subject);
+
+                return response;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -63,17 +74,48 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// Verifies a player by checking the verification code they have entered is correct. 
-        /// Returns a Response indicating success or failure.
+        /// Validates a players received verification code. If the player successfully enters their 
+        /// verification code their player record will be verified, meaning they have confirmed their 
+        /// email address or phone number is correct and has access to it throughout the game.
         /// </summary>
-        /// <param name="verificationCode">The verification code received by the user via phone or email.</param>
-        /// <returns>Response with NULL data, outlining if the database update was SUCCESSFUL or ERROR</returns>
+        /// <param name="verificationCode">The code received and entered by the player</param>
+        /// <param name="playerID">The playerID trying to verify</param>
+        /// <returns>SUCCESS or ERROR response.</returns>
         [HttpPost]
         [Route("api/player/verify")]
-        public Response<object> VerifyPlayer([FromForm] string verificationCode, [FromHeader] int playerID)
+        public ActionResult<Response> VerifyPlayer([FromForm] string verificationCode, [FromHeader] int playerID)
         {
-            //Call the business logic to verify the player and return a SUCCESS or ERROR response
-            return new PlayerBL().VerifyPlayer(verificationCode, playerID, _hubContext);
+            try
+            {
+                var playerToVerify = new Player(playerID);
+
+                //Confirm the verification code is valid and return an error response if the verification code is invalid
+                var code = Player.ValidateVerificationCode(verificationCode);
+                if(code == -1)
+                    return new Response("The verification code is invalid. Must be an INT between 10000 and 99999.", ErrorCodes.DATA_INVALID);
+
+                //Call the data access layer to confirm the verification code is correct.
+                var response = new PlayerDAL().ValidateVerificationCode(code, playerToVerify);
+
+                //If the player was successfully verified, updated all the clients about a joined player.
+                if (response.IsSuccessful())
+                {
+                    var hubInterface = new HubInterface(_hubContext);
+                    hubInterface.UpdatePlayerJoined(playerToVerify);
+                }
+
+                return response;
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -86,20 +128,46 @@ namespace INFT3970Backend.Controllers
         /// and resends the new code to the player's contact information (Email or Phone).
         /// </summary>
         /// <param name="playerID">The playerID who's verification code is being updated</param>
-        /// <returns>Response with NULL data, outlining if the database update was SUCCESSFUL or ERROR</returns>
+        /// <returns>SUCCESSFUL or ERROR response.</returns>
         [HttpPost]
         [Route("api/player/resend")]
-        public Response<object> ResendVerificationCode([FromHeader] int playerID)
+        public ActionResult<Response> ResendVerificationCode([FromHeader] int playerID)
         {
-            //Call the business logic layer
-            return new PlayerBL().ResendVerificationCode(playerID);
+            try
+            {
+                var player = new Player(playerID);
+
+                //Generate a new code
+                var newCode = Player.GenerateVerificationCode();
+
+                //Call the Data Access Layer to update the verification code for the player and 
+                //get the contact information for the player
+                var response = new PlayerDAL().UpdateVerificationCode(player, newCode);
+
+                //If the response is successful send the verification code to the player
+                var msgTxt = "Your CamTag verification code is: " + newCode;
+                var subject = "CamTag Verification Code";
+                if (response.IsSuccessful())
+                    response.Data.ReceiveMessage(msgTxt, subject);
+
+                return new Response(response.ErrorMessage, response.ErrorCode);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
 
 
         /// <summary>
-        /// GET: api/player/getNotifications/{playerID}/{all} - 
         /// Gets a list of all the notifications associated with a particular player
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player the notifications are for</param>
@@ -107,52 +175,117 @@ namespace INFT3970Backend.Controllers
         /// <returns>A list of notifications for a player</returns>
         [HttpGet]
         [Route("api/player/getNotifications/{playerID:int}/{all:bool}")]
-        public Response<List<Notification>> GetNotificationList(int playerID, bool all)
+        public ActionResult<Response<List<Notification>>> GetNotificationList(int playerID, bool all)
         {
-            //Example request
-            //https://localhost:5000/api/player/getNotifications/100000/false
-
-            PlayerBL playerBL = new PlayerBL();
-            return playerBL.GetNotificationList(playerID, all);
+            try
+            {
+                //Call the data access layer to return the notifications for the player.
+                var player = new Player(playerID);
+                return new PlayerDAL().GetNotificationList(player, all);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<List<Notification>>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
 
 
         /// <summary>
-        /// POST: api/player/leaveGame - 
         /// Leaves a player from their active game
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
         /// <returns>A response status indicating if the db update was a success.</returns>
         [HttpPost]
         [Route("api/player/leaveGame")]
-        public Response<object> LeaveGame([FromHeader] int playerID)
+        public ActionResult<Response> LeaveGame([FromHeader] int playerID)
         {
-            //Example request
-            //https://localhost:5000/api/player/leaveGame
+            //TODO: leave game notification during STARTING state
+            //TODO: Update lobby list when the player leaves game IN LOBBY and STARTING
+            try
+            {
+                var player = new Player(playerID);
 
-            PlayerBL playerBL = new PlayerBL();
-            return playerBL.LeaveGame(playerID, _hubContext);
+                //Call the data access layer to remove the player from the game.
+                var playerDAL = new PlayerDAL();
+                var isGameComplete = false;
+                var isPhotosComplete = false;
+                var leaveGameResponse = playerDAL.LeaveGame(player, ref isGameComplete, ref isPhotosComplete);
+
+                //Return the error response if an error occurred
+                if (!leaveGameResponse.IsSuccessful())
+                    return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
+
+                //Get the updated player object from the database
+                var playerResponse = playerDAL.GetPlayerByID(player.PlayerID);
+                if (!playerResponse.IsSuccessful())
+                    return new Response(playerResponse.ErrorMessage, playerResponse.ErrorCode);
+
+                //Create the hub interface which will be used to send live updates to clients
+                var hubInterface = new HubInterface(_hubContext);
+
+                //Call the hub method to send out notifications to players that the game is now complete
+                if (isGameComplete)
+                    hubInterface.UpdateGameCompleted(playerResponse.Data.Game, true);
+
+                //Otherwise, if the photo list is not empty then photos have been completed and need to send out updates
+                else if (isPhotosComplete)
+                {
+                    foreach (var photo in leaveGameResponse.Data)
+                        hubInterface.UpdatePhotoVotingCompleted(photo);
+                }
+
+                //If the game is not completed send out the player left notification
+                if (!isGameComplete)
+                    hubInterface.UpdatePlayerLeft(playerResponse.Data);
+
+                return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
 
         /// <summary>
-        /// POST: api/player/notificationsRead
         /// Marks a set of player notifications as read
         /// </summary>
         /// <param name="jsonNotificationIDs">The playerID and notificationIDs to mark as read.</param>
         /// <returns>A response status indicating if the db update was a success.</returns>
         [HttpPost]
         [Route("api/player/setNotificationsRead")]
-        public Response<object> SetNotificationsRead(ReadNotificationsRequest jsonNotificationIDs)
+        public ActionResult<Response> SetNotificationsRead(ReadNotificationsRequest jsonNotificationIDs)
         {
-            //Example request
-            //https://localhost:5000/api/player/setNotificationsRead
-
-            PlayerBL playerBL = new PlayerBL();
-            return playerBL.SetNotificationsRead(jsonNotificationIDs);
+            try
+            {
+                //Call the data access layer to update the notification records
+                return new PlayerDAL().SetNotificationsRead(jsonNotificationIDs);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -168,13 +301,32 @@ namespace INFT3970Backend.Controllers
         /// <returns>The updated Player object after the ammo count is decremented. NULL if error</returns>
         [HttpPost]
         [Route("api/player/useAmmo")]
-        public Response<Player> UseAmmo([FromHeader] int playerID)
+        public ActionResult<Response<Player>> UseAmmo([FromHeader] int playerID)
         {
-            //Example request
-            //https://localhost:5000/api/player/useAmmo
+            try
+            {
+                //Call the DataAccessLayer to update the Ammo count for the player
+                var player = new Player(playerID);
+                var response = new PlayerDAL().UseAmmo(player);
 
-            PlayerBL playerBL = new PlayerBL();
-            return playerBL.UseAmmo(playerID, _hubContext);
+                //If the response was successful schedule code to run in order to replenish the players ammo
+                if (response.IsSuccessful())
+                {
+                    var hubInterface = new HubInterface(_hubContext);
+                    ScheduledTasks.ScheduleReplenishAmmo(response.Data, hubInterface);
+                }
+                return response;
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<Player>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
 
 
@@ -189,13 +341,23 @@ namespace INFT3970Backend.Controllers
         /// <returns>The ammo count, negative INT if error</returns>
         [HttpGet]
         [Route("api/player/ammo")]
-        public Response<int> GetAmmoCount([FromHeader] int playerID)
+        public ActionResult<Response<int>> GetAmmoCount([FromHeader] int playerID)
         {
-            //Example request
-            //https://localhost:5000/api/player/ammo
-
-            PlayerBL playerBL = new PlayerBL();
-            return playerBL.GetAmmoCount(playerID);
+            try
+            {
+                var player = new Player(playerID);
+                return new PlayerDAL().GetAmmoCount(player);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<int>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
         }
     }
 }

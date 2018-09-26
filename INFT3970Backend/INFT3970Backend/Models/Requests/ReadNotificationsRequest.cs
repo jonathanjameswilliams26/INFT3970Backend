@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace INFT3970Backend.Models
+﻿namespace INFT3970Backend.Models
 {
     public class ReadNotificationsRequest
     {

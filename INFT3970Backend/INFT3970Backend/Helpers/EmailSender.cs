@@ -2,7 +2,7 @@
 using System.Net.Mail;
 using System.Threading;
 
-namespace INFT3970Backend.Business_Logic_Layer
+namespace INFT3970Backend.Helpers
 {
     public static class EmailSender
     {
@@ -12,7 +12,7 @@ namespace INFT3970Backend.Business_Logic_Layer
         private const string Password = "admin123!";
 
 
-        public static bool Send(string sendTo, string subject, string body, bool isHTML)
+        private static bool SendEmail(string sendTo, string subject, string body, bool isHTML)
         {
             SmtpClient SmtpClient;
             MailMessage Mail;
@@ -51,10 +51,10 @@ namespace INFT3970Backend.Business_Logic_Layer
 
 
 
-        public static void SendInBackground(string sendTo, string subject, string body, bool isHTML)
+        public static void Send(string sendTo, string subject, string body, bool isHTML)
         {
             Thread emailThread = new Thread(
-                () => Send(sendTo, subject, body, isHTML)
+                () => SendEmail(sendTo, subject, body, isHTML)
                 );
             emailThread.Start();
         }

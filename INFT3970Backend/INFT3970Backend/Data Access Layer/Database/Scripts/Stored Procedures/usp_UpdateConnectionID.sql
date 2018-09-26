@@ -29,7 +29,22 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
-	DECLARE @EC_ITEMALREADYEXISTS INT = 14;
+	--Declare the error codes
+    DECLARE @DATABASE_CONNECT_ERROR INT = 0;
+    DECLARE @INSERT_ERROR INT = 2;
+    DECLARE @BUILD_MODEL_ERROR INT = 3;
+    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
+    DECLARE @DATA_INVALID INT = 5;
+    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
+    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
+    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
+    DECLARE @GAME_STATE_INVALID INT = 9;
+    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
+    DECLARE @PLAYER_INVALID INT = 11;
+    DECLARE @MODELINVALID_PLAYER INT = 12;
+    DECLARE @MODELINVALID_GAME INT = 13;
+    DECLARE @MODELINVALID_PHOTO INT = 14;
+    DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
 		--Confirm the playerID passed in exists and is active
@@ -39,7 +54,7 @@ BEGIN
 		--Confirm the new connectionID does not already exists
 		IF EXISTS (SELECT * FROM tbl_Player WHERE ConnectionID = @connectionID)
 		BEGIN
-			SET @result = @EC_ITEMALREADYEXISTS;
+			SET @result = @ITEM_ALREADY_EXISTS;
 			SET @errorMSG = 'The connectionID already exists.';
 			RAISERROR('',16,1);
 		END;
@@ -59,6 +74,8 @@ BEGIN
 		IF @@TRANCOUNT > 0
 		BEGIN
 			ROLLBACK;
+			SET @result = @INSERT_ERROR;
+			SET @errorMSG = 'Insert error.';
 		END
 	END CATCH
 END

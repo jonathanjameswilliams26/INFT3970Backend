@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using INFT3970Backend.Helpers;
 using INFT3970Backend.Models.Errors;
 
 namespace INFT3970Backend.Models
@@ -27,11 +25,13 @@ namespace INFT3970Backend.Models
             get { return playerID; }
             set
             {
+                var errorMSG = "PlayerID is invalid. Must be atleast 100000.";
+
                 if (value == -1 || value >= 100000)
                     playerID = value;
 
                 else
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_ID, ErrorCodes.EC_PLAYER_ID);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
             }
         }
 
@@ -42,19 +42,15 @@ namespace INFT3970Backend.Models
             get { return nickname; }
             set
             {
-                if(value == "empty")
-                {
-                    nickname = value;
-                    return;
-                }
+                var errorMSG = "The nickname you entered is invalid, please only enter letters and numbers (no spaces).";
 
                 if (string.IsNullOrWhiteSpace(value))
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_NICKNAME, ErrorCodes.EC_PLAYER_NICKNAME);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
 
                 var nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
                 var isMatch = nicknameRegex.IsMatch(value);
                 if (!isMatch)
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_NICKNAME, ErrorCodes.EC_PLAYER_NICKNAME);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                     nickname = value;
             }
@@ -67,6 +63,8 @@ namespace INFT3970Backend.Models
             get { return phone; }
             set
             {
+                var errorMSG = "Phone number is invalid format.";
+
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     phone = null;
@@ -74,7 +72,7 @@ namespace INFT3970Backend.Models
                 }
                     
                 if (!IsPhone(value))
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_PHONE, ErrorCodes.EC_PLAYER_PHONE);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                     phone = value;
             }
@@ -88,6 +86,8 @@ namespace INFT3970Backend.Models
             get { return email; }
             set
             {
+                var errorMSG = "Email is invalid format.";
+
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     email = null;
@@ -95,7 +95,7 @@ namespace INFT3970Backend.Models
                 }
 
                 if (!IsEmail(value))
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_PHONE, ErrorCodes.EC_PLAYER_PHONE);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                 {
                     //If the address is a gmail address then remove the periods because they dont matter.
@@ -118,6 +118,8 @@ namespace INFT3970Backend.Models
             get { return selfieDataUrl; }
             set
             {
+                var errorMSG = "DataURL is not a base64 string.";
+
                 if (value == "empty")
                 {
                     selfieDataUrl = value;
@@ -125,20 +127,20 @@ namespace INFT3970Backend.Models
                 }
 
                 if (string.IsNullOrWhiteSpace(value))
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_SELFIE, ErrorCodes.EC_PLAYER_SELFIE);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
 
                 //Confirm the imgURL is a base64 string
                 try
                 {
                     if (!value.Contains("data:image/jpeg;base64,"))
-                        throw new InvalidModelException(ErrorMessages.EM_PLAYER_SELFIE, ErrorCodes.EC_PLAYER_SELFIE);
+                        throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                     var base64Data = value.Replace("data:image/jpeg;base64,", "");
                     var byteData = Convert.FromBase64String(base64Data);
                     selfieDataUrl = value;
                 }
                 catch
                 {
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_SELFIE, ErrorCodes.EC_PLAYER_SELFIE);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 }
             }
         }
@@ -150,8 +152,10 @@ namespace INFT3970Backend.Models
             get { return ammoCount; }
             set
             {
+                var errorMSG = "Ammo count cannot be less than 0.";
+
                 if (value < 0)
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_AMMO, ErrorCodes.EC_PLAYER_AMMO);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                     ammoCount = value;
             }
@@ -164,8 +168,10 @@ namespace INFT3970Backend.Models
             get { return numKills; }
             set
             {
+                var errorMSG = "Number of kills cannot be less than 0.";
+
                 if (value < 0)
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_KILLS, ErrorCodes.EC_PLAYER_KILLS);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                     numKills = value;
             }
@@ -178,8 +184,10 @@ namespace INFT3970Backend.Models
             get { return numDeaths; }
             set
             {
+                var errorMSG = "Number of deaths cannot be less than 0.";
+
                 if (value < 0)
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_DEATHS, ErrorCodes.EC_PLAYER_DEATHS);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                     numDeaths = value;
             }
@@ -192,32 +200,14 @@ namespace INFT3970Backend.Models
             get { return numPhotosTaken; }
             set
             {
+                var errorMSG = "Number of photos taken cannot be less than 0.";
+
                 if (value < 0)
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_PHOTOS, ErrorCodes.EC_PLAYER_PHOTOS);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                     numPhotosTaken = value;
             }
         }
-
-
-
-        public bool IsHost { get; set; }
-
-
-
-        public bool IsVerified { get; set; }
-
-
-
-        public bool IsActive { get; set; }
-
-
-
-        public bool IsDeleted { get; set; }
-
-
-
-        public string ConnectionID { get; set; }
 
 
 
@@ -234,93 +224,104 @@ namespace INFT3970Backend.Models
 
 
 
-        public bool HasLeftGame { get; set; }
-
-
-
         public int GameID
         {
-            get { return playerID; }
+            get { return gameID; }
             set
             {
+                var errorMSG = "GameID is invalid. Must be atleast 100000.";
+
                 if (value == -1 || value >= 100000)
                     gameID = value;
 
                 else
-                    throw new InvalidModelException(ErrorMessages.EM_PLAYER_GAMEID, ErrorCodes.EC_PLAYER_GAMEID);
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
             }
         }
 
 
-
+        public bool IsHost { get; set; }
+        public bool IsVerified { get; set; }
+        public bool IsActive { get; set; }
+        public bool IsDeleted { get; set; }
+        public string ConnectionID { get; set; }
+        public bool HasLeftGame { get; set; }
         public Game Game { get; set; }
         
 
+
+
+        /// <summary>
+        /// Creates a Player with the default values
+        /// </summary>
         public Player()
         {
             PlayerID = -1;
             GameID = -1;
-            Nickname = "empty";
+            Nickname = "Player";
             SelfieDataURL = "empty";
+            IsActive = true;
         }
 
 
-        public Player(int playerID)
+
+
+
+        /// <summary>
+        /// Creates a Player with the default values and set the PlayerID
+        /// </summary>
+        /// <param name="playerID">the ID of the player.</param>
+        public Player(int playerID) : this()
         {
             PlayerID = playerID;
-            GameID = -1;
-            Nickname = "empty";
-            SelfieDataURL = "empty";
         }
 
 
-        public Player(string nickname, string selfieDataURL, string contact)
+
+
+        /// <summary>
+        /// Creates a Player with the default values and sets the following properties.
+        /// </summary>
+        /// <param name="nickname">The nickname of the player.</param>
+        /// <param name="selfieDataURL">The DataURL of the player's selfie, a base64 string.</param>
+        /// <param name="contact">The contact of the player, a phone number or email address.</param>
+        public Player(string nickname, string selfieDataURL, string contact) :this()
         {
-            PlayerID = -1;
             Nickname = nickname;
             SelfieDataURL = selfieDataURL;
-            GameID = -1;
 
             if (IsPhone(contact))
                 Phone = "+61" + contact.Substring(1);
 
-            else
+            else if (IsEmail(contact))
                 Email = contact;
+            else
+                throw new InvalidModelException("Contact is invalid, not a phone number or email address.", ErrorCodes.MODELINVALID_PLAYER);
         }
 
-        
 
-        //public Response Validate()
-        //{
-        //    string msg = "";
-        //    int code = 1;
 
-        //    //Validate the PlayerID
-        //    if (PlayerID != -1 && PlayerID < 100000)
-        //        return new Response("PlayerID is not valid. Must be greater than 99999.", ErrorCodes.EC_PLAYER_ID);
 
-        //    //Validate the Nickname
-        //    if (!IsNicknameValid(ref msg, ref code))
-        //        return new Response(msg, code);
-        //}
-
-        
-
-        private bool IsNicknameValid(ref string errorMSG, ref int errorCode)
+        /// <summary>
+        /// Sends a text or email to the players contact information
+        /// </summary>
+        /// <param name="msg">The message to send.</param>
+        /// <param name="subject">The subject of the message, used when sending emails.</param>
+        public void ReceiveMessage(string msg, string subject)
         {
-            errorMSG = string.Empty;
-            errorCode = 1;
-            var nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
-            var isMatch = nicknameRegex.IsMatch(Nickname);
-            if(!isMatch)
-            {
-                errorMSG = "The nickname is invalid, please only enter letters and numbers(no spaces).";
-                errorCode = ErrorCodes.EC_PLAYER_NICKNAME;
-                return false;
-            }
-            return true;
+            if (HasEmail())
+                EmailSender.Send(Email, subject, msg, false);
+            else
+                TextMessageSender.Send(msg, Phone);
         }
 
+
+
+
+
+        /// <summary>
+        /// Checks if the player has an email address.
+        /// </summary>
         public bool HasEmail()
         {
             if (string.IsNullOrWhiteSpace(Email))
@@ -331,6 +332,10 @@ namespace INFT3970Backend.Models
 
 
 
+
+        /// <summary>
+        /// Checks if the player has a phone number.
+        /// </summary>
         public bool HasPhone()
         {
             if (string.IsNullOrWhiteSpace(Phone))
@@ -339,12 +344,25 @@ namespace INFT3970Backend.Models
                 return true;
         }
 
+
+
+
+        /// <summary>
+        /// Checks if the contact passed in is a valid email address.
+        /// </summary>
+        /// <param name="contact">The possible email address.</param>
         public static bool IsEmail(string contact)
         {
             Regex emailRegex = new Regex(@"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$");
             return emailRegex.IsMatch(contact);
         }
 
+
+
+        /// <summary>
+        /// Checks if the contact passed in is a valid phone number.
+        /// </summary>
+        /// <param name="contact">The possible phone number.</param>
         public static bool IsPhone(string contact)
         {
             var isNormalPhone = false;
@@ -361,12 +379,60 @@ namespace INFT3970Backend.Models
             return isNormalPhone || isTwilioPhone;
         }
 
+
+
+        /// <summary>
+        /// Gets the players contact information.
+        /// Will return the email address if the player has an email,
+        /// otherwise, phone number is returned.
+        /// </summary>
+        /// <returns></returns>
         public string GetContact()
         {
-            if (string.IsNullOrWhiteSpace(Phone))
+            if (HasEmail())
                 return Email;
             else
                 return Phone;
+        }
+
+
+
+
+        /// <summary>
+        /// Confirms the verification code passed in is valid.
+        /// Must be between 10000 and 99999
+        /// </summary>
+        /// <param name="strCode">The code in string format</param>
+        /// <returns>The INT code, negative INT if an error occurred or invalid</returns>
+        public static int ValidateVerificationCode(string strCode)
+        {
+            if (string.IsNullOrWhiteSpace(strCode))
+                return -1;
+
+            var code = 0;
+            try
+            {
+                //Confirm the code is within the valid range
+                code = int.Parse(strCode);
+                if (code < 10000 || code > 99999)
+                    throw new Exception();
+                return code;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+
+        /// <summary>
+        /// Generates a 5 digit verification code between 10000 and 99999
+        /// </summary>
+        /// <returns></returns>
+        public static int GenerateVerificationCode()
+        {
+            Random rand = new Random();
+            return rand.Next(10000, 99999);
         }
     }
 }

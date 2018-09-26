@@ -1,13 +1,12 @@
-﻿using INFT3970Backend.Business_Logic_Layer;
-using INFT3970Backend.Hubs;
+﻿using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
 using INFT3970Backend.Models.Responses;
 using INFT3970Backend.Models.Errors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using System;
-using System.Collections.Generic;
+using INFT3970Backend.Data_Access_Layer;
+using INFT3970Backend.Helpers;
 
 namespace INFT3970Backend.Controllers
 {
@@ -22,14 +21,13 @@ namespace INFT3970Backend.Controllers
         }
 
 
+
         /// <summary>
         /// POST: api/player/createGame - Creates a new game and joins a player to their created game, 
-        /// creating a new Player record and returning the created Player object with the created Game data/object also
+        /// creating a new Player record and returning the created Player object with the created Game data/object.
         /// </summary>
-        /// <param name="nickname">The players nickname in the game</param>
-        /// <param name="contact">The players contact info, either phone or email</param>
-        /// <param name="imgUrl">The imgUrl of the players profile picture</param>
-        /// <returns>Response including the created Player object, including Game data. NULL data if error occurred.</returns>
+        /// <param name="request">The request object containing the player information.</param>
+        /// <returns>The created Player record.</returns>
         [HttpPost]
         [Route("api/game/createGame")]
         public ActionResult<Response<Player>> CreateGame(CreateGameRequest request)
@@ -37,10 +35,58 @@ namespace INFT3970Backend.Controllers
             //Create the player object from the request and validate
             try
             {
+                //Create the host player who is joining, will perform data valiation inside Player Class
                 var hostPlayer = new Player(request.nickname, request.imgUrl, request.contact);
                 hostPlayer.IsHost = true;
-                GameBL gameBL = new GameBL();
-                return gameBL.CreateGame(hostPlayer);
+
+                var gameDAL = new GameDAL();
+                Response<Game> createdGame = null;
+                Response<Player> createdPlayer = null;
+
+                //Generate a game code and create a new game in the database
+                var doRun = true;
+                while(doRun)
+                {
+                    //Create a game with a generated code
+                    var newGame = new Game(Game.GenerateGameCode());
+
+                    //Add the game to the database
+                    createdGame = gameDAL.CreateGame(newGame);
+
+                    //If the response is successful the game was successfully created
+                    if (createdGame.IsSuccessful())
+                        doRun = false;
+
+                    //If the response contains an error code of ITEMALREADYEXISTS then the game code is not unique,
+                    //Want to run again and generate a new code
+                    else if (createdGame.ErrorCode == ErrorCodes.ITEM_ALREADY_EXISTS)
+                        doRun = true;
+
+                    //If the response contains any other error code we do not want to run again because an un expected
+                    //error occurred and we want to return the error response.
+                    else
+                        doRun = false;
+                }
+
+                //If the create game failed, return the error message and code from that response
+                if (!createdGame.IsSuccessful())
+                    return new Response<Player>(createdGame.ErrorMessage, createdGame.ErrorCode);
+
+                //Call the player data access layer to join the player to that game
+                var verificationCode = Player.GenerateVerificationCode();
+                createdPlayer = new PlayerDAL().JoinGame(createdGame.Data, hostPlayer, verificationCode);
+
+                //If the response was successful, send the verification code to the player
+                var message = "Your CamTag verification code is: " + verificationCode;
+                var subject = "CamTag Verification Code";
+                if (createdPlayer.IsSuccessful())
+                    createdPlayer.Data.ReceiveMessage(message, subject);
+
+                //Otherwise, the host player failed to join the game deleted the created game
+                else
+                    gameDAL.DeactivateGameAfterHostJoinError(createdGame.Data);
+
+                return createdPlayer;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -88,8 +134,27 @@ namespace INFT3970Backend.Controllers
 
             try
             {
-                GameBL gameBL = new GameBL();
-                return gameBL.GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+                //Validate the filer and orderby value is a valid value
+                if (string.IsNullOrWhiteSpace(filter) || string.IsNullOrWhiteSpace(orderBy))
+                    return new Response<Game>("The filter or orderBy value is null or empty.", ErrorCodes.DATA_INVALID);
+
+                //Confirm the filter value passed in is a valid value
+                var isFilterValid = false;
+                if (filter.ToUpper() == "ALL" || filter.ToUpper() == "ACTIVE" || filter.ToUpper() == "INGAME" || filter.ToUpper() == "INGAMEALL")
+                    isFilterValid = true;
+
+                //Confirm the order by value passed in is a valid value
+                var isOrderByValid = false;
+                if (orderBy.ToUpper() == "AZ" || orderBy.ToUpper() == "ZA" || orderBy.ToUpper() == "KILLS")
+                    isOrderByValid = true;
+
+                //If any of the values are invalid, set them to a default value
+                if (!isFilterValid)
+                    filter = "ALL";
+                if (!isOrderByValid)
+                    orderBy = "AZ";
+
+                return new GameDAL().GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -122,8 +187,19 @@ namespace INFT3970Backend.Controllers
             try
             {
                 var hostPlayer = new Player(playerID);
-                GameBL gameBL = new GameBL();
-                return gameBL.BeginGame(hostPlayer, _hubContext);
+                var response = new GameDAL().BeginGame(hostPlayer);
+
+                //If the response is successful schedule code to run to update the GameState after the time periods have passed
+                if (response.IsSuccessful())
+                {
+                    var hubInterface = new HubInterface(_hubContext);
+                    ScheduledTasks.ScheduleGameInPlayingState(response.Data, hubInterface);
+                    ScheduledTasks.ScheduleCompleteGame(response.Data, hubInterface);
+
+                    //Update all clients that the game is now in a starting state and the game will be playing soon
+                    hubInterface.UpdateGameInStartingState(response.Data);
+                }
+                return response;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -160,8 +236,9 @@ namespace INFT3970Backend.Controllers
             try
             {
                 var player = new Player(playerID);
-                GameBL gameBL = new GameBL();
-                return gameBL.GetGameStatus(player);
+                
+                //Call the data access layer to get the status of the game / player
+                return new GameDAL().GetGameStatus(player);
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)

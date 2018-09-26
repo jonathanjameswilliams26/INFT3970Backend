@@ -14,6 +14,8 @@ BEGIN
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
+	BEGIN TRY
+
 	--Confirm the GameID passed in exists
 	EXEC [dbo].[usp_ConfirmGameExists] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
@@ -24,5 +26,11 @@ BEGIN
 
 	SET @result = 1;
 	SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
 END
 GO

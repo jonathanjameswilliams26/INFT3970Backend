@@ -13,6 +13,7 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+	BEGIN TRY
 
 	--Confirm the PlayerID passed in exists and is active
 	EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
@@ -24,5 +25,11 @@ BEGIN
 
 	SET @result = 1;
 	SET @errorMSG = '';
+
+	END TRY
+
+	BEGIN CATCH
+
+	END CATCH
 END
 GO
