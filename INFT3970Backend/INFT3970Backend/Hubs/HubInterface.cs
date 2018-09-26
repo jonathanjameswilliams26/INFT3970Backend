@@ -308,7 +308,7 @@ namespace INFT3970Backend.Hubs
 
         /// <summary>
         /// Send an update to a player that their ammo has been replenished.
-        /// An update will only be sent out when a player's ammo has went from 0 to 1.
+        /// A text/mail notification will only be sent out when a player's ammo has gone from 0 to 1.
         /// </summary>
         /// <param name="player">The player being updated.</param>
         public async void UpdateAmmoReplenished(Player player)
@@ -327,10 +327,10 @@ namespace INFT3970Backend.Hubs
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("AmmoReplenished");
             }
 
-            //Otherwise, send out a text message or email
-            else
+            //Otherwise if ammo has gone from empty to not, send out a text message or email
+            else if (player.AmmoCount == 1)
             {
-                string message = "Your ammo has now been replenished, get back in the game.";
+                string message = "Your ammo has now been replenished, go get em!.";
                 var subject = "Ammo Replenished";
                 player.ReceiveMessage(message, subject);
             }
@@ -364,7 +364,7 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send an email/text message notification
                 else
                 {
-                    var message = "Your game of CamTag is now playing. Go tag other players.";
+                    var message = "Your game of CamTag is now playing. Go tag other players!";
                     var subject = "Game Now Playing";
                     player.ReceiveMessage(message, subject);
                 }
