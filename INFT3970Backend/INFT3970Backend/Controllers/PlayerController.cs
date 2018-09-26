@@ -362,5 +362,36 @@ namespace INFT3970Backend.Controllers
                 return StatusCode(500);
             }
         }
+
+
+
+
+
+        /// <summary>
+        /// Gets the count of unread notifications for the player.
+        /// </summary>
+        /// <param name="playerID">The ID of the player</param>
+        /// <returns>The count of unread notifications, negative INT if error</returns>
+        [HttpGet]
+        [Route("api/player/unread")]
+        public ActionResult<Response<int>> GetUnreadNotificationCount([FromHeader] int playerID)
+        {
+            try
+            {
+                var player = new Player(playerID);
+                return new PlayerDAL().GetUnreadNotificationsCount(player);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<int>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
+        }
+
     }
 }

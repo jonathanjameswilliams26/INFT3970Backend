@@ -12,7 +12,7 @@ namespace INFT3970Backend.Models
     /// </summary>
     public class Response
     {
-        public object Data { get { return null; } }
+        //public object Data { get { return null; } }
 
         /// <summary>
         /// READONLY: The type of Response, SUCCESS or ERROR.
@@ -107,7 +107,7 @@ namespace INFT3970Backend.Models
         /// <summary>
         /// The data/object being returned to the Frontend when the request was successfully completed.
         /// </summary>
-        public new T Data { get; set; }
+        public T Data { get; set; }
 
         
 

@@ -591,5 +591,49 @@ namespace INFT3970Backend.Data_Access_Layer
                 return Response<int>.DatabaseErrorResponse();
             }
         }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Gets the count of unread notifications
+        /// </summary>
+        /// <param name="player">The player getting the count for</param>
+        /// <returns>The count of unread notifications, negative INT if an error occurred.</returns>
+        public Response<int> GetUnreadNotificationsCount(Player player)
+        {
+            StoredProcedure = "usp_GetUnreadNotificationCount";
+            int count = -1;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("playerID", player.PlayerID);
+                        AddOutput("count", SqlDbType.Int);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        Run();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        count = Convert.ToInt32(Command.Parameters["@count"].Value);
+                        return new Response<int>(count, ErrorMSG, Result);
+                    }
+                }
+            }
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<int>.DatabaseErrorResponse();
+            }
+        }
     }
 }
