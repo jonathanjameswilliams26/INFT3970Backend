@@ -3840,7 +3840,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -3918,6 +3917,7 @@ BEGIN
 		COMMIT
 
 		--Set the success return variables
+		SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @playerID
 		SET @result = 1;
 		SET @errorMSG = ''
 	END TRY
@@ -3932,8 +3932,6 @@ BEGIN
 	END CATCH
 END
 GO
-
-
 
 
 

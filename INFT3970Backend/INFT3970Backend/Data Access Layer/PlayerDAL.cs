@@ -166,7 +166,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="verificationCode">The verification code to confirm is correct</param>
         /// <param name="playerID">The ID of the player to verify.</param>
         /// <returns></returns>
-        public Response ValidateVerificationCode(int verificationCode, Player player)
+        public Response<Player> ValidateVerificationCode(int verificationCode, Player player)
         {
             StoredProcedure = "usp_ValidateVerificationCode";
             try
@@ -182,11 +182,18 @@ namespace INFT3970Backend.Data_Access_Layer
                         AddDefaultParams();
 
                         //Perform the procedure and get the result
-                        Run();
+                        RunReader();
+                        while (Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).PlayerFactory(true);
+                            if (player == null)
+                                return new Response<Player>("An error occurred while trying to build the player model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
 
                         //Format the results into a response object
                         ReadDefaultParams();
-                        return new Response(ErrorMSG, Result);
+                        return new Response<Player>(player, ErrorMSG, Result);
                     }
                 }
             }
@@ -194,7 +201,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
-                return Response.DatabaseErrorResponse();
+                return Response<Player>.DatabaseErrorResponse();
             }
         }
 

@@ -13,7 +13,7 @@ connection.start().catch(function (err) {
 console.log("GETTING PLAYERS LIST");
 $.ajax({
     type: "GET",
-    url: "https://localhost:5000/api/player/getAllPlayersInGame/" + playerID,
+    url: "https://localhost:5000/api/game/getAllPlayersInGame/" + playerID + "/true/ACTIVE/AZ",
     //dataType: "application/json",
     success: function (result) {
         console.log(result);
@@ -39,7 +39,7 @@ connection.on("UpdateGameLobbyList", function () {
     //Make a call to the API to 
     $.ajax({
         type: "GET",
-        url: "https://localhost:5000/api/player/getAllPlayersInGame/" + playerID,
+        url: "https://localhost:5000/api/game/getAllPlayersInGame/" + playerID + "/true/ACTIVE/AZ",
         //dataType: "application/json",
         success: function (result) {
             console.log(result);

@@ -33,8 +33,6 @@ namespace INFT3970Backend.Controllers
         [Route("api/player/joinGame")]
         public ActionResult<Response<Player>> JoinGame(JoinGameRequest request)
         {
-            //TODO: Notification for joining game during STARTING state
-            //TODO: Update the lobby list after joining game if the game state is IN LOBBY, unverified player
             try
             {
                 //Create the player object who will be joining the game
@@ -47,12 +45,17 @@ namespace INFT3970Backend.Controllers
                 //Call the data access layer to add the player to the database
                 var response = new PlayerDAL().JoinGame(gameToJoin, playerToJoin, verificationCode);
 
-                //If the response was successful, send the verification code to the player
-                var message = "Your CamTag verification code is: " + verificationCode;
-                var subject = "CamTag Verification Code";
+                //If the response was successful, send the verification code to the player and update the lobby list
                 if (response.IsSuccessful())
+                {
+                    var message = "Your CamTag verification code is: " + verificationCode;
+                    var subject = "CamTag Verification Code";
                     response.Data.ReceiveMessage(message, subject);
 
+                    //Call the hub interface to invoke client methods to update the clients that another player has joined
+                    var hubInterface = new HubInterface(_hubContext);
+                    hubInterface.UpdatePlayerJoinedGame(response.Data);
+                }
                 return response;
             }
             //Catch any error associated with invalid model data
@@ -101,7 +104,7 @@ namespace INFT3970Backend.Controllers
                 if (response.IsSuccessful())
                 {
                     var hubInterface = new HubInterface(_hubContext);
-                    hubInterface.UpdatePlayerJoined(playerToVerify);
+                    hubInterface.UpdatePlayerJoinedGame(response.Data);
                 }
 
                 return response;

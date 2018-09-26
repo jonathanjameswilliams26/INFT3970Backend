@@ -16,18 +16,25 @@ namespace INFT3970Backend.Hubs
 
 
 
+
+
         /// <summary>
-        /// Sends a notification to the Players in the game that a new player is in the game.
-        /// If the game is currently in the Lobby (GameState = STARTING) then no notification will be sent, the lobby list will be updated.
-        /// If the game is currently playing (GameState = PLAYING) then a notification will be sent to the players in the game.
-        /// A notification will be sent to the players contact (Email or phone) if the player is not currently connected to the application hub.
-        /// Otherwise, if the player is currently in the app and connected to the hub an InGame notification will be sent to the client.
+        /// Sends a notification to the players in the game that a new player has joined the game.
+        /// 
+        /// If the game is currently in the lobby or starting (GameState = IN LOBBY, STARTING) 
+        /// then no notification will be sent, the lobby list will be updated.
+        /// 
+        /// If the game is currently playing (GameState = PLAYING) then a in game notification will be sent to 
+        /// the players connect to the hub / have the web app open.
+        /// 
+        /// An out of game notification will be sent to the players contact (Email or phone) if the player is 
+        /// not currently connected to the application hub when GameState = STARTING, PLAYING.
         /// </summary>
-        /// <param name="playerID"></param>
-        public async void UpdatePlayerJoined(Player joinedPlayer)
+        /// <param name="joinedPlayer"></param>
+        public async void UpdatePlayerJoinedGame(Player joinedPlayer)
         {
             //Get the list of players currently in the game
-            GameDAL gameDAL = new GameDAL();
+            var gameDAL = new GameDAL();
             var gameResponse = gameDAL.GetAllPlayersInGame(joinedPlayer.PlayerID, true, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
@@ -36,40 +43,36 @@ namespace INFT3970Backend.Hubs
 
             var game = gameResponse.Data;
 
-            //Get the player who joined
-            joinedPlayer = GetPlayerFromList(joinedPlayer.PlayerID, game.Players);
-
-            //Create notifications of new player joining, if the game has started
-            if (game.IsPlaying() || game.IsStarting())
+            //Create notifications of new player joining, if the game is playing and the player joining is verified
+            if (game.IsPlaying() && joinedPlayer.IsVerified)
                 gameDAL.CreateJoinNotification(joinedPlayer);
 
-            //Loop through each of the players and update any player currently connected to the hub
+
+            //Loop through each of the players and update any player currently in the game.
             foreach (var player in game.Players)
             {
                 //If the PlayerID is the playerID who joined skip this iteration
                 if (player.PlayerID == joinedPlayer.PlayerID)
                     continue;
 
-                //The player is connected to the hub, send live updates
+                //Update players in game when connected to the hub / have the web app open
                 if(player.IsConnected)
                 {
-                    //If the game state is IN LOBBY then the players are in the Lobby, update the lobby list
-                    if(game.IsInLobby())
+                    //If the game is IN LOBBY or STARTING update the lobby list for both verfied and unverified players joining
+                    if(game.IsInLobby() || game.IsStarting())
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
-                    //Send a notification to the players in the game.
-                    else           
+                    //Otherwise, update the players notifications because they are currently playing the game
+                    else
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                 }
-
-                //Otherwise, the player is not connected to the Hub, send a notification via the contact information
+                //Otherwise, the player is out of the app.
                 else
                 {
-                    //Don't send a notification when the game is in a IN LOBBY state
-                    //Send a notification when a new player joins when the game is currently playing.
+                    //Only send a notification when the game is playing or starting
                     var message = joinedPlayer.Nickname + " has joined your game of CamTag.";
                     var subject = "New Player Joined Your Game";
-                    if (game.IsPlaying() || game.IsStarting())
+                    if ((game.IsPlaying() || game.IsStarting()) && joinedPlayer.IsVerified)
                         player.ReceiveMessage(message, subject);
                 }
             }
