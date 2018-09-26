@@ -164,9 +164,8 @@ namespace INFT3970Backend.Helpers
 
             if (response.IsSuccessful())
             {
-                //If the ammo count is now at 1 then the ammo was replinished, send out a notification
-                if (response.Data.AmmoCount == 1)
-                    hubInterface.UpdateAmmoReplenished(response.Data);
+                //As the ammo has replenished, send out a notification and update client.
+                hubInterface.UpdateAmmoReplenished(response.Data);
             }
         }
 
