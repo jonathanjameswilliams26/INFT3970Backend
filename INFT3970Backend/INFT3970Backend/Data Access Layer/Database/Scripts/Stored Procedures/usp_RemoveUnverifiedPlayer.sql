@@ -94,22 +94,18 @@ BEGIN
 			RAISERROR('', 16, 1);
 		END
 
+		--Leave the game
+		DECLARE @isGameCompleted BIT;
+		EXEC [dbo].[usp_LeaveGame]
+		@playerID = @playerIDToRemove,
+		@isGameCompleted = @isGameCompleted OUTPUT,
+		@result = @result OUTPUT,
+		@errorMSG = @errorMSG OUTPUT
 
-		--Delete the player record after completing precondition checks
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			UPDATE tbl_Player
-			SET PlayerIsDeleted = 1
-			WHERE PlayerID = @playerIDToRemove
-		COMMIT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Set the return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-
-		--Read the updated player record
 		SELECT * FROM tbl_Player WHERE PlayerID = @playerIDToRemove
-
+		
 	END TRY
 
 	BEGIN CATCH

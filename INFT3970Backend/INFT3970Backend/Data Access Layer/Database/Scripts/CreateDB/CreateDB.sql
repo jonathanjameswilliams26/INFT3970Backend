@@ -2570,7 +2570,6 @@ GO
 
 
 
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 18/09/18
@@ -2588,6 +2587,10 @@ BEGIN
 	SET NOCOUNT ON;
 	BEGIN TRY
 
+	--Validate the playerID
+	EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+
 	SELECT *
 	FROM vw_Join_PlayerGame
 	WHERE PlayerID = @playerID
@@ -2602,8 +2605,6 @@ BEGIN
 	END CATCH
 END
 GO
-
-
 
 
 
@@ -2683,7 +2684,6 @@ BEGIN
 	
 END
 GO
-
 
 
 
@@ -2784,7 +2784,8 @@ BEGIN
 		IF(@isPhone = 1)
 		BEGIN
 			--Confirm the phone number is unique for all players currently in a game.
-			IF EXISTS(SELECT Phone FROM vw_Active_Players WHERE Phone LIKE @contact)
+			--Check against players in the game and unverified players.
+			IF EXISTS(SELECT Phone FROM vw_Active_Players WHERE Phone LIKE @contact AND HasLeftGame = 0)
 			BEGIN
 				SET @result = @ITEM_ALREADY_EXISTS;
 				SET @errorMSG = 'The phone number you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
@@ -2794,7 +2795,8 @@ BEGIN
 		ELSE
 		BEGIN
 			--Confirm the email is unique for all players currently in a game.
-			IF EXISTS(SELECT Email FROM vw_Active_Players WHERE Email LIKE @contact)
+			--Check against players in the game and unverified players.
+			IF EXISTS(SELECT Email FROM vw_Active_Players WHERE Email LIKE @contact AND HasLeftGame = 0)
 			BEGIN
 				SET @result = @ITEM_ALREADY_EXISTS;
 				SET @errorMSG = 'The email address you entered is already taken by another player in an active/not complete game. Please enter a unique contact.';
@@ -2841,7 +2843,6 @@ BEGIN
 	END CATCH
 END
 GO
-
 
 
 
@@ -2923,6 +2924,21 @@ BEGIN
 			UPDATE tbl_Game
 			SET NumOfPlayers = NumOfPlayers - 1
 			WHERE GameID = @gameID
+
+			--If the player leaving the game is not verified then delete the player record because
+			--the player record was never valid in the first place.
+			IF EXISTS (SELECT * FROM vw_Active_Players WHERE PlayerID = @playerID AND IsVerified = 0)
+			BEGIN
+				UPDATE tbl_Player
+				SET PlayerIsDeleted = 1
+				WHERE PlayerID = @playerID
+
+				--There is nothing else to complete so return and commit the changes
+				SET @result = 1;
+				SET @errorMSG = '';
+				COMMIT;
+				RETURN;
+			END
 
 			--If the current game state is in lobby leave the stored procedure because there is nothing else to perform.
 			IF(SELECT GameState From vw_Active_Games WHERE GameID = @gameID) LIKE 'IN LOBBY'
@@ -3037,7 +3053,6 @@ BEGIN
 	END CATCH
 END
 GO
-
 
 
 
@@ -4213,6 +4228,16 @@ GO
 
 
 
+--Check the playerID and playerTo remove in game
+
+--Confirm the game state is IN LOBBY
+
+--confirm the playerID is the Host player
+
+--confirm the playerID to remove is NOT VERIFIED
+
+
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -4223,6 +4248,8 @@ GO
 -- Author:		Jonathan Williams
 -- Create date: 05/09/18
 -- Description:	Removes the unverified player from the game.
+--				Deletes the player record to allow the phone or email
+--				to be used again.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
 -- =============================================
@@ -4297,22 +4324,18 @@ BEGIN
 			RAISERROR('', 16, 1);
 		END
 
+		--Leave the game
+		DECLARE @isGameCompleted BIT;
+		EXEC [dbo].[usp_LeaveGame]
+		@playerID = @playerIDToRemove,
+		@isGameCompleted = @isGameCompleted OUTPUT,
+		@result = @result OUTPUT,
+		@errorMSG = @errorMSG OUTPUT
 
-		--Delete the player record after completing precondition checks
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			UPDATE tbl_Player
-			SET PlayerIsDeleted = 1
-			WHERE PlayerID = @playerIDToRemove
-		COMMIT
+		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Set the return variables
-		SET @result = 1;
-		SET @errorMSG = ''
-
-		--Read the updated player record
 		SELECT * FROM tbl_Player WHERE PlayerID = @playerIDToRemove
-
+		
 	END TRY
 
 	BEGIN CATCH
@@ -4335,10 +4358,8 @@ GO
 
 
 
-
-
 --Dummy Data
-INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 4, 'IN LOBBY')
+INSERT INTO tbl_Game (GameCode, NumOfPlayers, GameState) VALUES ('tcf124', 6, 'IN LOBBY')
 GO
 
 INSERT INTO tbl_Player (Nickname, Email, SelfieDataURL, GameID, PlayerIsDeleted, IsVerified, IsHost) VALUES ('Jono', 'team6.camtag@gmail.com', 'data:image/jpeg;base64,', 100000, 0, 1, 1)

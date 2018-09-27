@@ -219,16 +219,18 @@ namespace INFT3970Backend.Controllers
                 var playerDAL = new PlayerDAL();
                 var isGameComplete = false;
                 var isPhotosComplete = false;
-                var leaveGameResponse = playerDAL.LeaveGame(player, ref isGameComplete, ref isPhotosComplete);
+
+                //Get the player leaving the game from the database
+                var playerResponse = playerDAL.GetPlayerByID(player.PlayerID);
+                if (!playerResponse.IsSuccessful())
+                    return new Response(playerResponse.ErrorMessage, playerResponse.ErrorCode);
+
+                //Leave the game
+                var leaveGameResponse = playerDAL.LeaveGame(playerResponse.Data, ref isGameComplete, ref isPhotosComplete);
 
                 //Return the error response if an error occurred
                 if (!leaveGameResponse.IsSuccessful())
                     return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
-
-                //Get the updated player object from the database
-                var playerResponse = playerDAL.GetPlayerByID(player.PlayerID);
-                if (!playerResponse.IsSuccessful())
-                    return new Response(playerResponse.ErrorMessage, playerResponse.ErrorCode);
 
                 //Create the hub interface which will be used to send live updates to clients
                 var hubInterface = new HubInterface(_hubContext);

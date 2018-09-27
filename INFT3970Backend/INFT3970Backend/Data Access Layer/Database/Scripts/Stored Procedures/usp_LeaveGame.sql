@@ -71,6 +71,21 @@ BEGIN
 			SET NumOfPlayers = NumOfPlayers - 1
 			WHERE GameID = @gameID
 
+			--If the player leaving the game is not verified then delete the player record because
+			--the player record was never valid in the first place.
+			IF EXISTS (SELECT * FROM vw_Active_Players WHERE PlayerID = @playerID AND IsVerified = 0)
+			BEGIN
+				UPDATE tbl_Player
+				SET PlayerIsDeleted = 1
+				WHERE PlayerID = @playerID
+
+				--There is nothing else to complete so return and commit the changes
+				SET @result = 1;
+				SET @errorMSG = '';
+				COMMIT;
+				RETURN;
+			END
+
 			--If the current game state is in lobby leave the stored procedure because there is nothing else to perform.
 			IF(SELECT GameState From vw_Active_Games WHERE GameID = @gameID) LIKE 'IN LOBBY'
 			BEGIN

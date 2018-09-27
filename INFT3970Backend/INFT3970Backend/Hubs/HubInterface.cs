@@ -246,7 +246,7 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, the player is not connected to the Hub, send a notification via the contact information
                 else
                 {
-                    //Don't send a notification when the game is IN LOBBY state
+                    //Don't send a notification when the game is IN LOBBY or STARTING state
                     var message = leftPlayer.Nickname + " has left your game of CamTag.";
                     var subject = "A Player Left Your Game";
                     if (game.IsPlaying() || game.IsStarting())

@@ -15,6 +15,10 @@ BEGIN
 	SET NOCOUNT ON;
 	BEGIN TRY
 
+	--Validate the playerID
+	EXEC [dbo].[usp_ConfirmPlayerExists] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_DoRaiseError] @result = @result
+
 	SELECT *
 	FROM vw_Join_PlayerGame
 	WHERE PlayerID = @playerID
