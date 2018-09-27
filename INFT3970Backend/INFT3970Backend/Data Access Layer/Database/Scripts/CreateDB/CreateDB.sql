@@ -1157,7 +1157,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -1238,6 +1237,15 @@ BEGIN
 		END
 
 
+		--Confirm that all players are verified, all players in the game need to be verified before the game can start
+		IF EXISTS (SELECT * FROM vw_All_Players WHERE GameID = @gameID AND IsVerified = 0 AND HasLeftGame = 0)
+		BEGIN
+			SET @result = @CANNOT_PERFORM_ACTION;
+			SET @errorMSG = 'All players must be verified before the game can begin.';
+			RAISERROR('',16,1);
+		END
+
+
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
 			--Update the GameState to STARTING, update the StartTime to 10mins in the future and update the EndTime to the endtime
@@ -1263,8 +1271,6 @@ BEGIN
 	END CATCH
 END
 GO
-
-
 
 
 
