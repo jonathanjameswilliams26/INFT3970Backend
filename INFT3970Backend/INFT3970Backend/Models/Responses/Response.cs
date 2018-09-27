@@ -1,6 +1,4 @@
-﻿using INFT3970Backend.Models.Errors;
-
-namespace INFT3970Backend.Models
+﻿namespace INFT3970Backend.Models
 {
     /// <summary>
     /// A Response is the response sent to the Frontend in order to outline

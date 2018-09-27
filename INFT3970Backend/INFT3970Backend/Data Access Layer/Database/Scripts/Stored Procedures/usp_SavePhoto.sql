@@ -55,6 +55,7 @@ BEGIN
 		BEGIN
 			SET @result = @DATA_INVALID;
 			SET @errorMSG = 'The players provided are not in the same game.'
+			RAISERROR('', 16, 1);
 		END
 
 		--Confirm the Game is PLAYING state

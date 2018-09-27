@@ -7,6 +7,7 @@ using INFT3970Backend.Hubs;
 using INFT3970Backend.Models.Errors;
 using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Helpers;
+using System;
 
 namespace INFT3970Backend.Controllers
 {
@@ -210,8 +211,6 @@ namespace INFT3970Backend.Controllers
         [Route("api/player/leaveGame")]
         public ActionResult<Response> LeaveGame([FromHeader] int playerID)
         {
-            //TODO: leave game notification during STARTING state
-            //TODO: Update lobby list when the player leaves game IN LOBBY and STARTING
             try
             {
                 var player = new Player(playerID);
@@ -247,7 +246,7 @@ namespace INFT3970Backend.Controllers
 
                 //If the game is not completed send out the player left notification
                 if (!isGameComplete)
-                    hubInterface.UpdatePlayerLeft(playerResponse.Data);
+                    hubInterface.UpdatePlayerLeftGame(playerResponse.Data);
 
                 return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
             }
@@ -380,6 +379,54 @@ namespace INFT3970Backend.Controllers
             {
                 var player = new Player(playerID);
                 return new PlayerDAL().GetUnreadNotificationsCount(player);
+            }
+            //Catch any error associated with invalid model data
+            catch (InvalidModelException e)
+            {
+                return new Response<int>(e.Msg, e.Code);
+            }
+            //Catch any unhandled / unexpected server errrors
+            catch
+            {
+                return StatusCode(500);
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Removes an unverified player from the game.
+        /// This can only be performed when the game is IN LOBBY and can only be performed by
+        /// the host player.
+        /// </summary>
+        /// <param name="playerID">The ID of the requesting player, should be the host playerID</param>
+        /// <param name="playerIDToRemove">ID the of the unverified player to remove from the game</param>
+        /// <returns>SUCCESS or ERROR</returns>
+        [HttpPost]
+        [Route("api/player/remove")]
+        public ActionResult<Response> RemoveUnverifiedPlayer([FromForm] int playerID, [FromForm] int playerIDToRemove)
+        {
+            try
+            {
+                //Create the player submitting the request
+                var playerMakingRequest = new Player(playerID);
+
+                //Create the player to remove
+                var playerToRemove = new Player(playerIDToRemove);
+
+                //Remove the unverified player
+                var response = new PlayerDAL().RemoveUnverifiedPlayer(playerMakingRequest, playerToRemove);
+
+                //if the response was successful call the hub interface to update the clients
+                if(response.IsSuccessful())
+                {
+                    var hubInterface = new HubInterface(_hubContext);
+                    hubInterface.UpdatePlayerLeftGame(response.Data);
+                }
+
+                return new Response(response.ErrorMessage, response.ErrorCode);
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)

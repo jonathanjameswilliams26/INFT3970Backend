@@ -212,11 +212,11 @@ namespace INFT3970Backend.Hubs
         /// Otherwise, if the player is currently in the app and connected to the hub an InGame notification will be sent to the client.
         /// </summary>
         /// <param name="playerID">The playerID of the player who left the game</param>
-        public async void UpdatePlayerLeft(Player leftPlayer)
+        public async void UpdatePlayerLeftGame(Player leftPlayer)
         {
             //Get all the players currently in the game
             GameDAL gameDAL = new GameDAL();
-            var gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.PlayerID, true, "INGAMEALL", "AZ");
+            var gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.PlayerID, true, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!gameResponse.IsSuccessful())
@@ -224,29 +224,22 @@ namespace INFT3970Backend.Hubs
 
             var game = gameResponse.Data;
 
-            //Get the player who left
-            leftPlayer = GetPlayerFromList(leftPlayer.PlayerID, game.Players);
-
-            //Create notifications of new player joining, if the game has started
-            if (game.IsPlaying() || game.IsStarting())
+            //Create notifications of player leaving, if the game is playing
+            if (game.IsPlaying())
                 gameDAL.CreateLeaveNotification(leftPlayer);
 
             //Loop through each of the players and update any player currently connected to the hub
             foreach (var player in game.Players)
             {
-                //If the PlayerID is the playerID who left or is a player who has left the game skip the iteration
-                if (player.PlayerID == leftPlayer.PlayerID || player.HasLeftGame)
-                    continue;
-
                 //The player is connected to the hub, send live updates
                 if (player.IsConnected)
                 {
-                    //If the game state is IN LOBBY then the players are in the Lobby, update the lobby list
-                    if (game.IsInLobby())
+                    //If the game state is IN LOBBY or STARTING then the players are in the Lobby, update the lobby list
+                    if (game.IsInLobby() || game.IsStarting())
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
                     //If the game state is PLAYING - Send a notification to the players in the game.
-                    if (game.IsPlaying() || game.IsStarting())
+                    else
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                 }
 
@@ -254,7 +247,6 @@ namespace INFT3970Backend.Hubs
                 else
                 {
                     //Don't send a notification when the game is IN LOBBY state
-                    //Send a notification when a new player joins when the game is currently playing.
                     var message = leftPlayer.Nickname + " has left your game of CamTag.";
                     var subject = "A Player Left Your Game";
                     if (game.IsPlaying() || game.IsStarting())

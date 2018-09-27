@@ -16,7 +16,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Get a Player object with the specified ID
+        /// Get a Player object with the specified ID. Inluding a deleted player.
         /// </summary>
         /// <param name="id">The ID of the player</param>
         /// <returns>The Player object, NULL if an errror occurred</returns>
@@ -404,6 +404,59 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 return Response<List<Photo>>.DatabaseErrorResponse();
+            }
+        }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Removes the unverified player from the game.
+        /// </summary>
+        /// <param name="hostPlayer">The host player of the game.</param>
+        /// <param name="playerToRemove">The unverified player to remove.</param>
+        /// <returns>The updated player record of the removed player.</returns>
+        public Response<Player> RemoveUnverifiedPlayer(Player hostPlayer, Player playerToRemove)
+        {
+            StoredProcedure = "usp_RemoveUnverifiedPlayer";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("playerID", hostPlayer.PlayerID);
+                        AddParam("playerIDToRemove", playerToRemove.PlayerID);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        RunReader();
+                        ModelFactory factory = new ModelFactory(Reader);
+                        while (Reader.Read())
+                        {
+                            playerToRemove = factory.PlayerFactory(false);
+                            if (playerToRemove == null)
+                                return new Response<Player>("An error occurred while trying to build the player model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response<Player>(playerToRemove, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<Player>.DatabaseErrorResponse();
             }
         }
 
