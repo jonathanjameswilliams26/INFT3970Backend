@@ -44,11 +44,18 @@ namespace INFT3970Backend.Controllers
                 Response<Player> createdPlayer = null;
 
                 //Generate a game code and create a new game in the database
+                //Creating the game inside a while loop because there is a chance that the gamecode could be duplicated
                 var doRun = true;
                 while(doRun)
                 {
-                    //Create a game with a generated code
-                    var newGame = new Game(Game.GenerateGameCode());
+                    //Create a game with a generated code and all the players selected settings
+                    var newGame = new Game(Game.GenerateGameCode(), 
+                                        request.timeLimit, 
+                                        request.ammoLimit, 
+                                        request.startDelay, 
+                                        request.replenishAmmoDelay, 
+                                        request.gameMode, 
+                                        request.isJoinableAtAnytime);
 
                     //Add the game to the database
                     createdGame = gameDAL.CreateGame(newGame);

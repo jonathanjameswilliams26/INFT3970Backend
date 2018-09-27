@@ -44,6 +44,10 @@ CREATE TABLE tbl_Game
 	GameMode VARCHAR(255) NOT NULL DEFAULT 'CORE',
 	StartTime DATETIME2,
 	EndTime DATETIME2,
+	TimeLimit INT NOT NULL DEFAULT 86400000,
+	AmmoLimit INT NOT NULL DEFAULT 3,
+	StartDelay INT NOT NULL DEFAULT 600000,
+	ReplenishAmmoDelay INT NOT NULL DEFAULT 600000,
 	GameState VARCHAR(255) NOT NULL DEFAULT 'IN LOBBY',
 	IsJoinableAtAnytime BIT NOT NULL DEFAULT 0,
 	GameIsActive BIT NOT NULL DEFAULT 1,
@@ -52,10 +56,21 @@ CREATE TABLE tbl_Game
 	PRIMARY KEY (GameID),
 
 	CHECK(LEN(GameCode) = 6),
-	CHECK(NumOfPlayers >= 0),
+	CHECK(NumOfPlayers >= 0 AND NumOfPlayers <= 16),
 	CHECK(GameMode IN ('CORE')),
 	CHECK(StartTime < EndTime),
-	CHECK(GameState IN ('IN LOBBY', 'STARTING', 'PLAYING', 'COMPLETED'))
+	CHECK(GameState IN ('IN LOBBY', 'STARTING', 'PLAYING', 'COMPLETED')),
+
+	--Timelimit is between 10 minutes and 24 hours (in milliseconds)
+	CHECK(TimeLimit >= 600000 AND TimeLimit <= 86400000),
+
+	CHECK(AmmoLimit >= 1 AND AmmoLimit <= 9),
+
+	--ReplenishAmmoDelay is between 1 minute and 1 hour (in milliseconds)
+	CHECK(ReplenishAmmoDelay >= 60000 AND ReplenishAmmoDelay <= 3600000),
+
+	--ReplenishAmmoDelay is between 1 minute and 10 minutes (in milliseconds)
+	CHECK(StartDelay >= 60000 AND StartDelay <= 600000)
 );
 GO
 
@@ -1493,7 +1508,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -1515,6 +1529,12 @@ GO
 CREATE PROCEDURE [dbo].[usp_CreateGame] 
 	-- Add the parameters for the stored procedure here
 	@gameCode VARCHAR(6),
+	@timeLimit INT,
+	@ammoLimit INT,
+	@startDelay INT,
+	@replenishAmmoDelay INT,
+	@gameMode VARCHAR(255),
+	@isJoinableAtAnytime BIT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -1553,7 +1573,8 @@ BEGIN
 		DECLARE @createdGameID INT;
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			INSERT INTO tbl_Game (GameCode) VALUES (@gameCode);
+			INSERT INTO tbl_Game (GameCode, TimeLimit, AmmoLimit, StartDelay, ReplenishAmmoDelay, GameMode, IsJoinableAtAnytime) 
+			VALUES (@gameCode, @timeLimit, @ammoLimit, @startDelay, @replenishAmmoDelay, @gameMode, @isJoinableAtAnytime);
 			SET @createdGameID = SCOPE_IDENTITY();
 		COMMIT
 
@@ -1577,8 +1598,6 @@ BEGIN
 	END CATCH
 END
 GO
-
-
 
 
 

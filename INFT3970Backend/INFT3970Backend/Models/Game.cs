@@ -7,12 +7,23 @@ namespace INFT3970Backend.Models
 {
     public class Game
     {
+        //Minutes / Days in milliseconds, used for the timers
+        const int ONE_MINUTE_MILLISECONDS = 60000;
+        const int TEN_MINUTES_MILLISECONDS = 600000;
+        const int ONE_HOUR_MILLISECONDS = 3600000;
+        const int ONE_DAY_MILLISECONDS = 86400000;
+
+
         //Private backing stores of public properites which have business logic behind them.
         private int gameID;
         private string gameCode;
         private string gameMode;
         private string gameState;
         private int numOfPlayers;
+        private int timeLimit;
+        private int ammoLimit;
+        private int replenishAmmoDelay;
+        private int startDelay;
 
 
 
@@ -78,8 +89,10 @@ namespace INFT3970Backend.Models
                 if (value == null)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
 
-                if (value == "CORE")
-                    gameMode = value;
+                var uppercaseValue = value.ToUpper();
+
+                if (uppercaseValue == "CORE")
+                    gameMode = uppercaseValue;
                 else
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
             }
@@ -97,10 +110,89 @@ namespace INFT3970Backend.Models
                 if (value == null)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
 
-                if (value == "IN LOBBY" || value == "STARTING" || value == "PLAYING" || value == "COMPLETED")
-                    gameState = value;
+                var uppercaseValue = value.ToUpper();
+
+                if (uppercaseValue == "IN LOBBY" || uppercaseValue == "STARTING" || uppercaseValue == "PLAYING" || uppercaseValue == "COMPLETED")
+                    gameState = uppercaseValue;
                 else
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
+            }
+        }
+
+
+
+
+
+        public int TimeLimit
+        {
+            get { return timeLimit; }
+            set
+            {
+                var errorMSG = "Time limit is invalid, must be between 10 minutes and 24 hours.";
+
+                //The time limit of the game can only be between 10 minutes and one day
+                if (value < TEN_MINUTES_MILLISECONDS || value > ONE_DAY_MILLISECONDS)
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
+                else
+                    timeLimit = value;
+            }
+        }
+
+
+
+
+        public int AmmoLimit
+        {
+            get { return ammoLimit; }
+            set
+            {
+                var errorMSG = "Ammo limit is invalid. Must be between 1 and 9.";
+
+                //confirm the ammo limit passed in is within the valid range
+                if (value < 1 || value > 9)
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
+                else
+                    ammoLimit = value;
+            }
+        }
+
+
+
+
+
+
+        public int ReplenishAmmoDelay
+        {
+            get { return replenishAmmoDelay; }
+            set
+            {
+                var errorMSG = "Reload ammo timer is invalid. Must be between 1 minute and 1 hour.";
+
+                //confirm the replenish ammo deley passed in is within the valid range
+                //The valid range is between 1 minute and 1 hour
+                if (value < ONE_MINUTE_MILLISECONDS || value > ONE_HOUR_MILLISECONDS)
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
+                else
+                    replenishAmmoDelay = value;
+            }
+        }
+
+
+
+
+        public int StartDelay
+        {
+            get { return startDelay; }
+            set
+            {
+                var errorMSG = "Start delay is invalid. Must be between 1 minute and 10 minutes.";
+
+                //confirm the start deley passed in is within the valid range
+                //The valid range is between 1 minute and 10 minutes
+                if (value < ONE_MINUTE_MILLISECONDS || value > TEN_MINUTES_MILLISECONDS)
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
+                else
+                    startDelay = value;
             }
         }
 
@@ -127,8 +219,11 @@ namespace INFT3970Backend.Models
             GameCode = "abc123";
             GameMode = "CORE";
             GameState = "IN LOBBY";
+            TimeLimit = ONE_DAY_MILLISECONDS;
+            AmmoLimit = 3;
+            StartDelay = TEN_MINUTES_MILLISECONDS;
+            ReplenishAmmoDelay = TEN_MINUTES_MILLISECONDS;
         }
-
 
 
         /// <summary>
@@ -138,6 +233,23 @@ namespace INFT3970Backend.Models
         public Game(string gameCode) : this()
         {
             GameCode = gameCode;
+        }
+
+
+
+        /// <summary>
+        /// Creates a game with default values and sets the GameCode
+        /// </summary>
+        /// <param name="gameCode">The 6 digit game code of the game.</param>
+        public Game(string gameCode, int timeLimit, int ammoLimit, int startDelay, int replenishAmmoDelay, string gameMode, bool isJoinableAtAnyTime) : this()
+        {
+            GameCode = gameCode;
+            TimeLimit = timeLimit;
+            AmmoLimit = ammoLimit;
+            StartDelay = startDelay;
+            ReplenishAmmoDelay = replenishAmmoDelay;
+            GameMode = gameMode;
+            IsJoinableAtAnytime = isJoinableAtAnyTime;
         }
 
 
