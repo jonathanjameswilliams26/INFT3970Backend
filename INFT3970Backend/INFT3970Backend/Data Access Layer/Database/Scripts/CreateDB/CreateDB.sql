@@ -3198,7 +3198,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -3263,6 +3262,17 @@ BEGIN
 		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @takenByGameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
+
+		--Confirm there is not an active photo record with the same taken by and photo of ID
+		--This is to avoid the same player constantly taking photos of the same person.
+		IF EXISTS (SELECT * FROM vw_Incompleted_Photos WHERE TakenByPlayerID = @takenByID AND PhotoOfPlayerID = @photoOfID)
+		BEGIN
+			SET @result = @CANNOT_PERFORM_ACTION;
+			SET @errorMSG = 'There is already an existing photo of this player which has not completed voting. Please wait before voting completes before taking another photo of the same player.';
+			RAISERROR('', 16, 1);
+		END
+
+
 		--Insert the new photo
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
@@ -3302,8 +3312,6 @@ BEGIN
 	END CATCH
 END
 GO
-
-
 
 
 
