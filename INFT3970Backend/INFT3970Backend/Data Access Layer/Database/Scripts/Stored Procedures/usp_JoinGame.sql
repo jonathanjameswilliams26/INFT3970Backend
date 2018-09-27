@@ -75,6 +75,15 @@ BEGIN
 		END
 
 
+		--Check to see if the game is full and the player can join. There is a 16 player limit per game.
+		IF EXISTS (SELECT * FROM vw_Active_Games WHERE GameID = @gameIDToJoin AND NumOfPlayers = 16)
+		BEGIN
+			SET @result = @CANNOT_PERFORM_ACTION;
+			SET @errorMSG = 'The game you are trying to join is full.';
+			RAISERROR('',16,1);
+		END
+
+
 		--Confirm the nickname entered is not already taken by a player in the game
 		--Checking against verified and unverified players.
 		IF EXISTS (SELECT * FROM vw_Active_Players WHERE GameID = @gameIDToJoin AND Nickname = @nickname)

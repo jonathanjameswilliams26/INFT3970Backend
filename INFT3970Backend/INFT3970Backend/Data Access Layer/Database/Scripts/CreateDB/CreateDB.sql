@@ -2698,7 +2698,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -2772,6 +2771,15 @@ BEGIN
 		BEGIN
 			SET @result = @CANNOT_PERFORM_ACTION;
 			SET @errorMSG = 'The game you are trying to join is already playing and does not allow you to join after the game has started.';
+			RAISERROR('',16,1);
+		END
+
+
+		--Check to see if the game is full and the player can join. There is a 16 player limit per game.
+		IF EXISTS (SELECT * FROM vw_Active_Games WHERE GameID = @gameIDToJoin AND NumOfPlayers = 16)
+		BEGIN
+			SET @result = @CANNOT_PERFORM_ACTION;
+			SET @errorMSG = 'The game you are trying to join is full.';
 			RAISERROR('',16,1);
 		END
 
