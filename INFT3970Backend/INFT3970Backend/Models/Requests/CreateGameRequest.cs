@@ -11,6 +11,5 @@
         public int replenishAmmoDelay { get; set; }
         public string gameMode { get; set; }
         public bool isJoinableAtAnytime { get; set; }
-
     }
 }

@@ -580,7 +580,6 @@ GO
 
 
 
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 23/09/18
@@ -614,6 +613,9 @@ SELECT
 	GameMode,
 	StartTime,
 	EndTime,
+	AmmoLimit,
+	ReplenishAmmoDelay,
+	StartDelay,
 	GameState,
 	IsJoinableAtAnytime,
 	GameIsActive,
@@ -659,6 +661,9 @@ SELECT
 	GameMode,
 	StartTime,
 	EndTime,
+	AmmoLimit,
+	ReplenishAmmoDelay,
+	StartDelay,
 	GameState,
 	IsJoinableAtAnytime,
 	GameIsActive,
@@ -771,9 +776,6 @@ FROM
 	vw_Active_Notifications n
 	INNER JOIN vw_Join_PlayerGame p ON (n.PlayerID = p.PlayerID)
 GO
-
-
-
 
 
 
@@ -1171,7 +1173,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -1243,7 +1244,7 @@ BEGIN
 
 		--Confirm there is enough players in the Game to Start
 		DECLARE @activePlayerCount INT = 0;
-		SELECT @activePlayerCount = COUNT(*) FROM vw_InGame_Players WHERE GameID = @gameID
+		SELECT @activePlayerCount = COUNT(*) FROM vw_Active_Players WHERE GameID = @gameID AND HasLeftGame = 0
 		IF(@activePlayerCount < 3)
 		BEGIN
 			SET @result = @CANNOT_PERFORM_ACTION;
@@ -1263,10 +1264,27 @@ BEGIN
 
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			--Update the GameState to STARTING, update the StartTime to 10mins in the future and update the EndTime to the endtime
-			UPDATE tbl_Game
-			SET GameState = 'STARTING', StartTime = DATEADD(MINUTE, 10, GETDATE()), EndTime = DATEADD(DAY, 1, GETDATE())
+			--Get the StartDelay and the TimeLimit
+			DECLARE @delay INT = 0;
+			DECLARE @timeLimit INT = 0;
+			SELECT @delay = StartDelay, @timeLimit = TimeLimit
+			FROM tbl_Game
 			WHERE GameID = @gameID
+
+			--Update the GameState to STARTING
+			UPDATE tbl_Game
+			SET 
+				GameState = 'STARTING', 
+				StartTime = DATEADD(MILLISECOND, @delay, GETDATE())
+			WHERE GameID = @gameID
+
+
+			DECLARE @startTime DATETIME2;
+			SELECT @startTime = StartTime
+			FROM tbl_Game
+			WHERE GameID = @gameID
+			UPDATE tbl_Game
+			SET EndTime = DATEADD(MILLISECOND, @timeLimit, @startTime)
 		COMMIT
 
 		SET @result = 1
@@ -2716,7 +2734,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -2840,13 +2857,20 @@ BEGIN
 		--If reaching this point all the inputs have been validated. Create the player record
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
+			
+			--Get the AmmoLimit from the game
+			DECLARE @ammoCount INT = 0;
+			SELECT @ammoCount = AmmoLimit
+			FROM tbl_Game
+			WHERE GameID = @gameIDToJoin
+
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
@@ -2876,8 +2900,6 @@ BEGIN
 	END CATCH
 END
 GO
-
-
 
 
 

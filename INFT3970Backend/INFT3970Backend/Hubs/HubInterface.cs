@@ -325,7 +325,7 @@ namespace INFT3970Backend.Hubs
             //Otherwise if ammo has gone from empty to not, send out a text message or email
             else if (player.AmmoCount == 1)
             {
-                string message = "Your ammo has now been replenished, go get em!.";
+                string message = "Your ammo has now been replenished, go get em!";
                 var subject = "Ammo Replenished";
                 player.ReceiveMessage(message, subject);
             }

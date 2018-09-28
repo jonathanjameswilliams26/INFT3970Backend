@@ -130,7 +130,7 @@ namespace INFT3970Backend.Helpers
         public static void ScheduleReplenishAmmo(Player player, HubInterface hubInterface)
         {
             //Get how long to wait for the task to run
-            int timeToWait = GetTimeToWait(DateTime.Now.AddMinutes(10));
+            int timeToWait = GetTimeToWait(DateTime.Now.AddMilliseconds(player.Game.ReplenishAmmoDelay));
 
             //Start the Method in a new thread
             Thread ScheduleReplenishAmmoThread = new Thread(

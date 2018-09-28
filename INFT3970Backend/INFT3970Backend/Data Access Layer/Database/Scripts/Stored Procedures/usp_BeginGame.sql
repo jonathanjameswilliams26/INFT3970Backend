@@ -69,7 +69,7 @@ BEGIN
 
 		--Confirm there is enough players in the Game to Start
 		DECLARE @activePlayerCount INT = 0;
-		SELECT @activePlayerCount = COUNT(*) FROM vw_InGame_Players WHERE GameID = @gameID
+		SELECT @activePlayerCount = COUNT(*) FROM vw_Active_Players WHERE GameID = @gameID AND HasLeftGame = 0
 		IF(@activePlayerCount < 3)
 		BEGIN
 			SET @result = @CANNOT_PERFORM_ACTION;
@@ -89,10 +89,27 @@ BEGIN
 
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			--Update the GameState to STARTING, update the StartTime to 10mins in the future and update the EndTime to the endtime
-			UPDATE tbl_Game
-			SET GameState = 'STARTING', StartTime = DATEADD(MINUTE, 10, GETDATE()), EndTime = DATEADD(DAY, 1, GETDATE())
+			--Get the StartDelay and the TimeLimit
+			DECLARE @delay INT = 0;
+			DECLARE @timeLimit INT = 0;
+			SELECT @delay = StartDelay, @timeLimit = TimeLimit
+			FROM tbl_Game
 			WHERE GameID = @gameID
+
+			--Update the GameState to STARTING
+			UPDATE tbl_Game
+			SET 
+				GameState = 'STARTING', 
+				StartTime = DATEADD(MILLISECOND, @delay, GETDATE())
+			WHERE GameID = @gameID
+
+
+			DECLARE @startTime DATETIME2;
+			SELECT @startTime = StartTime
+			FROM tbl_Game
+			WHERE GameID = @gameID
+			UPDATE tbl_Game
+			SET EndTime = DATEADD(MILLISECOND, @timeLimit, @startTime)
 		COMMIT
 
 		SET @result = 1

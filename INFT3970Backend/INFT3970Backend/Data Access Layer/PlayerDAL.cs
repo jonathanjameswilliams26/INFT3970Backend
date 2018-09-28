@@ -534,7 +534,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         RunReader();
                         while (Reader.Read())
                         {
-                            player = new ModelFactory(Reader).PlayerFactory(false);
+                            player = new ModelFactory(Reader).PlayerFactory(true);
                             if(player == null)
                                 return new Response<Player>("An error occurred while trying to build the player model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }

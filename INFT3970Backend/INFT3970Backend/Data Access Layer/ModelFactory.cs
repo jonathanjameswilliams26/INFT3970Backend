@@ -321,6 +321,9 @@ namespace INFT3970Backend.Data_Access_Layer
                 game.IsJoinableAtAnytime = GetBool("IsJoinableAtAnytime");
                 game.IsActive = GetBool("GameIsActive");
                 game.IsDeleted = GetBool("GameIsDeleted");
+                game.AmmoLimit = GetInt("AmmoLimit");
+                game.ReplenishAmmoDelay = GetInt("ReplenishAmmoDelay");
+                game.StartDelay = GetInt("StartDelay");
                 return game;
             }
             catch

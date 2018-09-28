@@ -121,13 +121,20 @@ BEGIN
 		--If reaching this point all the inputs have been validated. Create the player record
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
+			
+			--Get the AmmoLimit from the game
+			DECLARE @ammoCount INT = 0;
+			SELECT @ammoCount = AmmoLimit
+			FROM tbl_Game
+			WHERE GameID = @gameIDToJoin
+
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost);
+				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
