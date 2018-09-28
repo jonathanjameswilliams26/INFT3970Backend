@@ -26,6 +26,12 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         AddParam("gameCode", game.GameCode);
+                        AddParam("timeLimit", game.TimeLimit);
+                        AddParam("ammoLimit", game.AmmoLimit);
+                        AddParam("startDelay", game.StartDelay);
+                        AddParam("replenishAmmoDelay", game.ReplenishAmmoDelay);
+                        AddParam("gameMode", game.GameMode);
+                        AddParam("isJoinableAtAnytime", game.IsJoinableAtAnytime);
                         AddDefaultParams();
 
                         //Perform the procedure and get the result

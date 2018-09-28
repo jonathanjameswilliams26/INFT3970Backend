@@ -19,6 +19,12 @@ GO
 CREATE PROCEDURE [dbo].[usp_CreateGame] 
 	-- Add the parameters for the stored procedure here
 	@gameCode VARCHAR(6),
+	@timeLimit INT,
+	@ammoLimit INT,
+	@startDelay INT,
+	@replenishAmmoDelay INT,
+	@gameMode VARCHAR(255),
+	@isJoinableAtAnytime BIT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -57,7 +63,8 @@ BEGIN
 		DECLARE @createdGameID INT;
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			INSERT INTO tbl_Game (GameCode) VALUES (@gameCode);
+			INSERT INTO tbl_Game (GameCode, TimeLimit, AmmoLimit, StartDelay, ReplenishAmmoDelay, GameMode, IsJoinableAtAnytime) 
+			VALUES (@gameCode, @timeLimit, @ammoLimit, @startDelay, @replenishAmmoDelay, @gameMode, @isJoinableAtAnytime);
 			SET @createdGameID = SCOPE_IDENTITY();
 		COMMIT
 
