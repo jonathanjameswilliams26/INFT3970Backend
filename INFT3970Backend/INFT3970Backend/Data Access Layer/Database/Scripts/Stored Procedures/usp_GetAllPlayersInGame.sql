@@ -55,6 +55,10 @@ BEGIN
 
 	BEGIN TRY
 		
+		--Use the variable for taggable filter
+		DECLARE @playerID INT;
+		SET @playerID = @id;
+
 		--If the id is a playerID get the GameID from the Player record
 		IF(@isPlayerID = 1)
 		BEGIN
@@ -128,6 +132,23 @@ BEGIN
 				vw_InGameAll_Players
 			WHERE 
 				GameID = @id
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
+
+
+		--If filer = TAGGABLE get all players in the game which are able to be tagged, so players which are verified, in game, have not left game, have not been eliminated
+		IF(@filter LIKE 'TAGGABLE')
+		BEGIN
+			SELECT * 
+			FROM 
+				vw_InGame_Players
+			WHERE 
+				GameID = @id AND
+				IsEliminated = 0 AND
+				PlayerID <> @playerID
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
 				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,

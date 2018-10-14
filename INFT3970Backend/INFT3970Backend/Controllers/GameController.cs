@@ -147,7 +147,7 @@ namespace INFT3970Backend.Controllers
 
                 //Confirm the filter value passed in is a valid value
                 var isFilterValid = false;
-                if (filter.ToUpper() == "ALL" || filter.ToUpper() == "ACTIVE" || filter.ToUpper() == "INGAME" || filter.ToUpper() == "INGAMEALL")
+                if (filter.ToUpper() == "ALL" || filter.ToUpper() == "ACTIVE" || filter.ToUpper() == "INGAME" || filter.ToUpper() == "INGAMEALL" || filter.ToUpper() == "TAGGABLE")
                     isFilterValid = true;
 
                 //Confirm the order by value passed in is a valid value

@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using INFT3970Backend.Models;
 using System.Data.SqlClient;
+using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace INFT3970Backend.Data_Access_Layer
 {

@@ -112,6 +112,7 @@ CREATE TABLE tbl_Player
 	IsVerified BIT NOT NULL DEFAULT 0,
 	VerificationCode INT,
 	ConnectionID VARCHAR(255) DEFAULT NULL,
+	IsEliminated BIT NOT NULL DEFAULT 0,
 	HasLeftGame BIT NOT NULL DEFAULT 0,
 	PlayerIsDeleted BIT NOT NULL DEFAULT 0,
 	PlayerIsActive BIT NOT NULL DEFAULT 1,
@@ -2014,7 +2015,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -2072,6 +2072,10 @@ BEGIN
 
 	BEGIN TRY
 		
+		--Use the variable for taggable filter
+		DECLARE @playerID INT;
+		SET @playerID = @id;
+
 		--If the id is a playerID get the GameID from the Player record
 		IF(@isPlayerID = 1)
 		BEGIN
@@ -2151,6 +2155,23 @@ BEGIN
 				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
 		END
 
+
+		--If filer = TAGGABLE get all players in the game which are able to be tagged, so players which are verified, in game, have not left game, have not been eliminated
+		IF(@filter LIKE 'TAGGABLE')
+		BEGIN
+			SELECT * 
+			FROM 
+				vw_InGame_Players
+			WHERE 
+				GameID = @id AND
+				IsEliminated = 0 AND
+				PlayerID <> @playerID
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
+
 		--Set the return variables
 		SET @result = 1;
 		SET @errorMSG = ''
@@ -2160,7 +2181,6 @@ BEGIN
 	END CATCH
 END
 GO
-
 
 
 
