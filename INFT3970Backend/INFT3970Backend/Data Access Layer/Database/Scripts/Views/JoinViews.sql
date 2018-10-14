@@ -24,6 +24,9 @@ SELECT
 	HasLeftGame,
 	PlayerIsActive,
 	PlayerIsDeleted,
+	IsEliminated,
+	IsInZone,
+	LivesRemaining,
 	ConnectionID,
 	g.GameID,
 	GameCode,
@@ -37,13 +40,14 @@ SELECT
 	GameState,
 	IsJoinableAtAnytime,
 	GameIsActive,
-	GameIsDeleted
+	GameIsDeleted,
+	Latitude,
+	Longitude,
+	Radius
 FROM
 	vw_All_Players p INNER JOIN
 	vw_All_Games g ON (p.GameID = g.GameID)
 GO
-
-
 
 
 

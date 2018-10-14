@@ -80,7 +80,7 @@ namespace INFT3970Backend.Controllers
 
                     //Add the game to the database, create a BR game if the game is BR
                     if (newGame is BRGame)
-                        createdGame = gameDAL.CreateBRGame((BRGame)newGame);
+                        createdGame = new BattleRoyaleDAL().CreateBRGame((BRGame)newGame);
 
                     //Otherwise, create a normal game
                     else

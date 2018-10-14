@@ -296,7 +296,6 @@ namespace INFT3970Backend.Controllers
 
 
 
-
         /// <summary>
         /// Uses the Players ammo, decrements the players ammo count and schedules the ammo to replenish
         /// after a certain time period.

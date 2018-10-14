@@ -147,7 +147,7 @@ BEGIN
 				vw_InGame_Players
 			WHERE 
 				GameID = @id AND
-				IsEliminated = 0 AND
+				(IsEliminated = 0 OR IsEliminated IS NULL) AND
 				PlayerID <> @playerID
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,

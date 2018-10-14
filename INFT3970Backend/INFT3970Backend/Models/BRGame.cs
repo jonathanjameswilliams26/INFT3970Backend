@@ -8,7 +8,6 @@ namespace INFT3970Backend.Models
         private double lat;
         private double longitude;
         private int radius;
-        private Game game;
 
         public double Latitude
         {

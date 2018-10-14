@@ -177,7 +177,6 @@ namespace INFT3970Backend.Data_Access_Layer
             try
             {
                 Player player = new Player();
-                Game game = null;
                 player.PlayerID = GetInt("PlayerID");
                 player.Nickname = SafeGetString("Nickname");
                 player.Phone = SafeGetString("Phone");
@@ -197,11 +196,15 @@ namespace INFT3970Backend.Data_Access_Layer
 
                 //Build the Game object for the player
                 if(doGetGame)
-                {
-                    game = GameFactory();
-                    player.Game = game;
-                }
-                return player;
+                    player.Game = GameFactory();
+
+                //Attempt to build the BR player
+                BRPlayer brPlayer = BRPlayerFactory(player);
+
+                if (brPlayer == null)
+                    return player;
+                else
+                    return brPlayer;
             }
             catch
             {
@@ -324,7 +327,17 @@ namespace INFT3970Backend.Data_Access_Layer
                 game.AmmoLimit = GetInt("AmmoLimit");
                 game.ReplenishAmmoDelay = GetInt("ReplenishAmmoDelay");
                 game.StartDelay = GetInt("StartDelay");
-                return game;
+
+                //Attempt to create a BR game
+                BRGame brGame = null;
+                if (game.GameMode == "BR")
+                    brGame = BRGameFactory(game);
+
+                //Return a normal game or battle royale game
+                if (brGame == null)
+                    return game;
+                else
+                    return brGame;
             }
             catch
             {
@@ -336,26 +349,7 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-        /// <summary>
-        /// Builds a Battle Royale Game Model from the data reader.
-        /// </summary>
-        /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
-        public BRGame BRGameFactory()
-        {
-            try
-            {
-                Game game = GameFactory();
-                BRGame bRGame = new BRGame(game);
-                bRGame.Latitude = GetDouble("Latitude");
-                bRGame.Longitude = GetDouble("Longitude");
-                bRGame.Radius = GetInt("Radius");
-                return bRGame;
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        
 
 
 
@@ -390,6 +384,52 @@ namespace INFT3970Backend.Data_Access_Layer
                 playerVotePhoto.Photo = photo;
                 playerVotePhoto.Player = player;
                 return playerVotePhoto;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+
+
+
+        //Battle Royale Methods
+        /// <summary>
+        /// Builds a Battle Royale Game Model from the data reader.
+        /// </summary>
+        /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
+        public BRGame BRGameFactory(Game game)
+        {
+            try
+            {
+                BRGame bRGame = new BRGame(game);
+                bRGame.Latitude = GetDouble("Latitude");
+                bRGame.Longitude = GetDouble("Longitude");
+                bRGame.Radius = GetInt("Radius");
+                return bRGame;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+        /// <summary>
+        /// Builds a Battle Royale Player Model from the data reader.
+        /// </summary>
+        /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
+        public BRPlayer BRPlayerFactory(Player player)
+        {
+            try
+            {
+                BRPlayer brPlayer = new BRPlayer(player);
+                brPlayer.IsEliminated = GetBool("IsEliminated");
+                brPlayer.LivesRemaining = GetInt("LivesRemaining");
+                brPlayer.IsInZone = GetBool("IsInZone");
+                return brPlayer;
             }
             catch
             {

@@ -74,7 +74,7 @@ CREATE TABLE tbl_Game
 );
 GO
 
-
+--Create the Battle Royale Sub class
 CREATE TABLE tbl_BRGame
 (
 	GameID INT NOT NULL,
@@ -124,7 +124,6 @@ CREATE TABLE tbl_Player
 	IsVerified BIT NOT NULL DEFAULT 0,
 	VerificationCode INT,
 	ConnectionID VARCHAR(255) DEFAULT NULL,
-	IsEliminated BIT NOT NULL DEFAULT 0,
 	HasLeftGame BIT NOT NULL DEFAULT 0,
 	PlayerIsDeleted BIT NOT NULL DEFAULT 0,
 	PlayerIsActive BIT NOT NULL DEFAULT 1,
@@ -145,7 +144,18 @@ CREATE TABLE tbl_Player
 GO
 
 
+--Create the Battle Royale Sub class
+CREATE TABLE tbl_BRPlayer
+(
+	PlayerID INT NOT NULL,
+	IsEliminated BIT NOT NULL DEFAULT 0,
+	IsInZone BIT NOT NULL DEFAULT 0,
+	LivesRemaining INT NOT NULL DEFAULT 3,
 
+	PRIMARY KEY (PlayerID),
+	FOREIGN KEY (PlayerID) REFERENCES tbl_Player(PlayerID)
+)
+GO
 
 
 --Create the Photo table
@@ -220,8 +230,6 @@ CREATE TABLE tbl_Notification
 GO
 
 
-
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 23/09/18
@@ -232,14 +240,16 @@ USE udb_CamTag
 GO
 CREATE VIEW vw_All_Games
 AS
-SELECT *
+SELECT 
+	g.*,
+	br.Latitude,
+	br.Longitude,
+	br.Radius
 FROM
-	tbl_Game
+	tbl_Game g LEFT JOIN tbl_BRGame br ON (g.GameID = br.GameID)
 WHERE
 	GameIsDeleted = 0
 GO
-
-
 
 
 
@@ -266,7 +276,6 @@ GO
 
 
 
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 23/10/18
@@ -276,17 +285,12 @@ USE udb_CamTag
 GO
 CREATE VIEW vw_BRGames
 AS
-SELECT 
-	g.*,
-	Latitude,
-	Longitude,
-	Radius
+SELECT *
 FROM
-	vw_All_Games g INNER JOIN tbl_BRGame br ON (g.GameID = br.GameID)
+	vw_All_Games
+WHERE
+	GameMode LIKE 'BR'
 GO
-
-
-
 
 -- =============================================
 -- Author:		Jonathan Williams
@@ -298,9 +302,13 @@ USE udb_CamTag
 GO
 CREATE VIEW vw_All_Players
 AS
-SELECT *
+SELECT 
+	p.*,
+	br.IsEliminated,
+	br.IsInZone,
+	br.LivesRemaining
 FROM
-	tbl_Player
+	tbl_Player p LEFT JOIN tbl_BRPlayer br ON (p.PlayerID = br.PlayerID)
 WHERE
 	PlayerIsDeleted = 0
 GO
@@ -374,7 +382,6 @@ FROM
 WHERE
 	IsVerified = 1
 GO
-
 
 
 
@@ -611,7 +618,6 @@ GO
 
 
 
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 23/09/18
@@ -638,6 +644,9 @@ SELECT
 	HasLeftGame,
 	PlayerIsActive,
 	PlayerIsDeleted,
+	IsEliminated,
+	IsInZone,
+	LivesRemaining,
 	ConnectionID,
 	g.GameID,
 	GameCode,
@@ -651,13 +660,14 @@ SELECT
 	GameState,
 	IsJoinableAtAnytime,
 	GameIsActive,
-	GameIsDeleted
+	GameIsDeleted,
+	Latitude,
+	Longitude,
+	Radius
 FROM
 	vw_All_Players p INNER JOIN
 	vw_All_Games g ON (p.GameID = g.GameID)
 GO
-
-
 
 
 
@@ -808,7 +818,6 @@ FROM
 	vw_Active_Notifications n
 	INNER JOIN vw_Join_PlayerGame p ON (n.PlayerID = p.PlayerID)
 GO
-
 
 
 
@@ -2293,7 +2302,7 @@ BEGIN
 				vw_InGame_Players
 			WHERE 
 				GameID = @id AND
-				IsEliminated = 0 AND
+				(IsEliminated = 0 OR IsEliminated IS NULL) AND
 				PlayerID <> @playerID
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
