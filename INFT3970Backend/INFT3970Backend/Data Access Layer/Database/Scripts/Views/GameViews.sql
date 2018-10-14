@@ -39,3 +39,23 @@ WHERE
 	GameIsActive = 1 AND
 	GameState NOT LIKE 'COMPLETED'
 GO
+
+
+
+-- =============================================
+-- Author:		Jonathan Williams
+-- Create date: 23/10/18
+-- Description:	Creates the Battle Royal Game View
+-- =============================================
+USE udb_CamTag
+GO
+CREATE VIEW vw_BRGames
+AS
+SELECT 
+	g.*,
+	Latitude,
+	Longitude,
+	Radius
+FROM
+	vw_All_Games g INNER JOIN tbl_BRGame br ON (g.GameID = br.GameID)
+GO

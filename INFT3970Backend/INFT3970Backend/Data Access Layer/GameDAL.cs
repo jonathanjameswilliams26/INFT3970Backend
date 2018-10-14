@@ -90,6 +90,52 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
+        public Response<Game> CreateBRGame(BRGame game)
+        {
+            StoredProcedure = "usp_CreateBRGame";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("gameCode", game.GameCode);
+                        AddParam("timeLimit", game.TimeLimit);
+                        AddParam("ammoLimit", game.AmmoLimit);
+                        AddParam("startDelay", game.StartDelay);
+                        AddParam("replenishAmmoDelay", game.ReplenishAmmoDelay);
+                        AddParam("gameMode", game.GameMode);
+                        AddParam("isJoinableAtAnytime", game.IsJoinableAtAnytime);
+                        AddParam("latitude", game.Latitude);
+                        AddParam("longitude", game.Longitude);
+                        AddParam("radius", game.Radius);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        RunReader();
+                        while (Reader.Read())
+                        {
+                            game = new ModelFactory(Reader).BRGameFactory();
+                            if (game == null)
+                                return new Response<Game>("An error occurred while trying to build the Game model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response<Game>(game, ErrorMSG, Result);
+                    }
+                }
+            }
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<Game>.DatabaseErrorResponse();
+            }
+        }
+
 
 
         /// <summary>

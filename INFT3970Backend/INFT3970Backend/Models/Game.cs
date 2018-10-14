@@ -91,7 +91,7 @@ namespace INFT3970Backend.Models
 
                 var uppercaseValue = value.ToUpper();
 
-                if (uppercaseValue == "CORE")
+                if (uppercaseValue == "CORE" || uppercaseValue == "BR")
                     gameMode = uppercaseValue;
                 else
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);

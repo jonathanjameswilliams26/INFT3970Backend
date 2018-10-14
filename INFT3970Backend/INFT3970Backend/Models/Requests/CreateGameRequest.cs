@@ -11,5 +11,10 @@
         public int replenishAmmoDelay { get; set; }
         public string gameMode { get; set; }
         public bool isJoinableAtAnytime { get; set; }
+
+        //Game settings for the battle royal game mode
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public int Radius { get; set; }
     }
 }

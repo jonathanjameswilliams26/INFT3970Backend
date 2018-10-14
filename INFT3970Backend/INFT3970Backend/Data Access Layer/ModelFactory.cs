@@ -335,6 +335,31 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+        /// <summary>
+        /// Builds a Battle Royale Game Model from the data reader.
+        /// </summary>
+        /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
+        public BRGame BRGameFactory()
+        {
+            try
+            {
+                Game game = GameFactory();
+                BRGame bRGame = new BRGame(game);
+                bRGame.Latitude = GetDouble("Latitude");
+                bRGame.Longitude = GetDouble("Longitude");
+                bRGame.Radius = GetInt("Radius");
+                return bRGame;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+
+
         /// <summary>
         /// Builds a PlayerVotePhoto Model from the data reader.
         /// </summary>
