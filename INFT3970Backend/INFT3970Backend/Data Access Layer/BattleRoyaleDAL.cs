@@ -9,7 +9,7 @@ namespace INFT3970Backend.Data_Access_Layer
 {
     public class BattleRoyaleDAL : DataAccessLayer
     {
-        public Response<Game> CreateBRGame(BRGame game)
+        public Response<Game> BR_CreateGame(BRGame game)
         {
             StoredProcedure = "usp_CreateBRGame";
             try
@@ -53,6 +53,24 @@ namespace INFT3970Backend.Data_Access_Layer
             {
                 return Response<Game>.DatabaseErrorResponse();
             }
+        }
+
+        public Response<BRPlayer> BR_GetPlayerByID(int playerID)
+        {
+            //TODO: Implement Method
+            throw new NotImplementedException();
+        }
+
+        public Response<BRPlayer> BR_UseAmmo(BRPlayer player)
+        {
+            //TODO: Implement method
+            throw new NotImplementedException();
+        }
+
+        public Response<BRPlayer> BR_EliminatePlayer(BRPlayer player)
+        {
+            //TODO: Implement method
+            throw new NotImplementedException();
         }
     }
 }

@@ -198,13 +198,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 if(doGetGame)
                     player.Game = GameFactory();
 
-                //Attempt to build the BR player
-                BRPlayer brPlayer = BRPlayerFactory(player);
-
-                if (brPlayer == null)
-                    return player;
-                else
-                    return brPlayer;
+                return player;
             }
             catch
             {
@@ -327,17 +321,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 game.AmmoLimit = GetInt("AmmoLimit");
                 game.ReplenishAmmoDelay = GetInt("ReplenishAmmoDelay");
                 game.StartDelay = GetInt("StartDelay");
-
-                //Attempt to create a BR game
-                BRGame brGame = null;
-                if (game.GameMode == "BR")
-                    brGame = BRGameFactory(game);
-
-                //Return a normal game or battle royale game
-                if (brGame == null)
-                    return game;
-                else
-                    return brGame;
+                return game;
             }
             catch
             {
@@ -400,10 +384,11 @@ namespace INFT3970Backend.Data_Access_Layer
         /// Builds a Battle Royale Game Model from the data reader.
         /// </summary>
         /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
-        public BRGame BRGameFactory(Game game)
+        public BRGame BRGameFactory()
         {
             try
             {
+                Game game = GameFactory();
                 BRGame bRGame = new BRGame(game);
                 bRGame.Latitude = GetDouble("Latitude");
                 bRGame.Longitude = GetDouble("Longitude");
@@ -421,10 +406,11 @@ namespace INFT3970Backend.Data_Access_Layer
         /// Builds a Battle Royale Player Model from the data reader.
         /// </summary>
         /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
-        public BRPlayer BRPlayerFactory(Player player)
+        public BRPlayer BRPlayerFactory()
         {
             try
             {
+                Player player = PlayerFactory(true);
                 BRPlayer brPlayer = new BRPlayer(player);
                 brPlayer.IsEliminated = GetBool("IsEliminated");
                 brPlayer.LivesRemaining = GetInt("LivesRemaining");

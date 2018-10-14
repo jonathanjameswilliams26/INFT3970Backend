@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;
+using System;
 
 namespace INFT3970Backend.Hubs
 {
@@ -76,6 +77,12 @@ namespace INFT3970Backend.Hubs
                         player.ReceiveMessage(message, subject);
                 }
             }
+        }
+
+        internal void UpdatePlayerEliminated(IHubContext<ApplicationHub> hubContext)
+        {
+            //TODO: Implement method
+            throw new NotImplementedException();
         }
 
 

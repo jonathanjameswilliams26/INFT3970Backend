@@ -1,4 +1,5 @@
-﻿using INFT3970Backend.Models.Errors;
+﻿using System;
+using INFT3970Backend.Models.Errors;
 
 namespace INFT3970Backend.Models
 {
@@ -81,6 +82,12 @@ namespace INFT3970Backend.Models
             IsActive = game.IsActive;
             IsDeleted = game.IsDeleted;
             Players = game.Players;
+        }
+
+        public bool IsInZone(double latitude, double longitude)
+        {
+            //TODO: implement method
+            throw new NotImplementedException();
         }
     }
 }

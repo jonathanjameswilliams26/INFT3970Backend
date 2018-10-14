@@ -9,11 +9,34 @@ namespace INFT3970Backend.Models
     {
         public BRPlayer(Player player)
         {
-            //TODO: Make method
+            PlayerID = player.PlayerID;
+            Nickname = player.Nickname;
+            Phone = player.Phone;
+            Email = player.Email;
+            SelfieDataURL = player.SelfieDataURL;
+            AmmoCount = player.AmmoCount;
+            NumKills = player.NumKills;
+            NumDeaths = player.NumDeaths;
+            NumPhotosTaken = player.NumPhotosTaken;
+            GameID = player.GameID;
+            IsHost = player.IsHost;
+            IsVerified = player.IsVerified;
+            IsActive = player.IsActive;
+            IsDeleted = player.IsDeleted;
+            ConnectionID = player.ConnectionID;
+            HasLeftGame = player.HasLeftGame;
+            Game = player.Game as BRGame;
         }
 
         public bool IsEliminated { get; set; }
         public int LivesRemaining { get; set; }
         public bool IsInZone { get; set; }
+        public new BRGame Game { get; set; }
+
+
+        public bool IsAlive()
+        {
+            return LivesRemaining > 0;
+        }
     }
 }
