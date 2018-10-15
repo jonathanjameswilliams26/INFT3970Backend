@@ -52,7 +52,7 @@ GO
 --				1. Not Deleted
 --				2. Is Active
 --				3. Is verified
---				4. Has not left the game
+--				4. Has not left the game / been eliminated from the game
 -- =============================================
 USE udb_CamTag
 GO
@@ -63,7 +63,9 @@ FROM
 	vw_Active_Players
 WHERE
 	IsVerified = 1 AND
-	HasLeftGame = 0
+	HasLeftGame = 0 AND
+	IsEliminated = 0 OR 
+	IsEliminated IS NULL
 GO
 
 

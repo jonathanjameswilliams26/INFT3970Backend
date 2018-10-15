@@ -1,5 +1,6 @@
-﻿using System;
-using INFT3970Backend.Models.Errors;
+﻿using INFT3970Backend.Models.Errors;
+using System;
+using System.Device.Location;
 
 namespace INFT3970Backend.Models
 {
@@ -86,8 +87,44 @@ namespace INFT3970Backend.Models
 
         public bool IsInZone(double latitude, double longitude)
         {
-            //TODO: implement method
-            throw new NotImplementedException();
+            var centerLocation = new GeoCoordinate(Latitude, Longitude);
+            var playerLocation = new GeoCoordinate(latitude, longitude);
+
+            //Get the distance in meters
+            var distanceBetweenCoords = centerLocation.GetDistanceTo(playerLocation);
+
+            //Get the current radius of the zone
+            double currentRadius = CalculateRadius();
+
+            //If the distance between the two points is greater than the radius the player is outside the zone
+            if (distanceBetweenCoords > currentRadius)
+                return false;
+            else
+                return true;
+        }
+
+        public double CalculateRadius()
+        {
+            try
+            {
+                //Get the number of milliseconds between the start and end time
+                TimeSpan span = EndTime.Value.Subtract(StartTime.Value);
+                var totalTime = span.TotalMilliseconds;
+
+                //Get the time between the current time and the end time
+                span = EndTime.Value.Subtract(DateTime.Now);
+                var timeRemaining = span.TotalMilliseconds;
+
+                //Calculate the percentage of time remaining
+                var percentage = timeRemaining / totalTime;
+
+                //Return the current radius
+                return Radius * percentage;
+            }
+            catch
+            {
+                return -1;
+            }
         }
     }
 }

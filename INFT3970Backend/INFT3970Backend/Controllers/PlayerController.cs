@@ -54,7 +54,7 @@ namespace INFT3970Backend.Controllers
                     response.Data.ReceiveMessage(message, subject);
 
                     //Call the hub interface to invoke client methods to update the clients that another player has joined
-                    var hubInterface = new HubInterface(_hubContext);
+                    var hubInterface = new CoreHubInterface(_hubContext);
                     hubInterface.UpdatePlayerJoinedGame(response.Data);
                 }
                 return response;
@@ -104,7 +104,7 @@ namespace INFT3970Backend.Controllers
                 //If the player was successfully verified, updated all the clients about a joined player.
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new HubInterface(_hubContext);
+                    var hubInterface = new CoreHubInterface(_hubContext);
                     hubInterface.UpdatePlayerJoinedGame(response.Data);
                 }
 
@@ -233,7 +233,7 @@ namespace INFT3970Backend.Controllers
                     return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
 
                 //Create the hub interface which will be used to send live updates to clients
-                var hubInterface = new HubInterface(_hubContext);
+                var hubInterface = new CoreHubInterface(_hubContext);
 
                 //Call the hub method to send out notifications to players that the game is now complete
                 if (isGameComplete)
@@ -315,7 +315,7 @@ namespace INFT3970Backend.Controllers
                 //If the response was successful schedule code to run in order to replenish the players ammo
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new HubInterface(_hubContext);
+                    var hubInterface = new CoreHubInterface(_hubContext);
                     ScheduledTasks.ScheduleReplenishAmmo(response.Data, hubInterface);
                 }
                 return response;
@@ -423,7 +423,7 @@ namespace INFT3970Backend.Controllers
                 //if the response was successful call the hub interface to update the clients
                 if(response.IsSuccessful())
                 {
-                    var hubInterface = new HubInterface(_hubContext);
+                    var hubInterface = new CoreHubInterface(_hubContext);
                     hubInterface.UpdatePlayerLeftGame(response.Data);
                 }
 

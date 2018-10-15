@@ -6,10 +6,10 @@ using System;
 
 namespace INFT3970Backend.Hubs
 {
-    public class HubInterface
+    public class CoreHubInterface
     {
         private readonly IHubContext<ApplicationHub> _hubContext;
-        public HubInterface(IHubContext<ApplicationHub> hubContext)
+        public CoreHubInterface(IHubContext<ApplicationHub> hubContext)
         {
             _hubContext = hubContext;
         }
@@ -79,11 +79,7 @@ namespace INFT3970Backend.Hubs
             }
         }
 
-        internal void UpdatePlayerEliminated(IHubContext<ApplicationHub> hubContext)
-        {
-            //TODO: Implement method
-            throw new NotImplementedException();
-        }
+        
 
 
 
@@ -275,7 +271,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdateGameCompleted(Game game, bool isNotEnoughPlayers)
         {
             //Get the list of players from the game
-            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
+            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -283,11 +279,7 @@ namespace INFT3970Backend.Hubs
             //Loop through each of the players and send out the notifications
             foreach(var player in response.Data.Players)
             {
-                //If the player left the game, not verified or is deleted skip the iteration
-                if (player.HasLeftGame || !player.IsVerified || player.IsDeleted)
-                    continue;
-
-                //If the player is currently connected to the application send them an
+                //If the player is currently connected to the application send them a live update
                 if(player.IsConnected)
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameCompleted");
 

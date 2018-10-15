@@ -16,7 +16,7 @@ GO
 --		2. EC_ITEMALREADYEXISTS - An active game already exists with that game code.
 
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_CreateBRGame] 
+CREATE PROCEDURE [dbo].[usp_BR_CreateGame] 
 	-- Add the parameters for the stored procedure here
 	@gameCode VARCHAR(6),
 	@timeLimit INT,

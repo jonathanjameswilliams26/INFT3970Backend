@@ -35,59 +35,59 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
+                var player = new Player(playerID);
                 var DAL = new BattleRoyaleDAL();
 
-                //Get the player object from the database
-                var getPlayerResponse = DAL.BR_GetPlayerByID(playerID);
+                //Use ammo and return the updated BRPlayer from the DB
+                var useAmmoResponse = DAL.BR_UseAmmo(player);
+                if (!useAmmoResponse.IsSuccessful())
+                    return useAmmoResponse;
 
-                //If the response was not successful return an error
-                if (!getPlayerResponse.IsSuccessful())
-                    return getPlayerResponse;
+                var brPlayer = useAmmoResponse.Data;
 
-                var player = getPlayerResponse.Data;
-                var game = player.Game;
-
-                //Confirm the player can actually use ammo
-                if (player.AmmoCount == 0)
-                    return new Response<BRPlayer>("Cannot use ammo because ammo count is 0.", ErrorCodes.CANNOT_PERFORM_ACTION);
-
-                //Confirm the player is within the playing zone
-                if(game.IsInZone(latitude, longitude))
+                //Confirm the player is within the zone
+                if(brPlayer.Game.IsInZone(latitude, longitude))
                 {
-                    //Use ammo because the player is within the zone
-                    var useAmmoResponse = DAL.BR_UseAmmo(player);
-
-                    //If the use ammo request was successful schedule the ammo to be replenished
-                    if(useAmmoResponse.IsSuccessful())
-                    {
-                        var hubInterface = new HubInterface(_hubContext);
-                        ScheduledTasks.ScheduleReplenishAmmo(useAmmoResponse.Data, hubInterface);
-                    }
+                    //Schedule the ammo to replenish and return the response
+                    var hubInterface = new CoreHubInterface(_hubContext);
+                    ScheduledTasks.ScheduleReplenishAmmo(useAmmoResponse.Data, hubInterface);
                     return useAmmoResponse;
                 }
 
-                //Otherwise, the player is not within the zone, reduce lives and possibly eliminate from game
+                //Otherwise, the player is not within the zone, possibly eliminate from game
                 else
                 {
-                    player.LivesRemaining--;
+                    //Decrement the number of lives the player has
+                    brPlayer.LivesRemaining--;
 
-                    //If the player is no longer alive then eliminate the player from the game
-                    if (!player.IsAlive())
+                    //If the player is no longer alive because too many photos where taken outside the zone
+                    //eliminate from the game
+                    if(!brPlayer.IsAlive())
                     {
-                        var eliminatePlayerResponse = DAL.BR_EliminatePlayer(player);
+                        var eliminateResponse = DAL.BR_EliminatePlayer(brPlayer);
 
-                        //If the player was successfully eliminated send out updates to clients
-                        if (eliminatePlayerResponse.IsSuccessful())
-                        {
-                            var hubInterface = new HubInterface(_hubContext);
-                            hubInterface.UpdatePlayerEliminated(_hubContext);
-                        }
-                        return eliminatePlayerResponse;
+                        if (!eliminateResponse.IsSuccessful())
+                            return eliminateResponse;
+
+                        //Call the hub interface to update all the clients that a player has been eliminated
+                        var hubInterface = new BRHubInterface(_hubContext);
+                        hubInterface.UpdatePlayerEliminated(brPlayer);
+
+                        //Return an error code to indicate the player has been eliminated
+                        return new Response<BRPlayer>("You have been eliminated", ErrorCodes.USEAMMO_PLAYERELIMINATED);
                     }
 
-                    //Otherwise, return an error to indicate that the player is outside the playing area
+                    //Otherwise, the player is still in the game after taking a photo outside the zone
+                    //Schedule the ammo to be replenished and return an error response to indicate the player is not inside the zone
                     else
-                        return new Response<BRPlayer>("Not inside the zone.", ErrorCodes.DATA_INVALID);
+                    {
+                        var hubInterface = new CoreHubInterface(_hubContext);
+                        ScheduledTasks.ScheduleReplenishAmmo(useAmmoResponse.Data, hubInterface);
+
+                        useAmmoResponse.ErrorMessage = "You are outside the zone, cannot take photo.";
+                        useAmmoResponse.ErrorCode = ErrorCodes.USEAMMO_NOTINZONE;
+                        return useAmmoResponse;
+                    }
                 }
             }
             //Catch any error associated with invalid model data

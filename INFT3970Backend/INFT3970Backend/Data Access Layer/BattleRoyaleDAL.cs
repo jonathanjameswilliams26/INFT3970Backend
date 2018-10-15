@@ -11,7 +11,7 @@ namespace INFT3970Backend.Data_Access_Layer
     {
         public Response<Game> BR_CreateGame(BRGame game)
         {
-            StoredProcedure = "usp_CreateBRGame";
+            StoredProcedure = "usp_BRCreateGame";
             try
             {
                 //Create the connection and command for the stored procedure
@@ -57,20 +57,119 @@ namespace INFT3970Backend.Data_Access_Layer
 
         public Response<BRPlayer> BR_GetPlayerByID(int playerID)
         {
-            //TODO: Implement Method
-            throw new NotImplementedException();
+            StoredProcedure = "usp_GetPlayerByID";
+            BRPlayer player = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("playerID", playerID);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        RunReader();
+                        while (Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).BRPlayerFactory();
+                            if (player == null)
+                                return new Response<BRPlayer>("An error occurred while trying to build the BRPlayer model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response<BRPlayer>(player, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<BRPlayer>.DatabaseErrorResponse();
+            }
         }
 
-        public Response<BRPlayer> BR_UseAmmo(BRPlayer player)
+        public Response<BRPlayer> BR_UseAmmo(Player player)
         {
-            //TODO: Implement method
-            throw new NotImplementedException();
+            StoredProcedure = "usp_UseAmmo";
+            BRPlayer brPlayer = null;
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        RunReader();
+                        while (Reader.Read())
+                        {
+                            brPlayer = new ModelFactory(Reader).BRPlayerFactory();
+                            if (brPlayer == null)
+                                return new Response<BRPlayer>("An error occurred while trying to build the BRPlayer model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response<BRPlayer>(brPlayer, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<BRPlayer>.DatabaseErrorResponse();
+            }
         }
+
 
         public Response<BRPlayer> BR_EliminatePlayer(BRPlayer player)
         {
-            //TODO: Implement method
-            throw new NotImplementedException();
+            StoredProcedure = "usp_BR_EliminatePlayer";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        RunReader();
+                        while (Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).BRPlayerFactory();
+                            if (player == null)
+                                return new Response<BRPlayer>("An error occurred while trying to build the BRPlayer model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response<BRPlayer>(player, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<BRPlayer>.DatabaseErrorResponse();
+            }
         }
     }
 }

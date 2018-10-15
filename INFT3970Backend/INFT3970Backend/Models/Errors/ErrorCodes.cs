@@ -18,5 +18,10 @@
         public const int MODELINVALID_GAME = 13;
         public const int MODELINVALID_PHOTO = 14;
         public const int MODELINVALID_VOTE = 15;
+
+
+        //Battle Royal Error Codes
+        public const int USEAMMO_PLAYERELIMINATED = 100;
+        public const int USEAMMO_NOTINZONE = 101;
     }
 }
