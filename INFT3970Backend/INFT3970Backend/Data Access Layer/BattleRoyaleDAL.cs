@@ -94,6 +94,44 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
+        public Response<BRPlayer> BR_DecreaseLives(BRPlayer player)
+        {
+            StoredProcedure = "usp_BR_DecreaseLives";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("playerID", player.PlayerID);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        RunReader();
+                        while (Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).BRPlayerFactory();
+                            if (player == null)
+                                return new Response<BRPlayer>("An error occurred while trying to build the BRPlayer model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response<BRPlayer>(player, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<BRPlayer>.DatabaseErrorResponse();
+            }
+        }
+
         public Response<BRPlayer> BR_UseAmmo(Player player)
         {
             StoredProcedure = "usp_UseAmmo";
