@@ -59,6 +59,7 @@ namespace INFT3970Backend.Controllers
                 {
                     //Decrement the number of lives the player has
                     brPlayer.LivesRemaining--;
+                    //TODO: Decrement lives in the database
 
                     //If the player is no longer alive because too many photos where taken outside the zone
                     //eliminate from the game
