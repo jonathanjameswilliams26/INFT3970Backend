@@ -31,7 +31,7 @@ namespace INFT3970Backend.Controllers
         /// <returns>The updated Player object after the ammo count is decremented. NULL if error</returns>
         [HttpPost]
         [Route("api/br/useAmmo")]
-        public ActionResult<Response<BRPlayer>> UseAmmo([FromHeader] int playerID, [FromBody] double latitude, [FromBody] double longitude)
+        public ActionResult<Response<BRPlayer>> UseAmmo([FromHeader] int playerID, [FromForm] double latitude, [FromForm] double longitude)
         {
             try
             {
