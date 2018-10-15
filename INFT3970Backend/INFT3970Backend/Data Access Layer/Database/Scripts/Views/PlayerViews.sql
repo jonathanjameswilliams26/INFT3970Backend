@@ -64,8 +64,7 @@ FROM
 WHERE
 	IsVerified = 1 AND
 	HasLeftGame = 0 AND
-	IsEliminated = 0 OR 
-	IsEliminated IS NULL
+	(IsEliminated = 0 OR IsEliminated IS NULL)
 GO
 
 
