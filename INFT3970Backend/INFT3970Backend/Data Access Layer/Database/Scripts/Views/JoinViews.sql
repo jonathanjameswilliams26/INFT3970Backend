@@ -24,8 +24,8 @@ SELECT
 	HasLeftGame,
 	PlayerIsActive,
 	PlayerIsDeleted,
+	PlayerType,
 	IsEliminated,
-	IsInZone,
 	LivesRemaining,
 	ConnectionID,
 	g.GameID,
@@ -90,6 +90,9 @@ SELECT
 	IsJoinableAtAnytime,
 	GameIsActive,
 	GameIsDeleted,
+	Latitude,
+	Longitude,
+	Radius,
 	TakenByPlayerID,
 	takenBy.Nickname AS TakenByPlayerNickname,
 	takenBy.Phone AS TakenByPlayerPhone,
@@ -105,6 +108,9 @@ SELECT
 	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
 	takenBy.PlayerIsDeleted AS TakenByPlayerIsDeleted,
 	takenBy.HasLeftGame AS TakenByPlayerHasLeftGame,
+	takenBy.PlayerType AS TakenByPlayerPlayerType,
+	takenBy.IsEliminated AS TakenByPlayerIsEliminated,
+	takenBy.LivesRemaining AS TakenByPlayerLivesRemaining,
 	PhotoOfPlayerID,
 	photoOf.Nickname AS PhotoOfPlayerNickname,
 	photoOf.Phone AS PhotoOfPlayerPhone,
@@ -119,7 +125,10 @@ SELECT
 	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
 	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive,
 	photoOf.PlayerIsDeleted AS PhotoOfPlayerIsDeleted,
-	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame
+	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame,
+	photoOf.PlayerType AS PhotoOfPlayerPlayerType,
+	photoOf.IsEliminated AS PhotoOfPlayerIsEliminated,
+	photoOf.LivesRemaining AS PhotoOfPlayerLivesRemaining
 FROM
 	vw_Active_Photos p 
 	INNER JOIN vw_Active_Games g ON (p.GameID = g.GameID)
@@ -163,7 +172,10 @@ SELECT
 	pl.ConnectionID,
 	pl.HasLeftGame,
 	pl.PlayerIsActive,
-	pl.PlayerIsDeleted
+	pl.PlayerIsDeleted,
+	pl.PlayerType,
+	pl.IsEliminated,
+	pl.LivesRemaining
 FROM
 	vw_Active_Votes v
 	INNER JOIN vw_Active_Players pl ON (pl.PlayerID = v.PlayerID)

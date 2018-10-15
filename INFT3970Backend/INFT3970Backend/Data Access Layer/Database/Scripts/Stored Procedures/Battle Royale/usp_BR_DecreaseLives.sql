@@ -55,7 +55,7 @@ BEGIN
 
 		--Confirm the lives is not already at 0
 		DECLARE @lives INT;
-		SELECT @lives = LivesRemaining FROM tbl_BRPlayer WHERE PlayerID = @playerID
+		SELECT @lives = LivesRemaining FROM tbl_Player WHERE PlayerID = @playerID
 		IF(@lives = 0)
 		BEGIN
 			SET @result = @CANNOT_PERFORM_ACTION;
@@ -66,7 +66,7 @@ BEGIN
 		--Make the update on the Players ammo count and number of photos taken
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			UPDATE tbl_BRPlayer
+			UPDATE tbl_Player
 			SET LivesRemaining = LivesRemaining - 1
 			WHERE PlayerID = @playerID
 		COMMIT

@@ -32,6 +32,9 @@ namespace INFT3970Backend.Data_Access_Layer
                         AddParam("replenishAmmoDelay", game.ReplenishAmmoDelay);
                         AddParam("gameMode", game.GameMode);
                         AddParam("isJoinableAtAnytime", game.IsJoinableAtAnytime);
+                        AddParam("latitude", game.Latitude);
+                        AddParam("longitude", game.Longitude);
+                        AddParam("radius", game.Radius);
                         AddDefaultParams();
 
                         //Perform the procedure and get the result

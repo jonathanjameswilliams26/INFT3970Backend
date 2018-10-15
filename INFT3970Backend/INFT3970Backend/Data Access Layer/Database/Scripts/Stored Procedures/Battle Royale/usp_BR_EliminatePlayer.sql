@@ -57,7 +57,7 @@ BEGIN
 		BEGIN TRANSACTION
 
 			--Update the BR player record to be eliminated
-			UPDATE tbl_BRPlayer
+			UPDATE tbl_Player
 			SET IsEliminated = 1, LivesRemaining = 0
 			WHERE PlayerID = @playerID
 

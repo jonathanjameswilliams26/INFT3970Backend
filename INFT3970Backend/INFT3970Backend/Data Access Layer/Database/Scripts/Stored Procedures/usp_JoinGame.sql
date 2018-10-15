@@ -128,13 +128,16 @@ BEGIN
 			FROM tbl_Game
 			WHERE GameID = @gameIDToJoin
 
+			DECLARE @gameMode VARCHAR(255);
+			SELECT @gameMode = GameMode FROM tbl_Game WHERE GameID = @gameIDToJoin
+
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
+				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
+				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
@@ -143,14 +146,6 @@ BEGIN
 			UPDATE tbl_Game
 			SET NumOfPlayers = NumOfPlayers + 1
 			WHERE GameID = @gameIDToJoin
-
-			--If the game joining is a battle royale game, insert the BRPlayer record
-			DECLARE @gameMode VARCHAR(255);
-			SELECT @gameMode = GameMode FROM tbl_Game WHERE GameID = @gameIDToJoin
-			IF(@gameMode LIKE 'BR')
-			BEGIN
-				INSERT INTO tbl_BRPlayer (PlayerID) VALUES (@createdPlayerID)
-			END	
 
 		COMMIT
 

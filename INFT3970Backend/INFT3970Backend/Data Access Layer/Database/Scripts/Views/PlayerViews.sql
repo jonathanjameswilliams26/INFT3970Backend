@@ -8,13 +8,9 @@ USE udb_CamTag
 GO
 CREATE VIEW vw_All_Players
 AS
-SELECT 
-	p.*,
-	br.IsEliminated,
-	br.IsInZone,
-	br.LivesRemaining
+SELECT *
 FROM
-	tbl_Player p LEFT JOIN tbl_BRPlayer br ON (p.PlayerID = br.PlayerID)
+	tbl_Player
 WHERE
 	PlayerIsDeleted = 0
 GO

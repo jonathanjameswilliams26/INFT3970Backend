@@ -193,9 +193,12 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.IsActive = GetBool("PlayerIsActive");
                 player.IsDeleted = GetBool("PlayerIsDeleted");
                 player.GameID = GetInt("GameID");
+                player.PlayerType = SafeGetString("PlayerType");
+                player.IsEliminated = GetBool("IsEliminated");
+                player.LivesRemaining = GetInt("LivesRemaining");
 
                 //Build the Game object for the player
-                if(doGetGame)
+                if (doGetGame)
                     player.Game = GameFactory();
 
                 return player;
@@ -321,6 +324,9 @@ namespace INFT3970Backend.Data_Access_Layer
                 game.AmmoLimit = GetInt("AmmoLimit");
                 game.ReplenishAmmoDelay = GetInt("ReplenishAmmoDelay");
                 game.StartDelay = GetInt("StartDelay");
+                game.Latitude = GetDouble("Latitude");
+                game.Longitude = GetDouble("Longitude");
+                game.Radius = GetInt("Radius");
                 return game;
             }
             catch
@@ -368,56 +374,6 @@ namespace INFT3970Backend.Data_Access_Layer
                 playerVotePhoto.Photo = photo;
                 playerVotePhoto.Player = player;
                 return playerVotePhoto;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-
-
-
-
-        //Battle Royale Methods
-        /// <summary>
-        /// Builds a Battle Royale Game Model from the data reader.
-        /// </summary>
-        /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
-        public BRGame BRGameFactory()
-        {
-            try
-            {
-                Game game = GameFactory();
-                BRGame bRGame = new BRGame(game);
-                bRGame.Latitude = GetDouble("Latitude");
-                bRGame.Longitude = GetDouble("Longitude");
-                bRGame.Radius = GetInt("Radius");
-                return bRGame;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-
-        /// <summary>
-        /// Builds a Battle Royale Player Model from the data reader.
-        /// </summary>
-        /// <returns>A Game object, NULL if an error occurred while trying to build the object.</returns>
-        public BRPlayer BRPlayerFactory()
-        {
-            try
-            {
-                Player player = PlayerFactory(true);
-                BRGame game = BRGameFactory();
-                BRPlayer brPlayer = new BRPlayer(player);
-                brPlayer.IsEliminated = GetBool("IsEliminated");
-                brPlayer.LivesRemaining = GetInt("LivesRemaining");
-                brPlayer.IsInZone = GetBool("IsInZone");
-                brPlayer.Game = game;
-                return brPlayer;
             }
             catch
             {

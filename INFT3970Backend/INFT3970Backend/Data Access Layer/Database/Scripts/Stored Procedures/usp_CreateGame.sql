@@ -25,6 +25,9 @@ CREATE PROCEDURE [dbo].[usp_CreateGame]
 	@replenishAmmoDelay INT,
 	@gameMode VARCHAR(255),
 	@isJoinableAtAnytime BIT,
+	@latitude FLOAT,
+	@longitude FLOAT,
+	@radius INT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -63,8 +66,8 @@ BEGIN
 		DECLARE @createdGameID INT;
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			INSERT INTO tbl_Game (GameCode, TimeLimit, AmmoLimit, StartDelay, ReplenishAmmoDelay, GameMode, IsJoinableAtAnytime) 
-			VALUES (@gameCode, @timeLimit, @ammoLimit, @startDelay, @replenishAmmoDelay, @gameMode, @isJoinableAtAnytime);
+			INSERT INTO tbl_Game (GameCode, TimeLimit, AmmoLimit, StartDelay, ReplenishAmmoDelay, GameMode, IsJoinableAtAnytime, Latitude, Longitude, Radius) 
+			VALUES (@gameCode, @timeLimit, @ammoLimit, @startDelay, @replenishAmmoDelay, @gameMode, @isJoinableAtAnytime, @latitude, @longitude, @radius);
 			SET @createdGameID = SCOPE_IDENTITY();
 		COMMIT
 

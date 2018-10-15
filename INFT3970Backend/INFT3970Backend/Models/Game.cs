@@ -1,6 +1,7 @@
 ﻿using INFT3970Backend.Models.Errors;
 using System;
 using System.Collections.Generic;
+using System.Device.Location;
 using System.Text.RegularExpressions;
 
 namespace INFT3970Backend.Models
@@ -24,8 +25,9 @@ namespace INFT3970Backend.Models
         private int ammoLimit;
         private int replenishAmmoDelay;
         private int startDelay;
-
-
+        private double longitude;
+        private double latitude;
+        private int radius;
 
         public int GameID
         {
@@ -204,6 +206,48 @@ namespace INFT3970Backend.Models
         public bool IsJoinableAtAnytime { get; set; }
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }
+        public double Latitude
+        {
+            get { return latitude; }
+            set
+            {
+                var errorMessage = "Latitude is not within the valid range. Must be -90 to +90";
+
+                if (value >= -90 && value <= 90)
+                    latitude = value;
+
+                else
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
+            }
+        }
+        public double Longitude
+        {
+            get { return longitude; }
+            set
+            {
+                var errorMessage = "Longitude is not within the valid range. Must be -180 to +180";
+
+                if (value >= -180 && value <= 180)
+                    longitude = value;
+
+                else
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_GAME);
+            }
+        }
+        public int Radius
+        {
+            get { return radius; }
+            set
+            {
+                var errorMessage = "Radius is not within the valid range. Must be a minimum of 10 meters.";
+
+                if (value >= 10)
+                    radius = value;
+
+                else
+                    throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_GAME);
+            }
+        }
         public List<Player> Players { get; set; }
 
 
@@ -241,7 +285,7 @@ namespace INFT3970Backend.Models
         /// Creates a game with default values and sets the GameCode
         /// </summary>
         /// <param name="gameCode">The 6 digit game code of the game.</param>
-        public Game(string gameCode, int timeLimit, int ammoLimit, int startDelay, int replenishAmmoDelay, string gameMode, bool isJoinableAtAnyTime) : this()
+        public Game(string gameCode, int timeLimit, int ammoLimit, int startDelay, int replenishAmmoDelay, string gameMode, bool isJoinableAtAnyTime, double latitude, double longitude, int radius) : this()
         {
             GameCode = gameCode;
             TimeLimit = timeLimit;
@@ -250,6 +294,9 @@ namespace INFT3970Backend.Models
             ReplenishAmmoDelay = replenishAmmoDelay;
             GameMode = gameMode;
             IsJoinableAtAnytime = isJoinableAtAnyTime;
+            Latitude = latitude;
+            Longitude = Longitude;
+            Radius = radius;
         }
 
 
@@ -286,6 +333,55 @@ namespace INFT3970Backend.Models
                     i = i - 1;
             }
             return gameCode;
+        }
+
+
+
+
+        public double CalculateRadius()
+        {
+            try
+            {
+                //Get the number of milliseconds between the start and end time
+                TimeSpan span = EndTime.Value.Subtract(StartTime.Value);
+                var totalTime = span.TotalMilliseconds;
+
+                //Get the time between the current time and the end time
+                span = EndTime.Value.Subtract(DateTime.Now);
+                var timeRemaining = span.TotalMilliseconds;
+
+                //Calculate the percentage of time remaining
+                var percentage = timeRemaining / totalTime;
+
+                //Return the current radius
+                return Radius * percentage;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+
+
+
+
+        public bool IsInZone(double latitude, double longitude)
+        {
+            var centerLocation = new GeoCoordinate(Latitude, Longitude);
+            var playerLocation = new GeoCoordinate(latitude, longitude);
+
+            //Get the distance in meters
+            var distanceBetweenCoords = centerLocation.GetDistanceTo(playerLocation);
+
+            //Get the current radius of the zone
+            double currentRadius = CalculateRadius();
+
+            //If the distance between the two points is greater than the radius the player is outside the zone
+            if (distanceBetweenCoords > currentRadius)
+                return false;
+            else
+                return true;
         }
 
 

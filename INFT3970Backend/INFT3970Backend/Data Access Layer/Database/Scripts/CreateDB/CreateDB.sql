@@ -53,6 +53,11 @@ CREATE TABLE tbl_Game
 	GameIsActive BIT NOT NULL DEFAULT 1,
 	GameIsDeleted BIT NOT NULL DEFAULT 0,
 
+	--Used for battle royale
+	Latitude FLOAT NOT NULL DEFAULT 0.00,
+	Longitude FLOAT NOT NULL DEFAULT 0.00,
+	Radius INT NOT NULL DEFAULT 0,
+
 	PRIMARY KEY (GameID),
 
 	CHECK(LEN(GameCode) = 6),
@@ -73,20 +78,6 @@ CREATE TABLE tbl_Game
 	CHECK(StartDelay >= 60000 AND StartDelay <= 600000)
 );
 GO
-
---Create the Battle Royale Sub class
-CREATE TABLE tbl_BRGame
-(
-	GameID INT NOT NULL,
-	Latitude FLOAT NOT NULL DEFAULT 0.00,
-	Longitude FLOAT NOT NULL DEFAULT 0.00,
-	Radius INT NOT NULL DEFAULT 100,
-
-	PRIMARY KEY (GameID),
-	FOREIGN KEY (GameID) REFERENCES tbl_Game(GameID)
-)
-GO
-
 
 --Create a function which will be used as a check constraint to verify
 -- a players contact, either phone or email must be provided, both cannot be null
@@ -129,6 +120,11 @@ CREATE TABLE tbl_Player
 	PlayerIsActive BIT NOT NULL DEFAULT 1,
 	GameID INT NOT NULL,
 
+	--Used for battle royale
+	PlayerType VARCHAR(255) NOT NULL DEFAULT 'CORE',
+	IsEliminated BIT NOT NULL DEFAULT 0,
+	LivesRemaining INT NOT NULL DEFAULT 0,
+
 	PRIMARY KEY (PlayerID),
 	FOREIGN KEY (GameID) REFERENCES tbl_Game(GameID),
 
@@ -143,19 +139,6 @@ CREATE TABLE tbl_Player
 );
 GO
 
-
---Create the Battle Royale Sub class
-CREATE TABLE tbl_BRPlayer
-(
-	PlayerID INT NOT NULL,
-	IsEliminated BIT NOT NULL DEFAULT 0,
-	IsInZone BIT NOT NULL DEFAULT 0,
-	LivesRemaining INT NOT NULL DEFAULT 3,
-
-	PRIMARY KEY (PlayerID),
-	FOREIGN KEY (PlayerID) REFERENCES tbl_Player(PlayerID)
-)
-GO
 
 
 --Create the Photo table
@@ -240,13 +223,9 @@ USE udb_CamTag
 GO
 CREATE VIEW vw_All_Games
 AS
-SELECT 
-	g.*,
-	br.Latitude,
-	br.Longitude,
-	br.Radius
+SELECT *
 FROM
-	tbl_Game g LEFT JOIN tbl_BRGame br ON (g.GameID = br.GameID)
+	tbl_Game
 WHERE
 	GameIsDeleted = 0
 GO
@@ -302,13 +281,9 @@ USE udb_CamTag
 GO
 CREATE VIEW vw_All_Players
 AS
-SELECT 
-	p.*,
-	br.IsEliminated,
-	br.IsInZone,
-	br.LivesRemaining
+SELECT *
 FROM
-	tbl_Player p LEFT JOIN tbl_BRPlayer br ON (p.PlayerID = br.PlayerID)
+	tbl_Player
 WHERE
 	PlayerIsDeleted = 0
 GO
@@ -616,7 +591,6 @@ GO
 
 
 
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 23/09/18
@@ -643,8 +617,8 @@ SELECT
 	HasLeftGame,
 	PlayerIsActive,
 	PlayerIsDeleted,
+	PlayerType,
 	IsEliminated,
-	IsInZone,
 	LivesRemaining,
 	ConnectionID,
 	g.GameID,
@@ -709,6 +683,9 @@ SELECT
 	IsJoinableAtAnytime,
 	GameIsActive,
 	GameIsDeleted,
+	Latitude,
+	Longitude,
+	Radius,
 	TakenByPlayerID,
 	takenBy.Nickname AS TakenByPlayerNickname,
 	takenBy.Phone AS TakenByPlayerPhone,
@@ -724,6 +701,9 @@ SELECT
 	takenBy.PlayerIsActive AS TakenByPlayerIsActive,
 	takenBy.PlayerIsDeleted AS TakenByPlayerIsDeleted,
 	takenBy.HasLeftGame AS TakenByPlayerHasLeftGame,
+	takenBy.PlayerType AS TakenByPlayerPlayerType,
+	takenBy.IsEliminated AS TakenByPlayerIsEliminated,
+	takenBy.LivesRemaining AS TakenByPlayerLivesRemaining,
 	PhotoOfPlayerID,
 	photoOf.Nickname AS PhotoOfPlayerNickname,
 	photoOf.Phone AS PhotoOfPlayerPhone,
@@ -738,7 +718,10 @@ SELECT
 	photoOf.ConnectionID AS PhotoOfPlayerConnectionID,
 	photoOf.PlayerIsActive AS PhotoOfPlayerIsActive,
 	photoOf.PlayerIsDeleted AS PhotoOfPlayerIsDeleted,
-	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame
+	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame,
+	photoOf.PlayerType AS PhotoOfPlayerPlayerType,
+	photoOf.IsEliminated AS PhotoOfPlayerIsEliminated,
+	photoOf.LivesRemaining AS PhotoOfPlayerLivesRemaining
 FROM
 	vw_Active_Photos p 
 	INNER JOIN vw_Active_Games g ON (p.GameID = g.GameID)
@@ -782,7 +765,10 @@ SELECT
 	pl.ConnectionID,
 	pl.HasLeftGame,
 	pl.PlayerIsActive,
-	pl.PlayerIsDeleted
+	pl.PlayerIsDeleted,
+	pl.PlayerType,
+	pl.IsEliminated,
+	pl.LivesRemaining
 FROM
 	vw_Active_Votes v
 	INNER JOIN vw_Active_Players pl ON (pl.PlayerID = v.PlayerID)
@@ -817,7 +803,6 @@ FROM
 	vw_Active_Notifications n
 	INNER JOIN vw_Join_PlayerGame p ON (n.PlayerID = p.PlayerID)
 GO
-
 
 
 USE udb_CamTag
@@ -1593,99 +1578,6 @@ CREATE PROCEDURE [dbo].[usp_CreateGame]
 	@replenishAmmoDelay INT,
 	@gameMode VARCHAR(255),
 	@isJoinableAtAnytime BIT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declare the error codes
-	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
-    DECLARE @INSERT_ERROR INT = 2;
-    DECLARE @BUILD_MODEL_ERROR INT = 3;
-    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
-    DECLARE @DATA_INVALID INT = 5;
-    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
-    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
-    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
-    DECLARE @GAME_STATE_INVALID INT = 9;
-    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
-    DECLARE @PLAYER_INVALID INT = 11;
-    DECLARE @MODELINVALID_PLAYER INT = 12;
-    DECLARE @MODELINVALID_GAME INT = 13;
-    DECLARE @MODELINVALID_PHOTO INT = 14;
-    DECLARE @MODELINVALID_VOTE INT = 15;
-
-	BEGIN TRY  
-		--Confirm the game code does not already exist in a game
-		IF EXISTS (SELECT * FROM vw_All_Games WHERE GameCode = @gameCode)
-		BEGIN
-			SET @result = @ITEM_ALREADY_EXISTS;
-			SET @errorMSG = 'The game code already exists.';
-			RAISERROR('',16,1);
-		END;
-
-		--Game code does not exist, create the new game
-		DECLARE @createdGameID INT;
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			INSERT INTO tbl_Game (GameCode, TimeLimit, AmmoLimit, StartDelay, ReplenishAmmoDelay, GameMode, IsJoinableAtAnytime) 
-			VALUES (@gameCode, @timeLimit, @ammoLimit, @startDelay, @replenishAmmoDelay, @gameMode, @isJoinableAtAnytime);
-			SET @createdGameID = SCOPE_IDENTITY();
-		COMMIT
-
-		--Set the success return variables
-		SET @result = 1;
-		SET @errorMSG = '';
-
-		--Read the new game record
-		SELECT * FROM vw_Active_Games WHERE GameID = @createdGameID
-	END TRY
-
-	--An error occurred in the data validation
-	BEGIN CATCH
-		--An error occurred while trying to perform the update on the PLayer table
-		IF @@TRANCOUNT > 0
-		BEGIN
-			ROLLBACK;
-			SET @result = @INSERT_ERROR;
-			SET @errorMSG = 'The an error occurred while trying to create the game record';
-		END
-	END CATCH
-END
-GO
-
-
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 05/10/18
--- Description:	Creates a new battle royale game in the database.
-
--- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. EC_ITEMALREADYEXISTS - An active game already exists with that game code.
-
--- =============================================
-CREATE PROCEDURE [dbo].[usp_BR_CreateGame] 
-	-- Add the parameters for the stored procedure here
-	@gameCode VARCHAR(6),
-	@timeLimit INT,
-	@ammoLimit INT,
-	@startDelay INT,
-	@replenishAmmoDelay INT,
-	@gameMode VARCHAR(255),
-	@isJoinableAtAnytime BIT,
 	@latitude FLOAT,
 	@longitude FLOAT,
 	@radius INT,
@@ -1727,12 +1619,9 @@ BEGIN
 		DECLARE @createdGameID INT;
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			INSERT INTO tbl_Game (GameCode, TimeLimit, AmmoLimit, StartDelay, ReplenishAmmoDelay, GameMode, IsJoinableAtAnytime) 
-			VALUES (@gameCode, @timeLimit, @ammoLimit, @startDelay, @replenishAmmoDelay, @gameMode, @isJoinableAtAnytime);
+			INSERT INTO tbl_Game (GameCode, TimeLimit, AmmoLimit, StartDelay, ReplenishAmmoDelay, GameMode, IsJoinableAtAnytime, Latitude, Longitude, Radius) 
+			VALUES (@gameCode, @timeLimit, @ammoLimit, @startDelay, @replenishAmmoDelay, @gameMode, @isJoinableAtAnytime, @latitude, @longitude, @radius);
 			SET @createdGameID = SCOPE_IDENTITY();
-
-			--Create the BRGame table record
-			INSERT INTO tbl_BRGame (GameID, Latitude, Longitude, Radius) VALUES (@createdGameID, @latitude, @longitude, @radius)
 		COMMIT
 
 		--Set the success return variables
@@ -1740,7 +1629,7 @@ BEGIN
 		SET @errorMSG = '';
 
 		--Read the new game record
-		SELECT * FROM vw_BRGames WHERE GameID = @createdGameID
+		SELECT * FROM vw_Active_Games WHERE GameID = @createdGameID
 	END TRY
 
 	--An error occurred in the data validation
@@ -1755,6 +1644,9 @@ BEGIN
 	END CATCH
 END
 GO
+
+
+
 
 
 
@@ -2103,192 +1995,7 @@ GO
 
 
 
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 30/10/18
--- Description:	Decreases the number of lives the player has after
--- attempting to take a photo outside of the battle royale playing zone.
 
--- Returns: 1 = Successful, or 0 = An error occurred
--- =============================================
-CREATE PROCEDURE [dbo].[usp_BR_DecreaseLives] 
-	-- Add the parameters for the stored procedure here
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declare the error codes
-	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
-    DECLARE @INSERT_ERROR INT = 2;
-    DECLARE @BUILD_MODEL_ERROR INT = 3;
-    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
-    DECLARE @DATA_INVALID INT = 5;
-    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
-    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
-    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
-    DECLARE @GAME_STATE_INVALID INT = 9;
-    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
-    DECLARE @PLAYER_INVALID INT = 11;
-    DECLARE @MODELINVALID_PLAYER INT = 12;
-    DECLARE @MODELINVALID_GAME INT = 13;
-    DECLARE @MODELINVALID_PHOTO INT = 14;
-    DECLARE @MODELINVALID_VOTE INT = 15;
-
-	BEGIN TRY  
-		--Validate the playerID
-		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-		
-		--Get the GameID from the playerID
-		DECLARE @gameID INT;
-		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
-
-		--Confirm the Game is PLAYING state
-		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-
-		--Confirm the lives is not already at 0
-		DECLARE @lives INT;
-		SELECT @lives = LivesRemaining FROM tbl_BRPlayer WHERE PlayerID = @playerID
-		IF(@lives = 0)
-		BEGIN
-			SET @result = @CANNOT_PERFORM_ACTION;
-			SET @errorMSG = 'The players lives is already at 0.';
-			RAISERROR('', 16, 1);
-		END
-
-		--Make the update on the Players ammo count and number of photos taken
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-			UPDATE tbl_BRPlayer
-			SET LivesRemaining = LivesRemaining - 1
-			WHERE PlayerID = @playerID
-		COMMIT
-
-		SET @result = 1;
-		SET @errorMSG = '';
-		SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @playerID
-	END TRY
-
-
-	--An error occurred in the data validation
-	BEGIN CATCH
-		--An error occurred while trying to perform the update on the PLayer table
-		IF @@TRANCOUNT > 0
-		BEGIN
-			ROLLBACK;
-			SET @result = @INSERT_ERROR;
-			SET @errorMSG = 'An error occurred while trying to update the player record.'
-		END
-	END CATCH
-END
-GO
-
-
-
-
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Jonathan Williams
--- Create date: 30/10/18
--- Description:	Eliminate a player from the BR Game
-
--- Returns: 1 = Successful, or 0 = An error occurred
--- =============================================
-CREATE PROCEDURE [dbo].[usp_BR_EliminatePlayer] 
-	-- Add the parameters for the stored procedure here
-	@playerID INT,
-	@result INT OUTPUT,
-	@errorMSG VARCHAR(255) OUTPUT
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-
-	--Declare the error codes
-	DECLARE @DATABASE_CONNECT_ERROR INT = 0;
-    DECLARE @INSERT_ERROR INT = 2;
-    DECLARE @BUILD_MODEL_ERROR INT = 3;
-    DECLARE @ITEM_ALREADY_EXISTS INT = 4;
-    DECLARE @DATA_INVALID INT = 5;
-    DECLARE @ITEM_DOES_NOT_EXIST INT = 6;
-    DECLARE @CANNOT_PERFORM_ACTION INT = 7;
-    DECLARE @GAME_DOES_NOT_EXIST INT = 8;
-    DECLARE @GAME_STATE_INVALID INT = 9;
-    DECLARE @PLAYER_DOES_NOT_EXIST INT = 10;
-    DECLARE @PLAYER_INVALID INT = 11;
-    DECLARE @MODELINVALID_PLAYER INT = 12;
-    DECLARE @MODELINVALID_GAME INT = 13;
-    DECLARE @MODELINVALID_PHOTO INT = 14;
-    DECLARE @MODELINVALID_VOTE INT = 15;
-
-	BEGIN TRY  
-		--Validate the playerID
-		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-		
-		--Get the GameID from the playerID
-		DECLARE @gameID INT;
-		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
-
-		--Confirm the Game is PLAYING state
-		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-
-		
-		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
-		BEGIN TRANSACTION
-
-			--Update the BR player record to be eliminated
-			UPDATE tbl_BRPlayer
-			SET IsEliminated = 1, LivesRemaining = 0
-			WHERE PlayerID = @playerID
-
-			--Create Notifications for all other players
-			DECLARE @msgTxt VARCHAR;
-			SELECT @msgTxt = Nickname + ' has been eliminated from the game.' FROM tbl_Player WHERE PlayerID = @playerID
-
-			INSERT INTO tbl_Notification(MessageText, NotificationType, IsRead, NotificationIsActive, GameID, PlayerID) 
-			SELECT @msgTxt, 'ELIMINATED', 0, 1, @gameID, PlayerID
-			FROM vw_InGame_Players
-			WHERE PlayerID <> @playerID AND GameID = @gameID
-		COMMIT
-
-		SET @result = 1;
-		SET @errorMSG = '';
-		SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @playerID
-	END TRY
-
-
-	--An error occurred in the data validation
-	BEGIN CATCH
-		--An error occurred while trying to perform the update on the PLayer table
-		IF @@TRANCOUNT > 0
-		BEGIN
-			ROLLBACK;
-			SET @result = @INSERT_ERROR;
-			SET @errorMSG = 'An error occurred while trying to update the player record.'
-		END
-	END CATCH
-END
-GO
 
 
 
@@ -3200,13 +2907,16 @@ BEGIN
 			FROM tbl_Game
 			WHERE GameID = @gameIDToJoin
 
+			DECLARE @gameMode VARCHAR(255);
+			SELECT @gameMode = GameMode FROM tbl_Game WHERE GameID = @gameIDToJoin
+
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
+				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount);
+				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
@@ -3215,14 +2925,6 @@ BEGIN
 			UPDATE tbl_Game
 			SET NumOfPlayers = NumOfPlayers + 1
 			WHERE GameID = @gameIDToJoin
-
-			--If the game joining is a battle royale game, insert the BRPlayer record
-			DECLARE @gameMode VARCHAR(255);
-			SELECT @gameMode = GameMode FROM tbl_Game WHERE GameID = @gameIDToJoin
-			IF(@gameMode LIKE 'BR')
-			BEGIN
-				INSERT INTO tbl_BRPlayer (PlayerID) VALUES (@createdPlayerID)
-			END	
 
 		COMMIT
 

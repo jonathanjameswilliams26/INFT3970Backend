@@ -246,6 +246,9 @@ namespace INFT3970Backend.Models
         public bool IsDeleted { get; set; }
         public string ConnectionID { get; set; }
         public bool HasLeftGame { get; set; }
+        public bool IsEliminated { get; set; }
+        public int LivesRemaining { get; set; }
+        public string PlayerType { get; set; }
         public Game Game { get; set; }
         
 
@@ -433,6 +436,12 @@ namespace INFT3970Backend.Models
         {
             Random rand = new Random();
             return rand.Next(10000, 99999);
+        }
+
+
+        public bool IsAlive()
+        {
+            return LivesRemaining > 0;
         }
     }
 }

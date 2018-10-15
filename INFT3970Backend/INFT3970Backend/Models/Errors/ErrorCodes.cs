@@ -21,7 +21,7 @@
 
 
         //Battle Royal Error Codes
-        public const int USEAMMO_PLAYERELIMINATED = 100;
-        public const int USEAMMO_NOTINZONE = 101;
+        public const int BR_PLAYERELIMINATED = 100;
+        public const int BR_NOTINZONE = 101;
     }
 }

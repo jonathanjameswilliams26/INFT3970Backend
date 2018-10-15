@@ -8,13 +8,9 @@ USE udb_CamTag
 GO
 CREATE VIEW vw_All_Games
 AS
-SELECT 
-	g.*,
-	br.Latitude,
-	br.Longitude,
-	br.Radius
+SELECT *
 FROM
-	tbl_Game g LEFT JOIN tbl_BRGame br ON (g.GameID = br.GameID)
+	tbl_Game
 WHERE
 	GameIsDeleted = 0
 GO

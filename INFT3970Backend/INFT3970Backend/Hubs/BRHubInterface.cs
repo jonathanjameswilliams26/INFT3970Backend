@@ -22,7 +22,7 @@ namespace INFT3970Backend.Hubs
         /// eliminated from the game by taking too many photos outside of the zone.
         /// </summary>
         /// <param name="eliminatedPlayer"></param>
-        public async void UpdatePlayerEliminated(BRPlayer eliminatedPlayer)
+        public async void UpdatePlayerEliminated(Player eliminatedPlayer)
         {
             //Get the list of players currently in the game
             var gameDAL = new GameDAL();

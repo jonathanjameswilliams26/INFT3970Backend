@@ -50,41 +50,18 @@ namespace INFT3970Backend.Controllers
                 {
                     Game newGame = null;
 
-                    //If the gamemode is Battle Royal then create a battle royal game, otherwise, create a CORE game
-                    if(request.gameMode.ToUpper() == "BR")
-                    {
-                        newGame = new BRGame(Game.GenerateGameCode(),
-                                        request.timeLimit,
-                                        request.ammoLimit,
-                                        request.startDelay,
-                                        request.replenishAmmoDelay,
-                                        request.gameMode,
-                                        request.isJoinableAtAnytime,
-                                        request.Latitude,
-                                        request.Longitude,
-                                        request.Radius);
-                    }
-
-                    //Otherwise, create a normal game
-                    else
-                    {
-                        newGame = new Game(Game.GenerateGameCode(),
-                                        request.timeLimit,
-                                        request.ammoLimit,
-                                        request.startDelay,
-                                        request.replenishAmmoDelay,
-                                        request.gameMode,
-                                        request.isJoinableAtAnytime);
-                    }
-
-
-                    //Add the game to the database, create a BR game if the game is BR
-                    if (newGame is BRGame)
-                        createdGame = new BattleRoyaleDAL().BR_CreateGame(newGame as BRGame);
-
-                    //Otherwise, create a normal game
-                    else
-                        createdGame = gameDAL.CreateGame(newGame);
+                    newGame = new Game(Game.GenerateGameCode(),
+                                    request.timeLimit,
+                                    request.ammoLimit,
+                                    request.startDelay,
+                                    request.replenishAmmoDelay,
+                                    request.gameMode,
+                                    request.isJoinableAtAnytime,
+                                    request.Latitude,
+                                    request.Longitude,
+                                    request.Radius);
+                   
+                    createdGame = gameDAL.CreateGame(newGame);
 
                     //If the response is successful the game was successfully created
                     if (createdGame.IsSuccessful())
