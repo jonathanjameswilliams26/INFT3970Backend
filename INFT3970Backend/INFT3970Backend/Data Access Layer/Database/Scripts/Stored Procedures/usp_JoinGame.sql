@@ -143,6 +143,15 @@ BEGIN
 			UPDATE tbl_Game
 			SET NumOfPlayers = NumOfPlayers + 1
 			WHERE GameID = @gameIDToJoin
+
+			--If the game joining is a battle royale game, insert the BRPlayer record
+			DECLARE @gameMode VARCHAR(255);
+			SELECT @gameMode = GameMode FROM tbl_Game WHERE GameID = @gameIDToJoin
+			IF(@gameMode LIKE 'BR')
+			BEGIN
+				INSERT INTO tbl_BRPlayer (PlayerID) VALUES (@createdPlayerID)
+			END	
+
 		COMMIT
 
 		--Set the return variables

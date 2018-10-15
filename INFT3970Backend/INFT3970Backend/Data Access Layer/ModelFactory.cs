@@ -411,10 +411,12 @@ namespace INFT3970Backend.Data_Access_Layer
             try
             {
                 Player player = PlayerFactory(true);
+                BRGame game = BRGameFactory();
                 BRPlayer brPlayer = new BRPlayer(player);
                 brPlayer.IsEliminated = GetBool("IsEliminated");
                 brPlayer.LivesRemaining = GetInt("LivesRemaining");
                 brPlayer.IsInZone = GetBool("IsInZone");
+                brPlayer.Game = game;
                 return brPlayer;
             }
             catch

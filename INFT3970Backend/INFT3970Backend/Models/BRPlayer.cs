@@ -25,7 +25,7 @@ namespace INFT3970Backend.Models
             IsDeleted = player.IsDeleted;
             ConnectionID = player.ConnectionID;
             HasLeftGame = player.HasLeftGame;
-            Game = player.Game as BRGame;
+            base.Game = player.Game;
         }
 
         public bool IsEliminated { get; set; }

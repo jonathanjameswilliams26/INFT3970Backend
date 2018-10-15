@@ -11,7 +11,7 @@ namespace INFT3970Backend.Data_Access_Layer
     {
         public Response<Game> BR_CreateGame(BRGame game)
         {
-            StoredProcedure = "usp_BRCreateGame";
+            StoredProcedure = "usp_BR_CreateGame";
             try
             {
                 //Create the connection and command for the stored procedure
@@ -36,7 +36,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         RunReader();
                         while (Reader.Read())
                         {
-                            game = (BRGame) new ModelFactory(Reader).GameFactory();
+                            game = new ModelFactory(Reader).BRGameFactory();
                             if (game == null)
                                 return new Response<Game>("An error occurred while trying to build the Game model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }

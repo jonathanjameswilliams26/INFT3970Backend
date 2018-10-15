@@ -18,7 +18,7 @@ namespace INFT3970Backend.Models
             {
                 var errorMessage = "Latitude is not within the valid range. Must be -90 to +90";
 
-                if (value >= -90 || value <= 90)
+                if (value >= -90 && value <= 90)
                     lat = value;
 
                 else
@@ -33,7 +33,7 @@ namespace INFT3970Backend.Models
             {
                 var errorMessage = "Longitude is not within the valid range. Must be -180 to +180";
 
-                if (value >= -180 || value <= 180)
+                if (value >= -180 && value <= 180)
                     longitude = value;
 
                 else
