@@ -295,7 +295,7 @@ namespace INFT3970Backend.Models
             GameMode = gameMode;
             IsJoinableAtAnytime = isJoinableAtAnyTime;
             Latitude = latitude;
-            Longitude = Longitude;
+            Longitude = longitude;
             Radius = radius;
         }
 
@@ -335,8 +335,10 @@ namespace INFT3970Backend.Models
             return gameCode;
         }
 
-
-
+        public int CalculateDisabledTime()
+        {
+            return 60000;
+        }
 
         public double CalculateRadius()
         {

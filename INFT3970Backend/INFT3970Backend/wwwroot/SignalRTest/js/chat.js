@@ -87,6 +87,17 @@ connection.on("UpdateNotifications", function () {
 
 
 
+connection.on("PlayerDisabled", function (totalMinutesDisabled) {
+
+    alert("You have been disabled for " + totalMinutesDisabled + " minutes.");
+});
+
+
+connection.on("PlayerReEnabled", function () {
+
+    alert("You have been renabled !!!");
+});
+
 
 
 //Hub Client Function

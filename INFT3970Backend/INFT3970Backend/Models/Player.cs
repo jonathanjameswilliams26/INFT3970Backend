@@ -247,7 +247,7 @@ namespace INFT3970Backend.Models
         public string ConnectionID { get; set; }
         public bool HasLeftGame { get; set; }
         public bool IsEliminated { get; set; }
-        public int LivesRemaining { get; set; }
+        public bool IsDisabled { get; set; }
         public string PlayerType { get; set; }
         public Game Game { get; set; }
         
@@ -439,9 +439,9 @@ namespace INFT3970Backend.Models
         }
 
 
-        public bool IsAlive()
+        public bool IsBRPlayer()
         {
-            return LivesRemaining > 0;
+            return PlayerType.ToUpper() == "BR";
         }
     }
 }

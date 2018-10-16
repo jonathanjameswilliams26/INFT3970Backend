@@ -54,7 +54,7 @@ namespace INFT3970Backend.Controllers
                     response.Data.ReceiveMessage(message, subject);
 
                     //Call the hub interface to invoke client methods to update the clients that another player has joined
-                    var hubInterface = new CoreHubInterface(_hubContext);
+                    var hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePlayerJoinedGame(response.Data);
                 }
                 return response;
@@ -104,7 +104,7 @@ namespace INFT3970Backend.Controllers
                 //If the player was successfully verified, updated all the clients about a joined player.
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new CoreHubInterface(_hubContext);
+                    var hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePlayerJoinedGame(response.Data);
                 }
 
@@ -233,7 +233,7 @@ namespace INFT3970Backend.Controllers
                     return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
 
                 //Create the hub interface which will be used to send live updates to clients
-                var hubInterface = new CoreHubInterface(_hubContext);
+                var hubInterface = new HubInterface(_hubContext);
 
                 //Call the hub method to send out notifications to players that the game is now complete
                 if (isGameComplete)
@@ -304,21 +304,24 @@ namespace INFT3970Backend.Controllers
         /// <returns>The updated Player object after the ammo count is decremented. NULL if error</returns>
         [HttpPost]
         [Route("api/player/useAmmo")]
-        public ActionResult<Response<Player>> UseAmmo([FromHeader] int playerID)
+        public ActionResult<Response<Player>> UseAmmo([FromHeader] int playerID, [FromForm] double latitude, [FromForm] double longitude)
         {
             try
             {
-                //Call the DataAccessLayer to update the Ammo count for the player
-                var player = new Player(playerID);
-                var response = new PlayerDAL().UseAmmo(player);
+                //Call the DataAccessLayer to get the player object from the DB
+                var getPlayerResponse = new PlayerDAL().GetPlayerByID(playerID);
+                if (!getPlayerResponse.IsSuccessful())
+                    return getPlayerResponse;
 
-                //If the response was successful schedule code to run in order to replenish the players ammo
-                if (response.IsSuccessful())
-                {
-                    var hubInterface = new CoreHubInterface(_hubContext);
-                    ScheduledTasks.ScheduleReplenishAmmo(response.Data, hubInterface);
-                }
-                return response;
+                //If the player is a BR player process different, otherwise, process the CORE use ammo
+                var player = getPlayerResponse.Data;
+                if (player.IsBRPlayer())
+                    return BR_UseAmmoLogic(player, latitude, longitude);
+
+                //Otherwise, process the CORE use ammo logic
+                else
+                    return CORE_UseAmmoLogic(player);
+                
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -331,6 +334,68 @@ namespace INFT3970Backend.Controllers
                 return StatusCode(500);
             }
         }
+
+
+
+
+
+        private Response<Player> CORE_UseAmmoLogic(Player player)
+        {
+            var response = new PlayerDAL().UseAmmo(player);
+
+            //If the response was successful schedule code to run in order to replenish the players ammo
+            if (response.IsSuccessful())
+            {
+                var hubInterface = new HubInterface(_hubContext);
+                ScheduledTasks.ScheduleReplenishAmmo(response.Data, hubInterface);
+            }
+            return response;
+        }
+
+
+
+
+
+        private ActionResult<Response<Player>> BR_UseAmmoLogic(Player player, double latitude, double longitude)
+        {
+            //Decrement the players ammo
+            var response = new PlayerDAL().UseAmmo(player);
+            if (!response.IsSuccessful())
+                return response;
+
+            player = response.Data;
+            var hubInterface = new HubInterface(_hubContext);
+
+            //If the player is not within the zone disable the player
+            if (!player.Game.IsInZone(latitude, longitude))
+            {
+                //Calculate the the number of minutes the player will be disabled for
+                var totalMillisecondsDisabled = player.Game.CalculateDisabledTime();
+                var totalMinutesDisabled = TimeSpan.FromMilliseconds(totalMillisecondsDisabled).Minutes;
+
+                //Disable the player
+                response = new BattleRoyaleDAL().BR_DisableOrRenablePlayer(player, totalMinutesDisabled);
+                if (!response.IsSuccessful())
+                    return response;
+
+                player = response.Data;
+
+                //Call the hub to update the client that they are now disabled
+                hubInterface.BR_UpdatePlayerDisabled(player, totalMinutesDisabled);
+
+                //Schedule the player to be re-enabled
+                ScheduledTasks.BR_SchedulePlayerReEnabled(player, hubInterface, totalMillisecondsDisabled);
+
+                //Set the error code and message to indicate to the client that the player is now disabled.
+                response.ErrorMessage = "Not inside the zone.";
+                response.ErrorCode = ErrorCodes.BR_NOTINZONE;
+            }
+
+            //Schedule the ammo to be replenished
+            ScheduledTasks.ScheduleReplenishAmmo(player, hubInterface);
+            return response;
+        }   
+        
 
 
 
@@ -423,7 +488,7 @@ namespace INFT3970Backend.Controllers
                 //if the response was successful call the hub interface to update the clients
                 if(response.IsSuccessful())
                 {
-                    var hubInterface = new CoreHubInterface(_hubContext);
+                    var hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePlayerLeftGame(response.Data);
                 }
 

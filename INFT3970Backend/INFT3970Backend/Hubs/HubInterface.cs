@@ -6,10 +6,10 @@ using System;
 
 namespace INFT3970Backend.Hubs
 {
-    public class CoreHubInterface
+    public class HubInterface
     {
         private readonly IHubContext<ApplicationHub> _hubContext;
-        public CoreHubInterface(IHubContext<ApplicationHub> hubContext)
+        public HubInterface(IHubContext<ApplicationHub> hubContext)
         {
             _hubContext = hubContext;
         }
@@ -258,6 +258,8 @@ namespace INFT3970Backend.Hubs
             }
         }
 
+        
+
 
 
 
@@ -307,18 +309,27 @@ namespace INFT3970Backend.Hubs
         /// <param name="player">The player being updated.</param>
         public async void UpdateAmmoReplenished(Player player)
         {
-            //Create an ammo notification
-            var response = new GameDAL().CreateAmmoNotification(player);
+            //If the players ammo has gone from 0-1 create a notification for the player
+            if (player.AmmoCount == 1)
+            {
+                //Create an ammo notification
+                var response = new GameDAL().CreateAmmoNotification(player);
 
-            //If the ammo notification was not successful leave the method
-            if (!response.IsSuccessful())
-                return;
+                //If the ammo notification was not successful leave the method
+                if (!response.IsSuccessful())
+                    return;
+            }
+                
             
             //If the player is connected to the hub call the UpdateNotifications and the AmmoReplenished client methods
             if (player.IsConnected)
             {
-                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                //To indcate to the client that the ammo has increased to update the UI
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("AmmoReplenished");
+
+                //If the ammo count is now 1, there will be an ammo notificaiton
+                if (player.AmmoCount == 1)
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
             }
 
             //Otherwise if ammo has gone from empty to not, send out a text message or email
@@ -365,6 +376,8 @@ namespace INFT3970Backend.Hubs
             }
         }
 
+        
+
 
 
 
@@ -397,6 +410,49 @@ namespace INFT3970Backend.Hubs
                     player.ReceiveMessage(message, subject);
                 }
             }
+        }
+
+
+
+
+
+
+
+
+
+        //BATTLE ROYALE HUB METHODS
+        public async void BR_UpdatePlayerDisabled(Player player, int totalMinutesDisabled)
+        {
+            //Update the player if they are connected to the application
+            if (player.IsConnected)
+            {
+                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerDisabled", totalMinutesDisabled);
+            }
+            else
+                player.ReceiveMessage("You have been disabled for " + totalMinutesDisabled + " minute(s) for taking a photo outside of the zone.", "You have been disabled");
+        }
+
+
+
+        public async void BR_UpdatePlayerReEnabled(Player player)
+        {
+            //Get the player from the database as this will run after a certain amount of time.
+            //Get the most updated player information
+            var response = new PlayerDAL().GetPlayerByID(player.PlayerID);
+            if (!response.IsSuccessful())
+                return;
+
+            player = response.Data;
+
+            //Update the player if they are connected to the application
+            if (player.IsConnected)
+            {
+                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerReEnabled");
+            }
+            else
+                player.ReceiveMessage("You have been re-enabled, go get em!", "You have been re-enabled");
         }
     }
 }

@@ -202,7 +202,7 @@ namespace INFT3970Backend.Controllers
                 //If the response is successful schedule code to run to update the GameState after the time periods have passed
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new CoreHubInterface(_hubContext);
+                    var hubInterface = new HubInterface(_hubContext);
                     ScheduledTasks.ScheduleGameInPlayingState(response.Data, hubInterface);
                     ScheduledTasks.ScheduleCompleteGame(response.Data, hubInterface);
 

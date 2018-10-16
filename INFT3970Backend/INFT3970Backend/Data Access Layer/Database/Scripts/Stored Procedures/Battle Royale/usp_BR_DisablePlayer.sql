@@ -12,9 +12,11 @@ GO
 
 -- Returns: 1 = Successful, or 0 = An error occurred
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_BR_DecreaseLives] 
+CREATE PROCEDURE [dbo].[usp_BR_DisablePlayer] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
+	@isAlreadyDisabled BIT,
+	@disabledForMinutes INT,
 	@result INT OUTPUT,
 	@errorMSG VARCHAR(255) OUTPUT
 AS
@@ -53,22 +55,35 @@ BEGIN
 		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--Confirm the lives is not already at 0
-		DECLARE @lives INT;
-		SELECT @lives = LivesRemaining FROM tbl_Player WHERE PlayerID = @playerID
-		IF(@lives = 0)
-		BEGIN
-			SET @result = @CANNOT_PERFORM_ACTION;
-			SET @errorMSG = 'The players lives is already at 0.';
-			RAISERROR('', 16, 1);
-		END
-
 		--Make the update on the Players ammo count and number of photos taken
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
-			UPDATE tbl_Player
-			SET LivesRemaining = LivesRemaining - 1
-			WHERE PlayerID = @playerID
+			
+			--Renable the player if already disabled
+			IF(@isAlreadyDisabled = 1)
+			BEGIN
+				UPDATE tbl_Player
+				SET IsDisabled = 0
+				WHERE PlayerID = @playerID
+
+				--Create a notification that the player is now re-enabled
+				INSERT INTO tbl_Notification (MessageText, NotificationType, PlayerID, GameID)
+				VALUES ('You have been re-enabled, you can take photos again.', 'RE-ENABLED', @playerID, @gameID)
+			END
+			
+			--Disable the player if not already disabled
+			ELSE
+			BEGIN
+				UPDATE tbl_Player
+				SET IsDisabled = 1
+				WHERE PlayerID = @playerID
+
+				--Create a notification that the player is now disabled
+				DECLARE @msg VARCHAR(255);
+				SET @msg = 'You have been disabled for ' + CAST(@disabledForMinutes AS VARCHAR) + ' minutes for taking a photo outside of the zone.';
+				INSERT INTO tbl_Notification (MessageText, NotificationType, PlayerID, GameID)
+				VALUES (@msg, 'DISABLED', 100012, 100002)
+			END
 		COMMIT
 
 		SET @result = 1;

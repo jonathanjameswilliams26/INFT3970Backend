@@ -14,7 +14,7 @@ namespace INFT3970Backend.Helpers
         /// </summary>
         /// <param name="game">The Game being updated</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
-        public static void ScheduleGameInPlayingState(Game game, CoreHubInterface hubInterface)
+        public static void ScheduleGameInPlayingState(Game game, HubInterface hubInterface)
         {
             //Get how long to wait for the task to run
             int timeToWait = GetTimeToWait(game.StartTime.Value);
@@ -37,7 +37,7 @@ namespace INFT3970Backend.Helpers
         /// <param name="game">The Game being updated</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
         /// <param name="timeToWait">The number of milliseconds to sleep before the thread starts.</param>
-        private static void Run_GameInPlayingState(Game game, int timeToWait, CoreHubInterface hubInterface)
+        private static void Run_GameInPlayingState(Game game, int timeToWait, HubInterface hubInterface)
         {
             //Sleep the thread until the game has reached the playing state
             Thread.Sleep(timeToWait);
@@ -75,7 +75,7 @@ namespace INFT3970Backend.Helpers
         /// </summary>
         /// <param name="game">The Game being updated</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
-        public static void ScheduleCompleteGame(Game game, CoreHubInterface hubInterface)
+        public static void ScheduleCompleteGame(Game game, HubInterface hubInterface)
         {
             //Get how long to wait for the task to run
             int timeToWait = GetTimeToWait(game.EndTime.Value);
@@ -100,7 +100,7 @@ namespace INFT3970Backend.Helpers
         /// <param name="game">The Game being updated</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
         /// <param name="timeToWait">The number of milliseconds to sleep before the thread starts.</param>
-        private static void Run_CompleteGame(Game game, int timeToWait, CoreHubInterface hubInterface)
+        private static void Run_CompleteGame(Game game, int timeToWait, HubInterface hubInterface)
         {
             Thread.Sleep(timeToWait);
 
@@ -127,7 +127,7 @@ namespace INFT3970Backend.Helpers
         /// </summary>
         /// <param name="playerID">The ID of the player being updated.</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
-        public static void ScheduleReplenishAmmo(Player player, CoreHubInterface hubInterface)
+        public static void ScheduleReplenishAmmo(Player player, HubInterface hubInterface)
         {
             //Get how long to wait for the task to run
             int timeToWait = GetTimeToWait(DateTime.Now.AddMilliseconds(player.Game.ReplenishAmmoDelay));
@@ -154,7 +154,7 @@ namespace INFT3970Backend.Helpers
         /// <param name="playerID">The ID of the player being updated.</param>
         /// <param name="hubInterface">The HubInterface used to to send live updates to users.</param>
         /// <param name="timeToWait">The number of milliseconds to sleep before the thread starts.</param>
-        private static void Run_ReplenishAmmo(Player player, int timeToWait, CoreHubInterface hubInterface)
+        private static void Run_ReplenishAmmo(Player player, int timeToWait, HubInterface hubInterface)
         {
             Thread.Sleep(timeToWait);
 
@@ -185,7 +185,7 @@ namespace INFT3970Backend.Helpers
         /// </summary>
         /// <param name="uploadedPhoto">The photo which was uploaded and being checked if voting has been completed.</param>
         /// <param name="hubInterface">The Hub interface which will be used to send notifications / updates</param>
-        public static void ScheduleCheckPhotoVotingCompleted(Photo uploadedPhoto, CoreHubInterface hubInterface)
+        public static void ScheduleCheckPhotoVotingCompleted(Photo uploadedPhoto, HubInterface hubInterface)
         {
             //Get how long to wait for the task to run
             int timeToWait = GetTimeToWait(uploadedPhoto.VotingFinishTime);
@@ -211,7 +211,7 @@ namespace INFT3970Backend.Helpers
         /// <param name="uploadedPhoto">The photo which was uploaded and being checked if voting has been completed.</param>
         /// /// <param name="timeToWait">The number of milliseconds to wait for the thread to start.</param>
         /// <param name="hubInterface">The Hub interface which will be used to send notifications / updates</param>
-        private static void Run_CheckPhotoVotingCompleted(Photo uploadedPhoto, int timeToWait, CoreHubInterface hubContext)
+        private static void Run_CheckPhotoVotingCompleted(Photo uploadedPhoto, int timeToWait, HubInterface hubContext)
         {
             //Wait for the specified time
             Thread.Sleep(timeToWait);
@@ -259,5 +259,32 @@ namespace INFT3970Backend.Helpers
             TimeSpan span = waitUntil.Subtract(now);
             return (int)span.TotalMilliseconds;
         }
+
+
+
+        public static void BR_SchedulePlayerReEnabled(Player player, HubInterface hubInterface, int totalMillisecondsDisabled)
+        {
+            int timeToWait = totalMillisecondsDisabled;
+
+            //Start the Method in a new thread
+            Thread SchedulePlayerReEnabled = new Thread(
+                () => Run_RenablePlayer(player, timeToWait, hubInterface)
+                );
+            SchedulePlayerReEnabled.Start();
+        }
+
+        private static void Run_RenablePlayer(Player player, int timeToWait, HubInterface hubInterface)
+        {
+            //Wait for the specified time
+            Thread.Sleep(timeToWait);
+
+            //Renable the player
+            var response = new BattleRoyaleDAL().BR_DisableOrRenablePlayer(player, 0);
+            if (!response.IsSuccessful())
+                return;
+
+            //Call the hub to send an update that the player has now been re-enabled
+            hubInterface.BR_UpdatePlayerReEnabled(player);
+        }   
     }
 }

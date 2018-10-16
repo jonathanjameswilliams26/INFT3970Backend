@@ -47,7 +47,7 @@ namespace INFT3970Backend.Controllers
                 //email or text message notifications to not connected players
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new CoreHubInterface(_hubContext);
+                    var hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePhotoUploaded(response.Data);
                     ScheduledTasks.ScheduleCheckPhotoVotingCompleted(response.Data, hubInterface);
                 }
@@ -124,7 +124,7 @@ namespace INFT3970Backend.Controllers
                     //If the Photo's voting has now been completed send the notifications / updates
                     if (response.Data.Photo.IsVotingComplete)
                     {
-                        var hubInterface = new CoreHubInterface(_hubContext);
+                        var hubInterface = new HubInterface(_hubContext);
                         hubInterface.UpdatePhotoVotingCompleted(response.Data.Photo);
                     }
                 }

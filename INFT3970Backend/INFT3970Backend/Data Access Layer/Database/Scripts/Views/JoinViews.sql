@@ -26,7 +26,7 @@ SELECT
 	PlayerIsDeleted,
 	PlayerType,
 	IsEliminated,
-	LivesRemaining,
+	IsDisabled,
 	ConnectionID,
 	g.GameID,
 	GameCode,
@@ -110,7 +110,7 @@ SELECT
 	takenBy.HasLeftGame AS TakenByPlayerHasLeftGame,
 	takenBy.PlayerType AS TakenByPlayerPlayerType,
 	takenBy.IsEliminated AS TakenByPlayerIsEliminated,
-	takenBy.LivesRemaining AS TakenByPlayerLivesRemaining,
+	takenBy.IsDisabled AS TakenByPlayerIsDisabled,
 	PhotoOfPlayerID,
 	photoOf.Nickname AS PhotoOfPlayerNickname,
 	photoOf.Phone AS PhotoOfPlayerPhone,
@@ -128,7 +128,7 @@ SELECT
 	photoOf.HasLeftGame AS PhotoOfPlayerHasLeftGame,
 	photoOf.PlayerType AS PhotoOfPlayerPlayerType,
 	photoOf.IsEliminated AS PhotoOfPlayerIsEliminated,
-	photoOf.LivesRemaining AS PhotoOfPlayerLivesRemaining
+	photoOf.IsDisabled AS PhotoOfPlayerIsDisabled
 FROM
 	vw_Active_Photos p 
 	INNER JOIN vw_Active_Games g ON (p.GameID = g.GameID)
@@ -175,7 +175,7 @@ SELECT
 	pl.PlayerIsDeleted,
 	pl.PlayerType,
 	pl.IsEliminated,
-	pl.LivesRemaining
+	pl.IsDisabled
 FROM
 	vw_Active_Votes v
 	INNER JOIN vw_Active_Players pl ON (pl.PlayerID = v.PlayerID)

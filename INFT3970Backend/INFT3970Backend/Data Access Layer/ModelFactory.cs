@@ -195,7 +195,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.GameID = GetInt("GameID");
                 player.PlayerType = SafeGetString("PlayerType");
                 player.IsEliminated = GetBool("IsEliminated");
-                player.LivesRemaining = GetInt("LivesRemaining");
+                player.IsDisabled = GetBool("IsDisabled");
 
                 //Build the Game object for the player
                 if (doGetGame)
@@ -263,6 +263,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.HasLeftGame = GetBool("TakenByPlayerHasLeftGame");
                     player.IsActive = GetBool("TakenByPlayerIsActive");
                     player.IsDeleted = GetBool("TakenByPlayerIsDeleted");
+                    player.IsDisabled = GetBool("TakenByPlayerIsDisabled");
                     player.Game = null;
                     photo.TakenByPlayer = player;
                 }
@@ -287,6 +288,7 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.HasLeftGame = GetBool("PhotoOfPlayerHasLeftGame");
                     player.IsActive = GetBool("PhotoOfPlayerIsActive");
                     player.IsDeleted = GetBool("PhotoOfPlayerIsDeleted");
+                    player.IsDisabled = GetBool("PhotoOfPlayerIsDisabled");
                     player.Game = null;
                     photo.PhotoOfPlayer = player;
                 }
