@@ -4544,7 +4544,7 @@ BEGIN
 				DECLARE @msg VARCHAR(255);
 				SET @msg = 'You have been disabled for ' + CAST(@disabledForMinutes AS VARCHAR) + ' minutes for taking a photo outside of the zone.';
 				INSERT INTO tbl_Notification (MessageText, NotificationType, PlayerID, GameID)
-				VALUES (@msg, 'DISABLED', 100012, 100002)
+				VALUES (@msg, 'DISABLED', @playerID, @gameID)
 			END
 		COMMIT
 

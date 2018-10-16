@@ -370,8 +370,8 @@ namespace INFT3970Backend.Controllers
             if (!player.Game.IsInZone(latitude, longitude))
             {
                 //Calculate the the number of minutes the player will be disabled for
-                var totalMillisecondsDisabled = player.Game.CalculateDisabledTime();
-                var totalMinutesDisabled = TimeSpan.FromMilliseconds(totalMillisecondsDisabled).Minutes;
+                var totalMinutesDisabled = player.Game.CalculateDisabledTime();
+                var totalMillisecondsDisabled = totalMinutesDisabled * 60 * 1000;
 
                 //Disable the player
                 response = new BattleRoyaleDAL().BR_DisableOrRenablePlayer(player, totalMinutesDisabled);

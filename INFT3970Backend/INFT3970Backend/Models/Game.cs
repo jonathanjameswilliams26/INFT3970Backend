@@ -337,7 +337,21 @@ namespace INFT3970Backend.Models
 
         public int CalculateDisabledTime()
         {
-            return 60000;
+            var totalMilliseconds = EndTime.Value.Subtract(StartTime.Value).TotalMilliseconds;
+
+            //Calculate 5% of the total milliseconds
+            var millisecondsDisabled = totalMilliseconds * 0.05;
+
+            //Get the minutes of the disabled milliseconds
+            var minutesToBeDisabled = TimeSpan.FromMilliseconds(millisecondsDisabled).Minutes;
+
+            //The floor of the disabled minutes is 2, the ceiling of the disabled minutes is 30
+            if (minutesToBeDisabled < 2)
+                minutesToBeDisabled = 2;
+            else if (minutesToBeDisabled > 30)
+                minutesToBeDisabled = 30;
+
+            return minutesToBeDisabled;
         }
 
         public double CalculateRadius()
@@ -355,8 +369,13 @@ namespace INFT3970Backend.Models
                 //Calculate the percentage of time remaining
                 var percentage = timeRemaining / totalTime;
 
-                //Return the current radius
-                return Radius * percentage;
+                //get the current radius
+                var currentRadius = Radius * percentage;
+
+                //If the radius ratio/percentage is less than 20 meters, just return 20 meters
+                if (currentRadius < 20)
+                    currentRadius = 20;
+                return currentRadius;
             }
             catch
             {
