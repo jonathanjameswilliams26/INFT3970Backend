@@ -239,6 +239,12 @@ namespace INFT3970Backend.Models
             get { return radius; }
             set
             {
+                if(GameMode == "CORE")
+                {
+                    radius = value;
+                    return;
+                }
+
                 var errorMessage = "Radius is not within the valid range. Must be a minimum of 10 meters.";
 
                 if (value >= 10)
