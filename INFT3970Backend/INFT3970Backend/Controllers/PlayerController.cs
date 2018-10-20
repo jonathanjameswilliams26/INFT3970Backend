@@ -56,6 +56,9 @@ namespace INFT3970Backend.Controllers
                     //Call the hub interface to invoke client methods to update the clients that another player has joined
                     var hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePlayerJoinedGame(response.Data);
+
+                    //Compress the player data before sending back over the network
+                    response.Data.Compress(true, true, true);
                 }
                 return response;
             }
@@ -348,6 +351,9 @@ namespace INFT3970Backend.Controllers
             {
                 var hubInterface = new HubInterface(_hubContext);
                 ScheduledTasks.ScheduleReplenishAmmo(response.Data, hubInterface);
+
+                //Compress the player object before sending back over the network
+                response.Data.Compress(true, true, true);
             }
             return response;
         }
@@ -393,6 +399,9 @@ namespace INFT3970Backend.Controllers
 
             //Schedule the ammo to be replenished
             ScheduledTasks.ScheduleReplenishAmmo(player, hubInterface);
+            
+            //Compress the player object before sending back over the network
+            response.Data.Compress(true, true, true);
             return response;
         }   
         

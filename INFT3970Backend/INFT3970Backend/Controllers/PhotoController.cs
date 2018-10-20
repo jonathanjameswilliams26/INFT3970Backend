@@ -83,7 +83,16 @@ namespace INFT3970Backend.Controllers
             {
                 var player = new Player(playerID);
                 //Call the Data Access Layer to get the photos require voting to be completed
-                return new PhotoDAL().GetVotesToComplete(player);
+                var response = new PhotoDAL().GetVotesToComplete(player);
+
+                //If the response was successful compress the response before sending the data over the network
+                if(response.IsSuccessful())
+                {
+                    foreach (var vote in response.Data)
+                        vote.Compress();
+                }
+
+                return response;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)

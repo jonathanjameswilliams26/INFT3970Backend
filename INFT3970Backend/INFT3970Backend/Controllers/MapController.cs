@@ -18,7 +18,16 @@ namespace INFT3970Backend.Controllers
                 var player = new Player(playerID);
                 
                 //Call the data access layer to get the last known locations
-                return new PhotoDAL().GetLastKnownLocations(player);
+                var getLastPhotoLocationsResponse =  new PhotoDAL().GetLastKnownLocations(player);
+
+                //If the response was successful compress the photo to remove any unneccessary data needed for the map
+                if(getLastPhotoLocationsResponse.IsSuccessful())
+                {
+                    foreach (var photo in getLastPhotoLocationsResponse.Data)
+                        photo.CompressForMapRequest();
+                }
+
+                return getLastPhotoLocationsResponse;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)

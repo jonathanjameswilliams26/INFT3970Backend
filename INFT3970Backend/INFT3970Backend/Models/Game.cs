@@ -448,5 +448,18 @@ namespace INFT3970Backend.Models
         {
             return GameState == "COMPLETED";
         }
+
+
+
+        public void Compress()
+        {
+            if (Players == null)
+                return;
+            if (Players.Count == 0)
+                return;
+
+            foreach(Player player in Players)
+                player.Compress(true, false, true);
+        }
     }
 }

@@ -75,7 +75,7 @@ namespace INFT3970Backend.Models
             {
                 var errorMessage = "PhotoDataURL is not a base64 string.";
 
-                if (value == "empty")
+                if (value == null)
                 {
                     photoDataURL = value;
                     return;
@@ -220,7 +220,7 @@ namespace INFT3970Backend.Models
             GameID = -1;
             TakenByPlayerID = -1;
             PhotoOfPlayerID = -1;
-            PhotoDataURL = "empty";
+            PhotoDataURL = null;
             TimeTaken = DateTime.Now;
             VotingFinishTime = DateTime.Now.AddMinutes(15);
             IsActive = true;
@@ -271,6 +271,31 @@ namespace INFT3970Backend.Models
                 var errorMessage = "Lat, long, takenByPlayerID or photoOfID is invalid format. Must be numbers.";
                 throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
+        }
+
+
+        public void CompressForMapRequest()
+        {
+            PhotoDataURL = null;
+
+            //Compress the player object to remove all the photos except for the extraSmallPhoto
+            if (TakenByPlayer != null)
+                TakenByPlayer.Compress(true, true, false);
+
+            if (PhotoOfPlayer != null)
+                PhotoOfPlayer.Compress(true, true, true);
+        }
+
+
+        public void CompressForVoting()
+        {
+            //Compress the taken by player as its not needed for voting
+            if (TakenByPlayer != null)
+                TakenByPlayer.Compress(true, true, true);
+
+            //Compress the photo of player but keep their large selfie
+            if (PhotoOfPlayer != null)
+                PhotoOfPlayer.Compress(false, true, true);
         }
     }
 }

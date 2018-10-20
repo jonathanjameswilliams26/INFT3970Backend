@@ -96,6 +96,9 @@ namespace INFT3970Backend.Controllers
                 else
                     gameDAL.DeactivateGameAfterHostJoinError(createdGame.Data);
 
+                //Compress the player object so no photo data is sent back to the client to speed up request times
+                createdPlayer.Data.Compress(true, true, true);
+
                 return createdPlayer;
             }
             //Catch any error associated with invalid model data
@@ -164,7 +167,13 @@ namespace INFT3970Backend.Controllers
                 if (!isOrderByValid)
                     orderBy = "AZ";
 
-                return new GameDAL().GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+                var getAllPlayersRequest = new GameDAL().GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+
+                //If the request was successful compress the game object by removing the players unneeded images to increase request times
+                if(getAllPlayersRequest.IsSuccessful())
+                    getAllPlayersRequest.Data.Compress();
+
+                return getAllPlayersRequest;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
@@ -248,7 +257,13 @@ namespace INFT3970Backend.Controllers
                 var player = new Player(playerID);
                 
                 //Call the data access layer to get the status of the game / player
-                return new GameDAL().GetGameStatus(player);
+                var gameStatusResponse = new GameDAL().GetGameStatus(player);
+
+                //If the response was successful compress the data by removing the players unneeded images before sending over the network
+                if (gameStatusResponse.IsSuccessful())
+                    gameStatusResponse.Data.Compress();
+
+                return gameStatusResponse;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)

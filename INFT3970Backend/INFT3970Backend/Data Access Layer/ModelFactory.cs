@@ -182,6 +182,8 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.Phone = SafeGetString("Phone");
                 player.Email = SafeGetString("Email");
                 player.Selfie = SafeGetString("Selfie");
+                player.SmallSelfie = SafeGetString("SmallSelfie");
+                player.ExtraSmallSelfie = SafeGetString("ExtraSmallSelfie");
                 player.AmmoCount = GetInt("AmmoCount");
                 player.NumKills = GetInt("NumKills");
                 player.NumDeaths = GetInt("NumDeaths");

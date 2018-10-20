@@ -123,5 +123,17 @@ namespace INFT3970Backend.Models
                 throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_VOTE);
             }
         }
+
+
+
+        public void Compress()
+        {
+            if (Player != null)
+                Player.Compress(true, true, true);
+
+            //Compress the photo
+            if (Photo != null)
+                Photo.CompressForVoting();
+        }
     }
 }

@@ -15,5 +15,11 @@
             HasNotifications = hasNotifications;
             Player = player;
         }
+
+        public void Compress()
+        {
+            if (Player != null)
+                Player.Compress(true, true, true);
+        }
     }
 }
