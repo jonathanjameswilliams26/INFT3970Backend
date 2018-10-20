@@ -144,7 +144,7 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, the player is not currently in the WebApp, send a notification to their contact details.
                 else
                 {
-                    string message = "A new photo has been uploaded in your game of CamTag. Click the link to cast your vote. LINK HERE...";
+                    string message = "A new photo has been uploaded in your game of CamTag. Cast your vote before time runs out!";
                     var subject = "New Photo Submitted";
                     player.ReceiveMessage(message, subject);
                 }
@@ -273,7 +273,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdateGameCompleted(Game game, bool isNotEnoughPlayers)
         {
             //Get the list of players from the game
-            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -281,6 +281,11 @@ namespace INFT3970Backend.Hubs
             //Loop through each of the players and send out the notifications
             foreach(var player in response.Data.Players)
             {
+                //Since the game is now completed needed to get all players. 
+                //If they have left the game, have not been verified or deleted do not send them a notification
+                if (player.HasLeftGame || !player.IsVerified || player.IsDeleted)
+                    continue;
+
                 //If the player is currently connected to the application send them a live update
                 if(player.IsConnected)
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameCompleted");
@@ -288,10 +293,10 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send them a text message or email letting them know the game is completed
                 else
                 {
-                    var message = "Your game of CamTag has been completed. Thanks for playing.";
+                    var message = "Your game of CamTag has been completed. Thanks for playing!";
                     var subject = "Game Completed";
                     if (isNotEnoughPlayers)
-                        message = "Your game of CamTag has been completed because there is no longer enough players in your game. Thanks for playing";
+                        message = "Your game of CamTag has been completed because there is no longer enough players in your game. Thanks for playing!";
                     player.ReceiveMessage(message, subject);
                 }
             }
@@ -405,7 +410,7 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send an email/text message notification
                 else
                 {
-                    var message = "Your game of CamTag will begin at: " + game.StartTime.Value.ToString("dd/MM/yyyy HH:mm tt");
+                    var message = "Your game of CamTag will begin at: " + game.StartTime.Value.ToString("dd/MM/yyyy HH:mm:ss tt");
                     var subject = "Game Starting Soon";
                     player.ReceiveMessage(message, subject);
                 }
@@ -430,7 +435,7 @@ namespace INFT3970Backend.Hubs
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerDisabled", totalMinutesDisabled);
             }
             else
-                player.ReceiveMessage("You have been disabled for " + totalMinutesDisabled + " minute(s) for taking a photo outside of the zone.", "You have been disabled");
+                player.ReceiveMessage("You have been disabled for " + totalMinutesDisabled + " minutes for taking a photo outside of the zone.", "You Have Been Disabled");
         }
 
 
@@ -452,7 +457,7 @@ namespace INFT3970Backend.Hubs
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerReEnabled");
             }
             else
-                player.ReceiveMessage("You have been re-enabled, go get em!", "You have been re-enabled");
+                player.ReceiveMessage("You have been re-enabled, go get em!", "You Have Been Re-enabled");
         }
     }
 }

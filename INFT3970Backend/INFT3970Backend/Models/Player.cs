@@ -312,6 +312,9 @@ namespace INFT3970Backend.Models
         /// <param name="subject">The subject of the message, used when sending emails.</param>
         public void ReceiveMessage(string msg, string subject)
         {
+            //Add a footer to the message which includes a link back to the game.
+            msg += "\n\nPlease visit theteam6.com to return to your game.";
+
             if (HasEmail())
                 EmailSender.Send(Email, subject, msg, false);
             else
