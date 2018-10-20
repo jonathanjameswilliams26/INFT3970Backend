@@ -121,7 +121,9 @@ namespace INFT3970Backend.Data_Access_Layer
                         AddParam("gameCode", game.GameCode);
                         AddParam("nickname", player.Nickname);
                         AddParam("contact", player.GetContact());
-                        AddParam("imgURL", player.SelfieDataURL);
+                        AddParam("selfie", player.Selfie);
+                        AddParam("smallSelfie", player.SmallSelfie);
+                        AddParam("extraSmallSelfie", player.ExtraSmallSelfie);
                         AddParam("isPhone", player.HasPhone());
                         AddParam("verificationCode", verificationCode);
                         AddParam("isHost", player.IsHost);

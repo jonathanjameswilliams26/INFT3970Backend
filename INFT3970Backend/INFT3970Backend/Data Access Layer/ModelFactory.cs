@@ -181,7 +181,7 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.Nickname = SafeGetString("Nickname");
                 player.Phone = SafeGetString("Phone");
                 player.Email = SafeGetString("Email");
-                player.SelfieDataURL = SafeGetString("SelfieDataURL");
+                player.Selfie = SafeGetString("Selfie");
                 player.AmmoCount = GetInt("AmmoCount");
                 player.NumKills = GetInt("NumKills");
                 player.NumDeaths = GetInt("NumDeaths");
@@ -252,7 +252,9 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.Nickname = SafeGetString("TakenByPlayerNickname");
                     player.Phone = SafeGetString("TakenByPlayerPhone");
                     player.Email = SafeGetString("TakenByPlayerEmail");
-                    player.SelfieDataURL = SafeGetString("TakenByPlayerSelfieDataURL");
+                    player.Selfie = SafeGetString("TakenByPlayerSelfie");
+                    player.SmallSelfie = SafeGetString("TakenByPlayerSmallSelfie");
+                    player.ExtraSmallSelfie = SafeGetString("TakenByPlayerExtraSmallSelfie");
                     player.AmmoCount = GetInt("TakenByPlayerAmmoCount");
                     player.NumKills = GetInt("TakenByPlayerNumKills");
                     player.NumDeaths = GetInt("TakenByPlayerNumDeaths");
@@ -277,7 +279,9 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.Nickname = SafeGetString("PhotoOfPlayerNickname");
                     player.Phone = SafeGetString("PhotoOfPlayerPhone");
                     player.Email = SafeGetString("PhotoOfPlayerEmail");
-                    player.SelfieDataURL = SafeGetString("PhotoOfPlayerSelfieDataURL");
+                    player.Selfie = SafeGetString("PhotoOfPlayerSelfie");
+                    player.SmallSelfie = SafeGetString("PhotoOfPlayerSmallSelfie");
+                    player.ExtraSmallSelfie = SafeGetString("PhotoOfPlayerExtraSmallSelfie");
                     player.AmmoCount = GetInt("PhotoOfPlayerAmmoCount");
                     player.NumKills = GetInt("PhotoOfPlayerNumKills");
                     player.NumDeaths = GetInt("PhotoOfPlayerNumDeaths");

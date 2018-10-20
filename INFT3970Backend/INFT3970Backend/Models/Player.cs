@@ -1,7 +1,11 @@
 ﻿using System;
+using System.IO;
 using System.Text.RegularExpressions;
 using INFT3970Backend.Helpers;
 using INFT3970Backend.Models.Errors;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace INFT3970Backend.Models
 {
@@ -12,7 +16,9 @@ namespace INFT3970Backend.Models
         private string nickname;
         private string phone;
         private string email;
-        private string selfieDataUrl;
+        private string selfie;
+        private string smallSelfie;
+        private string extraSmallSelfie;
         private int ammoCount;
         private int numKills;
         private int numDeaths;
@@ -113,37 +119,30 @@ namespace INFT3970Backend.Models
 
 
 
-        public string SelfieDataURL
+        public string Selfie
         {
-            get { return selfieDataUrl; }
+            get { return selfie; }
             set
             {
-                var errorMSG = "DataURL is not a base64 string.";
+                var errorMSG = "Selfie DataURL is not a base64 string.";
 
-                if (value == "empty")
+                //Allow the selfie to be set to null because of compression while sending over the network
+                if (value == null)
                 {
-                    selfieDataUrl = value;
+                    selfie = null;
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(value))
+                //Confirm the imgURL is a base64 string
+                if (!IsValidDataURL(value))
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
 
-                //Confirm the imgURL is a base64 string
-                try
-                {
-                    if (!value.Contains("data:image/jpeg;base64,"))
-                        throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
-                    var base64Data = value.Replace("data:image/jpeg;base64,", "");
-                    var byteData = Convert.FromBase64String(base64Data);
-                    selfieDataUrl = value;
-                }
-                catch
-                {
-                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
-                }
+                selfie = value;
             }
         }
+
+
+        
 
 
 
@@ -240,6 +239,49 @@ namespace INFT3970Backend.Models
         }
 
 
+        public string SmallSelfie
+        {
+            get { return smallSelfie; }
+            set
+            {
+                var errorMSG = "Selfie DataURL is not a base64 string.";
+
+                //Allow the selfie to be set to null because of compression while sending over the network
+                if (value == null)
+                {
+                    smallSelfie = null;
+                    return;
+                }
+
+                //Confirm the imgURL is a base64 string
+                if (!IsValidDataURL(value))
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
+
+                smallSelfie = value;
+            }
+        }
+
+        public string ExtraSmallSelfie
+        {
+            get { return extraSmallSelfie; }
+            set
+            {
+                var errorMSG = "Selfie DataURL is not a base64 string.";
+
+                //Allow the selfie to be set to null because of compression while sending over the network
+                if (value == null)
+                {
+                    extraSmallSelfie = null;
+                    return;
+                }
+
+                //Confirm the imgURL is a base64 string
+                if (!IsValidDataURL(value))
+                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
+
+                extraSmallSelfie = value;
+            }
+        }
         public bool IsHost { get; set; }
         public bool IsVerified { get; set; }
         public bool IsActive { get; set; }
@@ -262,7 +304,7 @@ namespace INFT3970Backend.Models
             PlayerID = -1;
             GameID = -1;
             Nickname = "Player";
-            SelfieDataURL = "empty";
+            Selfie = null;
             IsActive = true;
         }
 
@@ -291,7 +333,11 @@ namespace INFT3970Backend.Models
         public Player(string nickname, string selfieDataURL, string contact) :this()
         {
             Nickname = nickname;
-            SelfieDataURL = selfieDataURL;
+            Selfie = selfieDataURL;
+
+            //Resize the selfie images to the smaller values
+            if (!ResizeSelfieImages())
+                throw new InvalidModelException("Failed to resize selife images.", ErrorCodes.MODELINVALID_PLAYER);
 
             if (IsPhone(contact))
                 Phone = "+61" + contact.Substring(1);
@@ -445,6 +491,91 @@ namespace INFT3970Backend.Models
         public bool IsBRPlayer()
         {
             return PlayerType.ToUpper() == "BR";
+        }
+
+
+
+        public bool ResizeSelfieImages()
+        {
+            try
+            {
+                var dataUrlString = "data:image/jpeg;base64,";
+                var largeImageBase64Data = Selfie.Replace(dataUrlString, "");
+                var largeImageByteData = Convert.FromBase64String(largeImageBase64Data);
+
+                //Reszie the large selfie data to the the smaller versions
+                using (Image<Rgba32> image = Image.Load(largeImageByteData))
+                {
+                    //Resize to the small version
+                    image.Mutate(ctx => ctx.Resize(128, 128));
+                    using (var stream = new MemoryStream())
+                    {
+                        //Get the byte data from the image
+                        image.Save<Rgba32>(stream, ImageFormats.Jpeg);
+                        var smallImageByteArray = stream.ToArray();
+
+                        //Convert it to a base 64 string
+                        var smallImageBase64String = Convert.ToBase64String(smallImageByteArray);
+                        SmallSelfie = dataUrlString + smallImageBase64String;
+                    }
+
+                    //Rezise the image to the extra small version
+                    image.Mutate(ctx => ctx.Resize(32, 32));
+                    using (var stream = new MemoryStream())
+                    {
+                        //Get the byte data from the image
+                        image.Save<Rgba32>(stream, ImageFormats.Jpeg);
+                        var extraSmallImageByteArray = stream.ToArray();
+
+                        //Convert it to a base 64 string
+                        var extraSmallImageBase64String = Convert.ToBase64String(extraSmallImageByteArray);
+                        ExtraSmallSelfie = dataUrlString + extraSmallImageBase64String;
+                    }
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
+        public void Compress(bool doCompressLarge, bool doCompressSmall, bool doCompressExtraSmall)
+        {
+            if(doCompressLarge)
+                Selfie = null;
+
+            if(doCompressSmall)
+                SmallSelfie = null;
+
+            if(doCompressExtraSmall)
+                ExtraSmallSelfie = null;
+        }
+
+
+
+        private bool IsValidDataURL(string dataURL)
+        {
+            //Confirm the dataURL is a base64 string
+            try
+            {
+                if (!dataURL.Contains("data:image/jpeg;base64,"))
+                    return false;
+
+                //Get the byte data from the dataURL, will thrown an exception if in the incorrect format
+                var dataUrlString = "data:image/jpeg;base64,";
+                var base64Data = dataURL.Replace(dataUrlString, "");
+                var byteData = Convert.FromBase64String(base64Data);
+
+                //If reaching this point the image is a valid dataURL
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

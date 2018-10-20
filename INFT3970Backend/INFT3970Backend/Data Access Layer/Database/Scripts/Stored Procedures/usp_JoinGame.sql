@@ -16,7 +16,9 @@ CREATE PROCEDURE [dbo].[usp_JoinGame]
 	@gameCode VARCHAR(6),
 	@nickname VARCHAR(255),
 	@contact VARCHAR(255),
-	@imgURL VARCHAR(MAX), 
+	@selfie VARCHAR(MAX),
+	@smallSelfie VARCHAR(MAX),
+	@extraSmallSelfie VARCHAR(MAX), 
 	@isPhone BIT,
 	@verificationCode INT,
 	@isHost BIT,
@@ -133,11 +135,11 @@ BEGIN
 
 			IF(@isPhone = 1)
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Phone, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
+				INSERT INTO tbl_Player(Nickname, Phone, Selfie, SmallSelfie, ExtraSmallSelfie, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @selfie, @smallSelfie, @extraSmallSelfie, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
 			END
 			ELSE
 			BEGIN
-				INSERT INTO tbl_Player(Nickname, Email, SelfieDataURL, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @imgURL, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
+				INSERT INTO tbl_Player(Nickname, Email, Selfie, SmallSelfie, ExtraSmallSelfie, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @selfie, @smallSelfie, @extraSmallSelfie, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);
 			END
 
 			SET @createdPlayerID = SCOPE_IDENTITY();
