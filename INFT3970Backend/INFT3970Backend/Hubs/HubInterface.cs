@@ -332,6 +332,18 @@ namespace INFT3970Backend.Hubs
             }
         }
 
+        public async void UpdateNotificationsRead(int playerID)
+        {
+            //Get the player from the database
+            var response = new PlayerDAL().GetPlayerByID(playerID);
+            if (!response.IsSuccessful())
+                return;
+
+            //If the player is connected to the hub update the notifications list
+            if(response.Data.IsConnected)
+                await _hubContext.Clients.Client(response.Data.ConnectionID).SendAsync("UpdateNotifications");
+        }
+
 
 
 

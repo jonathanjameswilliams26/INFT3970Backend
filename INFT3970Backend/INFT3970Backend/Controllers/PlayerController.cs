@@ -296,7 +296,13 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Call the data access layer to update the notification records
-                return new PlayerDAL().SetNotificationsRead(jsonNotificationIDs);
+                var response = new PlayerDAL().SetNotificationsRead(jsonNotificationIDs);
+
+                //If the response was successful update the client's notifications list
+                if (response.IsSuccessful())
+                    new HubInterface(_hubContext).UpdateNotificationsRead(Convert.ToInt32(jsonNotificationIDs.PlayerID));
+
+                return response;
             }
             //Catch any error associated with invalid model data
             catch (InvalidModelException e)
