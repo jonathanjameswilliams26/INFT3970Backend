@@ -12,7 +12,7 @@ namespace INFT3970Backend.Controllers
     {
         [HttpGet]
         [Route("api/map")]
-        public ActionResult<Response<MapResponse>> GetMap(int playerID)
+        public ActionResult<Response<MapResponse>> GetMap([FromHeader] int playerID)
         {
             try
             {

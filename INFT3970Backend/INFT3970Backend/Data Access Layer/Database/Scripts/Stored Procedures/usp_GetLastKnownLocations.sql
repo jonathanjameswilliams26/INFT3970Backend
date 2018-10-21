@@ -63,16 +63,17 @@ BEGIN
 			p.GameID = @gameID AND
 			p.PhotoIsActive = 1 AND
 			p.PhotoIsDeleted = 0 AND
-			p.TimeTaken = (
-				SELECT MAX(ph.TimeTaken)
+			p.TakenByPlayerID <> @playerID AND
+			p.TimeTaken IN (
+				SELECT MAX(TimeTaken)
 				FROM tbl_Photo ph
-				WHERE 
-					ph.TakenByPlayerID = p.TakenByPlayerID AND 
+				WHERE
 					ph.GameID = @gameID AND
 					ph.PhotoIsActive = 1 AND
 					ph.PhotoIsDeleted = 0
+				GROUP BY
+					ph.TakenByPlayerID
 			)
-			AND TakenByPlayerID <> @playerID
 
 
 		SET @result = 1
