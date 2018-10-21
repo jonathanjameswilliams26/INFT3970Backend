@@ -218,29 +218,44 @@ namespace INFT3970Backend.Controllers
             {
                 var player = new Player(playerID);
 
-                //Call the data access layer to remove the player from the game.
+                //Get the player who is leaving the game
                 var playerDAL = new PlayerDAL();
+                var getPlayerResponse = playerDAL.GetPlayerByID(playerID);
+                if (!getPlayerResponse.IsSuccessful())
+                    return new Response(getPlayerResponse.ErrorMessage, getPlayerResponse.ErrorCode);
+
+                player = getPlayerResponse.Data;
+
+                //Create the hub interface which will be used to send live updates to clients
+                var hubInterface = new HubInterface(_hubContext);
+
+                //If the player leaving the game is the host and the game is currently in the lobby kick all other players from the game
+                //because only the host player can begin the game
+                if (player.IsHost && player.Game.IsInLobby())
+                {
+                    var endLobbyResponse = new GameDAL().EndLobby(player.Game);
+
+                    //If successfully kicked all players from the game send live updates to clients that they have been removed from the lobby
+                    if(endLobbyResponse.IsSuccessful())
+                        hubInterface.UpdateLobbyEnded(player.Game);
+
+                    //Return and leave the method because there is nothing else to process at this point
+                    return endLobbyResponse;
+                }
+
+
+                //Call the data access layer to remove the player from the game.
                 var isGameComplete = false;
                 var isPhotosComplete = false;
-
-                //Get the player leaving the game from the database
-                var playerResponse = playerDAL.GetPlayerByID(player.PlayerID);
-                if (!playerResponse.IsSuccessful())
-                    return new Response(playerResponse.ErrorMessage, playerResponse.ErrorCode);
-
-                //Leave the game
-                var leaveGameResponse = playerDAL.LeaveGame(playerResponse.Data, ref isGameComplete, ref isPhotosComplete);
+                var leaveGameResponse = playerDAL.LeaveGame(player, ref isGameComplete, ref isPhotosComplete);
 
                 //Return the error response if an error occurred
                 if (!leaveGameResponse.IsSuccessful())
                     return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
 
-                //Create the hub interface which will be used to send live updates to clients
-                var hubInterface = new HubInterface(_hubContext);
-
                 //Call the hub method to send out notifications to players that the game is now complete
                 if (isGameComplete)
-                    hubInterface.UpdateGameCompleted(playerResponse.Data.Game, true);
+                    hubInterface.UpdateGameCompleted(player.Game, true);
 
                 //Otherwise, if the photo list is not empty then photos have been completed and need to send out updates
                 else if (isPhotosComplete)
@@ -251,7 +266,7 @@ namespace INFT3970Backend.Controllers
 
                 //If the game is not completed send out the player left notification
                 if (!isGameComplete)
-                    hubInterface.UpdatePlayerLeftGame(playerResponse.Data);
+                    hubInterface.UpdatePlayerLeftGame(player);
 
                 return new Response(leaveGameResponse.ErrorMessage, leaveGameResponse.ErrorCode);
             }

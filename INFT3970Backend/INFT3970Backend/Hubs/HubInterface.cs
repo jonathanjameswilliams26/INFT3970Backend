@@ -181,7 +181,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get all the players currently in the game
             GameDAL gameDAL = new GameDAL();
-            var gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.PlayerID, true, "INGAME", "AZ");
+            var gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.GameID, false, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!gameResponse.IsSuccessful())
@@ -261,6 +261,24 @@ namespace INFT3970Backend.Hubs
                         message = "Your game of CamTag has been completed because there is no longer enough players in your game. Thanks for playing!";
                     player.ReceiveMessage(message, subject);
                 }
+            }
+        }
+
+
+
+
+        public async void UpdateLobbyEnded(Game game)
+        {
+            //Get the list of players from the game
+            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
+            if (!response.IsSuccessful())
+                return;
+
+            //Loop through each of the players and send out the live update
+            foreach(var player in response.Data.Players)
+            {
+                if(player.IsConnected)
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("LobbyEnded");
             }
         }
 

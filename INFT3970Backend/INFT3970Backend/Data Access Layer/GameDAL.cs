@@ -247,6 +247,36 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
+        public Response EndLobby(Game game)
+        {
+            StoredProcedure = "usp_EndLobby";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("gameID", game.GameID);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        Run();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response(ErrorMSG, Result);
+                    }
+                }
+            }
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response.DatabaseErrorResponse();
+            }
+        }
+
 
 
         /// <summary>
