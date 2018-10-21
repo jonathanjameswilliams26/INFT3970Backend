@@ -63,9 +63,12 @@ namespace INFT3970Backend.Hubs
                     if(game.IsInLobby() || game.IsStarting())
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
 
-                    //Otherwise, update the players notifications because they are currently playing the game
-                    else
+                    //Otherwise, update the players notifications and the scoreboard because they are currently playing the game
+                    else if(game.IsPlaying() && joinedPlayer.IsVerified)
+                    {
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                        await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateScoreboard");
+                    }
                 }
                 //Otherwise, the player is out of the app.
                 else
@@ -205,7 +208,10 @@ namespace INFT3970Backend.Hubs
 
                     //If the game state is PLAYING - Send a notification to the players in the game.
                     else
+                    {
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                        await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateScoreboard");
+                    }
                 }
 
                 //Otherwise, the player is not connected to the Hub, send a notification via the contact information
@@ -486,6 +492,9 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, just update the notifications
                 else
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+
+                //Update the scoreboard
+                await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateScoreboard");
             }
         }
 
