@@ -222,7 +222,7 @@ namespace INFT3970Backend.Helpers
                 return;
 
             //Confirm the game the photo is apart of is not completed, if completed leave the method
-            if (photo.Game.GameState == "COMPLETED")
+            if (photo.Game.IsCompleted())
                 return;
 
             //Check to see if the voting has been completed for the photo.
@@ -234,12 +234,20 @@ namespace INFT3970Backend.Helpers
 
             //Call the Data Access Layer to update the photo record to now be completed.
             PhotoDAL photoDAL = new PhotoDAL();
-            Response<Photo> response = photoDAL.VotingTimeExpired(photo.PhotoID);
+            Response<Photo> response = photoDAL.VotingTimeExpired(photo.PhotoID, photo.TakenByPlayer.IsBRPlayer());
 
             //If the update was successful then send out the notifications to the affected players
             //Will send out in game notifications and text/email notifications
-            if (response.Type == "SUCCESS")
-                hubContext.UpdatePhotoVotingCompleted(response.Data);
+            if (response.IsSuccessful())
+            {
+                //If the response's data is NULL that means the game is now completed. Send live updates to complete the game
+                if (response.Data == null)
+                    hubContext.UpdateGameCompleted(photo.Game, false);
+
+                //Otherwise, update the players that voting has been completed
+                else
+                    hubContext.UpdatePhotoVotingCompleted(response.Data);
+            }   
         }
 
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Helpers;
 using INFT3970Backend.Hubs;
@@ -38,10 +39,23 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
+                //Build the photo object
                 var uploadedPhoto = new Photo(request.latitude, request.longitude, request.imgUrl, request.takenByID, request.photoOfID);
 
-                //Call the DAL to save the photo to the DB
-                var response = new PhotoDAL().SavePhoto(uploadedPhoto);
+                //Get the player object from the database
+                var getPlayerResponse = new PlayerDAL().GetPlayerByID(uploadedPhoto.TakenByPlayerID);
+                if (!getPlayerResponse.IsSuccessful())
+                    return new Response(getPlayerResponse.ErrorMessage, getPlayerResponse.ErrorCode);
+
+                Response<Photo> response;
+
+                //Call the BR Upload business logic if the player is a BR player
+                if (getPlayerResponse.Data.IsBRPlayer())
+                    response = new PhotoDAL().SavePhoto(uploadedPhoto, true);
+
+                //Otherwise, call the CORE business logic
+                else
+                    response = new PhotoDAL().SavePhoto(uploadedPhoto, false);
                 
                 //If the response is successful we want to send live updates to clients and
                 //email or text message notifications to not connected players
@@ -125,13 +139,27 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var vote = new Vote(voteID, decision, playerID);
-                var response = new PhotoDAL().VoteOnPhoto(vote);
+                //Get the player object from the database
+                var getPlayerResponse = new PlayerDAL().GetPlayerByID(playerID);
+                if (!getPlayerResponse.IsSuccessful())
+                    return new Response(getPlayerResponse.ErrorMessage, getPlayerResponse.ErrorCode);
 
+                var vote = new Vote(voteID, decision, playerID);
+                Response<Vote> response;
+
+                //Vote on the photo
+                response = new PhotoDAL().VoteOnPhoto(vote, getPlayerResponse.Data.IsBRPlayer());
                 if (response.IsSuccessful())
                 {
+                    //If the response's data is NULL that means the game is now completed. Send live updates to complete the game
+                    if(response.Data == null)
+                    {
+                        var hubInterface = new HubInterface(_hubContext);
+                        hubInterface.UpdateGameCompleted(getPlayerResponse.Data.Game, false);
+                    }
+
                     //If the Photo's voting has now been completed send the notifications / updates
-                    if (response.Data.Photo.IsVotingComplete)
+                    else if (response.Data.Photo.IsVotingComplete)
                     {
                         var hubInterface = new HubInterface(_hubContext);
                         hubInterface.UpdatePhotoVotingCompleted(response.Data.Photo);

@@ -157,51 +157,13 @@ namespace INFT3970Backend.Hubs
 
 
 
-        public async void UpdatePhotoVotingCompleted(Photo photo)
-        {
-            //Generate the messages to be send
-            var takenByMsgTxt = "";
-            var photoOfMsgTxt = "";
-            var subject = "Voting Complete";
-
-            //If the yes votes are greater than the no votes the the photo is successful
-            if (photo.IsSuccessful)
-            {
-                takenByMsgTxt = "You have successfully tagged " + photo.PhotoOfPlayer.Nickname + ".";
-                photoOfMsgTxt = "You have been tagged by " + photo.TakenByPlayer.Nickname + ".";
-
-                //Update the scoreboard because the photo was successful
-                await _hubContext.Clients.All.SendAsync("UpdateScoreboard");
-            }
-            //Otherwise, the photo was not successful
-            else
-            {
-                takenByMsgTxt = "You did not successfully tag " + photo.PhotoOfPlayer.Nickname + " because other players voted \"No\" on the photo you submitted.";
-                photoOfMsgTxt = photo.TakenByPlayer.Nickname + " failed to tag you.";
-            }
-
-            
-            //Add the notifications to the database
-            new GameDAL().CreateTagResultNotification(photo);
+        
 
 
-            //If the TakenByPlayer is connected to the Hub send out a live notification update
-            if (photo.TakenByPlayer.IsConnected)
-                await _hubContext.Clients.Client(photo.TakenByPlayer.ConnectionID).SendAsync("UpdateNotifications");
-            
-            //Otherwise, send a text message or email notification
-            else
-                photo.TakenByPlayer.ReceiveMessage(takenByMsgTxt, subject);
 
 
-            //If the PhotoOfPlayer is connected to the Hub send out a live notification update
-            if (photo.PhotoOfPlayer.IsConnected)
-                await _hubContext.Clients.Client(photo.PhotoOfPlayer.ConnectionID).SendAsync("UpdateNotifications");
 
-            //Otherwise, send a text message or email notification
-            else
-                photo.PhotoOfPlayer.ReceiveMessage(photoOfMsgTxt, subject);
-        }
+        
 
 
 
@@ -458,6 +420,94 @@ namespace INFT3970Backend.Hubs
             }
             else
                 player.ReceiveMessage("You have been re-enabled, go get em!", "You Have Been Re-enabled");
+        }
+
+
+
+        public async void UpdatePhotoVotingCompleted(Photo photo)
+        {  
+            //Generate the messages to be sent
+            var takenByMsgTxt = "";
+            var photoOfMsgTxt = "";
+            var subject = "Voting Complete";
+
+            GenerateVotingCompleteMessages(photo, ref takenByMsgTxt, ref photoOfMsgTxt);
+
+            //Generate the notifications
+            var isBR = photo.Game.IsBR();
+            if (isBR)
+                new GameDAL().CreateTagResultNotification(photo, true);
+            else
+                new GameDAL().CreateTagResultNotification(photo, false);
+
+            //If the TakenByPlayer is not connected to the application send an out of game notification
+            if (!photo.TakenByPlayer.IsConnected)
+                photo.TakenByPlayer.ReceiveMessage(takenByMsgTxt, subject);
+
+            //If the PhotoOfPlayer is not connected to the application send an out of game notification
+            if (!photo.PhotoOfPlayer.IsConnected)
+                photo.PhotoOfPlayer.ReceiveMessage(photoOfMsgTxt, subject);
+
+            //Live update all other clients connected to the application
+            //Get the list of players from the game
+            var response = new GameDAL().GetAllPlayersInGame(photo.GameID, false, "INGAME", "AZ");
+            if (!response.IsSuccessful())
+                return;
+
+            //Loop through each player and send the live in game update to update the notifications
+            foreach(var player in response.Data.Players)
+            {
+                //If the player is not connected then continue
+                if (!player.IsConnected)
+                    continue;
+
+                //If the player is the PhotoOfPlayer and the Photo was successful and it is a BR game, send out eliminated updated
+                if(player.PlayerID == photo.PhotoOfPlayerID && photo.IsSuccessful && isBR)
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerEliminated");
+
+                //Otherwise, just update the notifications
+                else
+                    await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+            }
+        }
+
+
+
+        private void GenerateVotingCompleteMessages(Photo completedPhoto, ref string takenByMessage, ref string photoOfMessage)
+        {
+            //If the completed photo is apart of a BR game process the BR Eliminated message
+            if(completedPhoto.Game.IsBR())
+            {
+                //If the photo was successful set the eliminated message
+                if(completedPhoto.IsSuccessful)
+                {
+                    takenByMessage = "You have eliminated " + completedPhoto.PhotoOfPlayer.Nickname + ".";
+                    photoOfMessage = "You have been eliminated by " + completedPhoto.TakenByPlayer.Nickname + ".";
+                }
+                //Otherwise, set the unsuccessful photo
+                else
+                {
+                    takenByMessage = "You did not successfully tag " + completedPhoto.PhotoOfPlayer.Nickname + " because other players voted \"No\" on the photo you submitted.";
+                    photoOfMessage = completedPhoto.TakenByPlayer.Nickname + " failed to tag you.";
+                }
+            }
+
+            //Otherwise, the game is apart of a normal CORE game, process the normal messages
+            else
+            {
+                //If the yes votes are greater than the no votes the the photo is successful
+                if (completedPhoto.IsSuccessful)
+                {
+                    takenByMessage = "You have successfully tagged " + completedPhoto.PhotoOfPlayer.Nickname + ".";
+                    photoOfMessage = "You have been tagged by " + completedPhoto.TakenByPlayer.Nickname + ".";
+                }
+                //Otherwise, the photo was not successful
+                else
+                {
+                    takenByMessage = "You did not successfully tag " + completedPhoto.PhotoOfPlayer.Nickname + " because other players voted \"No\" on the photo you submitted.";
+                    photoOfMessage = completedPhoto.TakenByPlayer.Nickname + " failed to tag you.";
+                }
+            }
         }
     }
 }

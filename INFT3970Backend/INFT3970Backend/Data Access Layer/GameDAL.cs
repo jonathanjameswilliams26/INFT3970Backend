@@ -255,9 +255,12 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <param name="gameID">The gameID of the game</param>
         /// <param name="playerID">The playerID of the receiver.</param>
         /// <returns>void</returns>
-        public void CreateTagResultNotification(Photo photo)
+        public void CreateTagResultNotification(Photo photo, bool isBR)
         {
-            StoredProcedure = "usp_CreateTagResultNotification";
+            if(isBR)
+                StoredProcedure = "usp_BR_CreateTagResultNotification";
+            else
+                StoredProcedure = "usp_CreateTagResultNotification";
             try
             {
                 //Create the connection and command for the stored procedure

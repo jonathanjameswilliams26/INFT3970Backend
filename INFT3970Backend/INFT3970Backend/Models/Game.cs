@@ -449,6 +449,11 @@ namespace INFT3970Backend.Models
             return GameState == "COMPLETED";
         }
 
+        public bool IsBR()
+        {
+            return GameMode == "BR";
+        }
+
 
 
         public void Compress()

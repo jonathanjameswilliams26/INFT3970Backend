@@ -58,9 +58,12 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="photo">The photo object to save to the database.</param>
         /// <returns></returns>
-        public Response<Photo> SavePhoto(Photo photoToSave)
+        public Response<Photo> SavePhoto(Photo photoToSave, bool isBR)
         {
-            StoredProcedure = "usp_SavePhoto";
+            if(isBR)
+                StoredProcedure = "usp_BR_SavePhoto";
+            else
+                StoredProcedure = "usp_SavePhoto";
             Photo photo = null;
             try
             {
@@ -203,9 +206,12 @@ namespace INFT3970Backend.Data_Access_Layer
         /// </summary>
         /// <param name="photoID">The ID of the photo to update.</param>
         /// <returns></returns>
-        public Response<Photo> VotingTimeExpired(int photoID)
+        public Response<Photo> VotingTimeExpired(int photoID, bool isBR)
         {
-            StoredProcedure = "usp_VotingTimeExpired";
+            if (isBR)
+                StoredProcedure = "usp_BR_VotingTimeExpired";
+            else
+                StoredProcedure = "usp_VotingTimeExpired";
             Photo photo = null;
             try
             {
@@ -290,9 +296,12 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-        public Response<Vote> VoteOnPhoto(Vote playerVote)
+        public Response<Vote> VoteOnPhoto(Vote playerVote, bool isBR)
         {
-            StoredProcedure = "usp_VoteOnPhoto";
+            if (isBR)
+                StoredProcedure = "usp_BR_VoteOnPhoto";
+            else
+                StoredProcedure = "usp_VoteOnPhoto";
             Vote playerVotePhoto = null;
             try
             {
