@@ -55,9 +55,9 @@ BEGIN
 
 		--The playerID exists, get the notifications associated with that player
 		IF (@all = 1)
-			SELECT * FROM vw_Active_Notifications WHERE PlayerID = @playerID	
+			SELECT * FROM vw_Active_Notifications WHERE PlayerID = @playerID ORDER BY NotificationID DESC
 		ELSE
-			SELECT * FROM vw_Unread_Notifications WHERE PlayerID = @playerID
+			SELECT * FROM vw_Unread_Notifications WHERE PlayerID = @playerID ORDER BY NotificationID DESC
 
 		--Set the return variables
 		SET @result = 1;
