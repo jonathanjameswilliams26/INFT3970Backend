@@ -1,4 +1,19 @@
-﻿using System.Collections.Generic;
+﻿///-----------------------------------------------------------------
+///   Class:        PhotoController
+///   
+///   Description:  The API Endpoint for all Player requests such as
+///                 joining a game, verifying a player, leaving a game etc.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
@@ -14,7 +29,7 @@ namespace INFT3970Backend.Controllers
     [ApiController]
     public class PlayerController : ControllerBase
     {
-        //The application hub context, used to be able to invokve client methods from anywhere in the code
+        //The application hub context, used to to invoke client methods anywhere in the code to send out live updates to clients via SignalR
         private readonly IHubContext<ApplicationHub> _hubContext;
         public PlayerController(IHubContext<ApplicationHub> hubContext)
         {
@@ -23,13 +38,16 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
         /// <summary>
         /// Joins a new player to a game matching the game code passed in. Stores their player details 
         /// and sends them a verification code once they have joined the game.
-        /// Returns the created Player object. NULL data if error occurred.
+        /// Returns the created Player object.
         /// </summary>
         /// <param name="request">The request which contains the player information and the GameCode to join.</param>
-        /// <returns>Returns the created Player object. NULL data if error occurred.</returns>
+        /// <returns>Returns the created Player object.</returns>
         [HttpPost]
         [Route("api/player/joinGame")]
         public ActionResult<Response<Player>> JoinGame(JoinGameRequest request)
@@ -87,7 +105,7 @@ namespace INFT3970Backend.Controllers
         /// </summary>
         /// <param name="verificationCode">The code received and entered by the player</param>
         /// <param name="playerID">The playerID trying to verify</param>
-        /// <returns>SUCCESS or ERROR response.</returns>
+        /// <returns>Success or error.</returns>
         [HttpPost]
         [Route("api/player/verify")]
         public ActionResult<Response> VerifyPlayer([FromForm] string verificationCode, [FromHeader] int playerID)
@@ -130,12 +148,14 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
         /// <summary>
         /// Generates a new verification code for the player, updates the verification code in the database
         /// and resends the new code to the player's contact information (Email or Phone).
         /// </summary>
         /// <param name="playerID">The playerID who's verification code is being updated</param>
-        /// <returns>SUCCESSFUL or ERROR response.</returns>
+        /// <returns>Success or error.</returns>
         [HttpPost]
         [Route("api/player/resend")]
         public ActionResult<Response> ResendVerificationCode([FromHeader] int playerID)
@@ -174,12 +194,16 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
+
         /// <summary>
-        /// Gets a list of all the notifications associated with a particular player
+        /// Gets a list of all the notifications associated with a particular player, ordered by most recent.
         /// </summary>
         /// <param name="playerID">The playerID used to determine which player the notifications are for</param>
-        /// <param name="all"> all is a boolean used to determine if all notifications should be fetched or just unread</param>
-        /// <returns>A list of notifications for a player</returns>
+        /// <param name="all">A boolean used to determine if all notifications should be fetched or just unread</param>
+        /// <returns>The list of notifications.</returns>
         [HttpGet]
         [Route("api/player/getNotifications/{playerID:int}/{all:bool}")]
         public ActionResult<Response<List<Notification>>> GetNotificationList(int playerID, bool all)
@@ -205,11 +229,19 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
+
         /// <summary>
-        /// Leaves a player from their active game
+        /// Leaves a player from the game. Will remove any incomplete photos posted by the player,
+        /// will remove any incomplete votes the player was required to vote on, will also remove any
+        /// unread notifications. If after the player leaves photos have now been completed voting, notifications
+        /// will be sent out to players. Also, if after the player leaves the game there is not enough players the
+        /// game will end.
         /// </summary>
-        /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
-        /// <returns>A response status indicating if the db update was a success.</returns>
+        /// <param name="playerID">The playerID leaving the game.</param>
+        /// <returns>Success or error.</returns>
         [HttpPost]
         [Route("api/player/leaveGame")]
         public ActionResult<Response> LeaveGame([FromHeader] int playerID)
@@ -284,11 +316,15 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
+
         /// <summary>
-        /// Marks a set of player notifications as read
+        /// Marks a set of player notifications as read.
         /// </summary>
         /// <param name="jsonNotificationIDs">The playerID and notificationIDs to mark as read.</param>
-        /// <returns>A response status indicating if the db update was a success.</returns>
+        /// <returns>Success or error.</returns>
         [HttpPost]
         [Route("api/player/setNotificationsRead")]
         public ActionResult<Response> SetNotificationsRead(ReadNotificationsRequest jsonNotificationIDs)
@@ -320,12 +356,19 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
         /// <summary>
-        /// Uses the Players ammo, decrements the players ammo count and schedules the ammo to replenish
-        /// after a certain time period.
+        /// Uses a players ammo, when a player clicks the take photo button the ammo is reduced by 1
+        /// even if the player decides not to take the photo. 
+        /// 
+        /// If the player is playing a BR game the player is validated to confirm they are inside the playing
+        /// zone, if they are not inside the zone the player is disabled and the ammo is still decremented.
         /// </summary>
-        /// <param name="playerID">The ID of the Player</param>
-        /// <returns>The updated Player object after the ammo count is decremented. NULL if error</returns>
+        /// <param name="playerID">The playerID using ammo/taking a photo.</param>
+        /// <param name="latitude">The latitude of the player.</param>
+        /// <param name="longitude">The longitude of the player.</param>
+        /// <returns>The updated player object, outlining the new ammo count and if the player is now disabled.</returns>
         [HttpPost]
         [Route("api/player/useAmmo")]
         public ActionResult<Response<Player>> UseAmmo([FromHeader] int playerID, [FromForm] double latitude, [FromForm] double longitude)
@@ -363,6 +406,13 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+        /// <summary>
+        /// Helper method for the UseAmmo request, processes the CORE gamemode business logic for using a players ammo.
+        /// </summary>
+        /// <param name="player">The player who is using the ammo</param>
+        /// <returns>The updated player object outlining the new ammo count.</returns>
         private Response<Player> CORE_UseAmmoLogic(Player player)
         {
             var response = new PlayerDAL().UseAmmo(player);
@@ -383,6 +433,16 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+        /// <summary>
+        /// Helper method for the UseAmmo request, processes the BR gamemode businesss logic.
+        /// Will confirm the player is within the playing radius, if not will disable the player.
+        /// </summary>
+        /// <param name="player">The player who is using the ammo</param>
+        /// <param name="latitude">The latitude of the player.</param>
+        /// <param name="longitude">The longitude of the player.</param>
+        /// <returns></returns>
         private ActionResult<Response<Player>> BR_UseAmmoLogic(Player player, double latitude, double longitude)
         {
             //Decrement the players ammo
@@ -401,7 +461,7 @@ namespace INFT3970Backend.Controllers
                 var totalMillisecondsDisabled = totalMinutesDisabled * 60 * 1000;
 
                 //Disable the player
-                response = new BattleRoyaleDAL().BR_DisableOrRenablePlayer(player, totalMinutesDisabled);
+                response = new PlayerDAL().BR_DisableOrRenablePlayer(player, totalMinutesDisabled);
                 if (!response.IsSuccessful())
                     return response;
 
@@ -462,6 +522,8 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
         /// <summary>
         /// Gets the count of unread notifications for the player.
         /// </summary>
@@ -492,6 +554,9 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
         /// <summary>
         /// Removes an unverified player from the game.
         /// This can only be performed when the game is IN LOBBY and can only be performed by
@@ -499,7 +564,7 @@ namespace INFT3970Backend.Controllers
         /// </summary>
         /// <param name="playerID">The ID of the requesting player, should be the host playerID</param>
         /// <param name="playerIDToRemove">ID the of the unverified player to remove from the game</param>
-        /// <returns>SUCCESS or ERROR</returns>
+        /// <returns>Success or error.</returns>
         [HttpPost]
         [Route("api/player/remove")]
         public ActionResult<Response> RemoveUnverifiedPlayer([FromForm] int playerID, [FromForm] int playerIDToRemove)
@@ -535,6 +600,5 @@ namespace INFT3970Backend.Controllers
                 return StatusCode(500);
             }
         }
-
     }
 }

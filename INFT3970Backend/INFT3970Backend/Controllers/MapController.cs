@@ -1,4 +1,17 @@
-﻿using System.Collections.Generic;
+﻿///-----------------------------------------------------------------
+///   Class:        MapController
+///   
+///   Description:  The API Endpoint for the map requests
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
 using INFT3970Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models.Errors;
@@ -10,6 +23,14 @@ namespace INFT3970Backend.Controllers
     [ApiController]
     public class Map : ControllerBase
     {
+
+        /// <summary>
+        /// Gets all the data required to display the map such as the last photo taken by each player to indicate their
+        /// last known location and all their player information to display the selfie image on the screen.
+        /// If the game is a BR game, the centre point and the currenct game radius will also be returned.
+        /// </summary>
+        /// <param name="playerID">The ID of the player making the request</param>
+        /// <returns>The list of last photos taken by each player used for the last known locations and all player information.</returns>
         [HttpGet]
         [Route("api/map")]
         public ActionResult<Response<MapResponse>> GetMap([FromHeader] int playerID)

@@ -1,4 +1,19 @@
-﻿using System;
+﻿///-----------------------------------------------------------------
+///   Class:        ModelFactory
+///   
+///   Description:  A helper class for the DataAccessLayers in order to
+///                 build the strongly typed objects from the database data.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using System;
 using System.Data.SqlClient;
 using INFT3970Backend.Models;
 
@@ -6,7 +21,12 @@ namespace INFT3970Backend.Data_Access_Layer
 {
     public class ModelFactory
     {
+        /// <summary>
+        /// The reader which contains the data to build the model.
+        /// </summary>
         private SqlDataReader Reader;
+
+
 
         /// <summary>
         /// Constructor
@@ -167,6 +187,8 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
         /// <summary>
         /// Builds a Player Model from the data reader.
         /// </summary>
@@ -210,6 +232,8 @@ namespace INFT3970Backend.Data_Access_Layer
                 return null;
             }
         }
+
+
 
 
 
@@ -310,6 +334,8 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
         /// <summary>
         /// Builds a Game Model from the data reader.
         /// </summary>
@@ -347,18 +373,16 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-        
-
 
 
 
         /// <summary>
-        /// Builds a PlayerVotePhoto Model from the data reader.
+        /// Builds a Vote Model from the data reader.
         /// </summary>
         /// <param name="doGetPlayer">A flag which outlines if also building the Player model.</param>
         /// <param name="doGetPhoto">A flag which outlines if also building the Photo model.</param>
         /// <returns></returns>
-        public Vote PlayerVotePhotoFactory(bool doGetPlayer, bool doGetPhoto)
+        public Vote VoteFactory(bool doGetPlayer, bool doGetPhoto)
         {
             try
             {

@@ -1,4 +1,19 @@
-﻿using INFT3970Backend.Models;
+﻿///-----------------------------------------------------------------
+///   Class:        PlayerDAL
+///   
+///   Description:  The DataAccessLayer for all Player updates in the database.
+///                 Extends the base DataAccessLayer class.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using INFT3970Backend.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -61,12 +76,13 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
         /// <summary>
         /// Updates the specified playerID's connectionID inside the database.
         /// Sets the ConnectionID to the ID passed in and sets IsConnected = TRUE
         /// </summary>
-        /// <param name="playerID">The player being updated</param>
-        /// <param name="connectionID">The new connectionID</param>
+        /// <param name="player">The player being updated</param>
         public void UpdateConnectionID(Player player)
         {
             StoredProcedure = "usp_UpdateConnectionID";
@@ -98,15 +114,17 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
         /// <summary>
         /// Adds the player to the game matching the gamecode passed in.
         /// Returns the created Player object. NULL data if error occurred.
         /// </summary>
-        /// <param name="gameCode">The gamecode the player is attempting to join</param>
-        /// <param name="nickname">The nickname chosen by the player</param>
-        /// <param name="contact">The email or phone number entered by the player to receive notifications</param>
-        /// <param name="isPhone">Flag value which outlines if the contact passed in is a phone number or email. TRUE = phone number, FALSE = email</param>
-        /// <returns>The created Player object or NULL data if error occurred.</returns>
+        /// <param name="game">The game the player is joining.</param>
+        /// <param name="player">The player joining the game.</param>
+        /// <param name="verificationCode">The players verification which the player needs to verify.</param>
+        /// <returns>The created player object.</returns>
         public Response<Player> JoinGame(Game game, Player player, int verificationCode)
         {
             StoredProcedure = "usp_JoinGame";
@@ -166,8 +184,8 @@ namespace INFT3970Backend.Data_Access_Layer
         /// If the player successfully enters the validation code their player record will be set to "Verified"
         /// </summary>
         /// <param name="verificationCode">The verification code to confirm is correct</param>
-        /// <param name="playerID">The ID of the player to verify.</param>
-        /// <returns></returns>
+        /// <param name="player">The player to verify.</param>
+        /// <returns>The updated player record.</returns>
         public Response<Player> ValidateVerificationCode(int verificationCode, Player player)
         {
             StoredProcedure = "usp_ValidateVerificationCode";
@@ -215,12 +233,10 @@ namespace INFT3970Backend.Data_Access_Layer
 
         /// <summary>
         /// Updates the Player's verification code.
-        /// Returns a Response with string data, where the data is the contact (phone or email) of the playerID in
-        /// order to resend the verification code.
         /// </summary>
-        /// <param name="playerID">The playerID who's verification code is being updated</param>
+        /// <param name="player">The player who's verification code is being updated</param>
         /// <param name="verificationCode">The new verification code</param>
-        /// <returns>The email or phone number to send the new verification code to. NULL data if error.</returns>
+        /// <returns>The updated player record.</returns>
         public Response<Player> UpdateVerificationCode(Player player, int verificationCode)
         {
             StoredProcedure = "usp_UpdateVerificationCode";
@@ -298,10 +314,11 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Gets a list of all notifications for the passed player
+        /// Gets the list of notifications for the player, ordered by most recent.
         /// </summary>
-        /// <param name="playerID"></param>
-        /// <returns>A list of Notification objects for the respective playerID.</returns>
+        /// <param name="player">The player whos notifications are being retrieved.</param>
+        /// <param name="all">A flag value which outlines if should get all notifications or just unread notifications.</param>
+        /// <returns>The list of players notifications.</returns>
         public Response<List<Notification>> GetNotificationList(Player player, bool all)
         {
             StoredProcedure = "usp_GetNotifications";
@@ -351,11 +368,15 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
         /// <summary>
-        /// Leaves a player from their active game
+        /// Leaves a player from the game.
         /// </summary>
-        /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
-        /// <returns>A response status.</returns>
+        /// <param name="player">The player leaving the game.</param>
+        /// <param name="isGameCompleted">The output param which outlines if the game is now complete after removing the player</param>
+        /// <param name="isPhotosCompleted">The output param which outlines if photos have now finished voting after the player leaves.</param>
+        /// <returns>A list of photos which have been completed after the player leaves.</returns>
         public Response<List<Photo>> LeaveGame(Player player, ref bool isGameCompleted, ref bool isPhotosCompleted)
         {
             StoredProcedure = "usp_LeaveGame";
@@ -414,8 +435,6 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
-
-
         /// <summary>
         /// Removes the unverified player from the game.
         /// </summary>
@@ -467,10 +486,10 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Marks player notifications as read.
+        /// Marks a players notifications as read.
         /// </summary>
-        /// <param name="playerID">The playerID used to determine which player is leaving the game.</param>
-        /// <returns>A response status.</returns>
+        /// <param name="jsonNotificationIDs">The ID's of notifications to set as read.</param>
+        /// <returns>Success or error.</returns>
         public Response SetNotificationsRead(ReadNotificationsRequest jsonNotificationIDs)
         {
             StoredProcedure = "usp_SetNotificationsRead";
@@ -516,7 +535,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <summary>
         /// Decrements a players ammo count.
         /// </summary>
-        /// <param name="playerID">The playerID to decrement</param>
+        /// <param name="player">The player to decrement</param>
         /// <returns>The updated player object</returns>
         public Response<Player> UseAmmo(Player player)
         {
@@ -561,9 +580,9 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Replenish a players ammo count.
+        /// Replenish a players ammo count. Incrementing by 1.
         /// </summary>
-        /// <param name="playerID">The playerID to update</param>
+        /// <param name="player">The player to update</param>
         /// <returns>The updated player object.</returns>
         public Response<Player> ReplenishAmmo(Player player)
         {
@@ -612,7 +631,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// <summary>
         /// Gets the ammo count for the player.
         /// </summary>
-        /// <param name="playerID">The ID of the Player</param>
+        /// <param name="player">The Player</param>
         /// <returns>The ammo count, negative INT if an error occurred.</returns>
         public Response<int> GetAmmoCount(Player player)
         {
@@ -688,6 +707,57 @@ namespace INFT3970Backend.Data_Access_Layer
             catch
             {
                 return Response<int>.DatabaseErrorResponse();
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Disables or Re-enables a player in a BR game.
+        /// If the player is disabled they will be re-enabled and vice versa.
+        /// </summary>
+        /// <param name="player">The player being enabled or re-enabled</param>
+        /// <param name="disabledForMinutes">The number of minutes the player is disabled.</param>
+        /// <returns>The updated player record.</returns>
+        public Response<Player> BR_DisableOrRenablePlayer(Player player, int disabledForMinutes)
+        {
+            StoredProcedure = "usp_BR_DisablePlayer";
+            try
+            {
+                //Create the connection and command for the stored procedure
+                using (Connection = new SqlConnection(ConnectionString))
+                {
+                    using (Command = new SqlCommand(StoredProcedure, Connection))
+                    {
+                        //Add the procedure input and output params
+                        AddParam("playerID", player.PlayerID);
+                        AddParam("isAlreadyDisabled", player.IsDisabled);
+                        AddParam("disabledForMinutes", disabledForMinutes);
+                        AddDefaultParams();
+
+                        //Perform the procedure and get the result
+                        RunReader();
+                        while (Reader.Read())
+                        {
+                            player = new ModelFactory(Reader).PlayerFactory(true);
+                            if (player == null)
+                                return new Response<Player>("An error occurred while trying to build the player model.", ErrorCodes.BUILD_MODEL_ERROR);
+                        }
+                        Reader.Close();
+
+                        //Format the results into a response object
+                        ReadDefaultParams();
+                        return new Response<Player>(player, ErrorMSG, Result);
+                    }
+                }
+            }
+
+            //A database exception was thrown, return an error response
+            catch
+            {
+                return Response<Player>.DatabaseErrorResponse();
             }
         }
     }

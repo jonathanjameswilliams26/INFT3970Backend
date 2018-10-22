@@ -1,4 +1,19 @@
-﻿using INFT3970Backend.Hubs;
+﻿///-----------------------------------------------------------------
+///   Class:        GameController
+///   
+///   Description:  The API Endpoint for all Game requests such as
+///                 creating games, beginning games etc.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using INFT3970Backend.Models.Requests;
 using INFT3970Backend.Models.Responses;
@@ -13,7 +28,7 @@ namespace INFT3970Backend.Controllers
     [ApiController]
     public class GameController : ControllerBase
     {
-        //The application hub context, used to be able to invokve client methods from anywhere in the code
+        //The application hub context, used to to invoke client methods anywhere in the code to send out live updates to clients via SignalR
         private readonly IHubContext<ApplicationHub> _hubContext;
         public GameController(IHubContext<ApplicationHub> hubContext)
         {
@@ -22,8 +37,11 @@ namespace INFT3970Backend.Controllers
 
 
 
+
+
+
         /// <summary>
-        /// POST: api/player/createGame - Creates a new game and joins a player to their created game, 
+        /// Creates a new game and joins a player to their created game, 
         /// creating a new Player record and returning the created Player object with the created Game data/object.
         /// </summary>
         /// <param name="request">The request object containing the player information.</param>
@@ -127,6 +145,7 @@ namespace INFT3970Backend.Controllers
         /// ACTIVE = get all players in the game which arnt deleted and is active
         /// INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
         /// INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified(includes players who have left the game)
+        /// TAGGABLE = get all players in the game which arnt deleted, is active, have been verified, have not left game, have not been eliminated and is not the playerID making the request.
         ///
         /// ORDER by
         /// AZ = Order by name in alphabetical order
@@ -142,9 +161,6 @@ namespace INFT3970Backend.Controllers
         [Route("api/game/getAllPlayersInGame/{id:int}/{isPlayerID:bool}/{filter}/{orderBy}")]
         public ActionResult<Response<Game>> GetAllPlayersInGame(int id, bool isPlayerID, string filter, string orderBy)
         {
-            //Example request
-            //https://localhost:5000/api/game/getAllPlayersInGame/100000/true/INGAME/AZ
-
             try
             {
                 //Validate the filer and orderby value is a valid value
@@ -195,7 +211,7 @@ namespace INFT3970Backend.Controllers
 
 
         /// <summary>
-        /// Begins the Game
+        /// Begins the game.
         /// </summary>
         /// <param name="playerID">The ID of the host player, the host player is the only player who can begin the game</param>
         /// <returns>The updated Game object after being updated in the database.</returns>
@@ -205,6 +221,7 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
+                //Create the player object and begin the game.
                 var hostPlayer = new Player(playerID);
                 var response = new GameDAL().BeginGame(hostPlayer);
 
@@ -231,6 +248,8 @@ namespace INFT3970Backend.Controllers
                 return StatusCode(500);
             }
         }
+
+
 
 
 

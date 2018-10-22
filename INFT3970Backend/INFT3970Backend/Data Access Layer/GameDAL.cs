@@ -1,4 +1,19 @@
-﻿using System;
+﻿///-----------------------------------------------------------------
+///   Class:        GameDAL
+///   
+///   Description:  The DataAccessLayer for all Game updates in the database.
+///                 Extends the base DataAccessLayer class.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -10,10 +25,10 @@ namespace INFT3970Backend.Data_Access_Layer
     public class GameDAL : DataAccessLayer
     {
         /// <summary>
-        /// Creates a new game using the game code passed in. Returns the create Game object. NULL if error.
+        /// Creates a new game in the database.
         /// </summary>
-        /// <param name="gameCode">The gamecode of the new game</param>
-        /// <returns>Returns the created Game object. NULL data if error</returns>
+        /// <param name="game">The game to add to the database.</param>
+        /// <returns>The created game object added to the DB</returns>
         public Response<Game> CreateGame(Game game)
         {
             StoredProcedure = "usp_CreateGame";
@@ -62,11 +77,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+        
+
+
         /// <summary>
-        /// Sets the game to inactive after a game was created by the host player and failed to join the game due to an unexpected
-        /// error such as invalid contact details or the contact details are already taken by another player in an active playing game.
+        /// Deactivates / deletes the created game after the host player failed
+        /// to join the game due to an error.
         /// </summary>
-        /// <param name="gameCode">The game code being deactivated</param>
+        /// <param name="game">The game being deactivated.</param>
         public void DeactivateGameAfterHostJoinError(Game game)
         {
             StoredProcedure = "usp_DeactivateGameAfterHostJoinError";
@@ -97,11 +115,13 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
         /// <summary>
         /// Gets the Game object matching the specified GameID
         /// </summary>
         /// <param name="gameID">The gameID of the game</param>
-        /// <returns>Game object matching the specified ID. NULL if game does not exist or error occurred.</returns>
+        /// <returns>Game object matching the specified ID.</returns>
         public Response<Game> GetGameByID(int gameID)
         {
             StoredProcedure = "usp_GetGameByID";
@@ -142,12 +162,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
         /// <summary>
-        /// Creates a notification of type JOIN, sent to all players notifying.
+        /// Creates a notification of type JOIN for all players in the game.
+        /// Notifying them that a new player has joined the game.
         /// </summary>
-        /// <param name="gameID">The gameID of the game</param>
-        /// <param name="playerID">The playerID of who joined the game.</param>
-        /// <returns>void</returns>
+        /// <param name="player">The player who joined the game.</param>
         public void CreateJoinNotification(Player player)
         {
             StoredProcedure = "usp_CreateJoinNotification";
@@ -175,12 +197,14 @@ namespace INFT3970Backend.Data_Access_Layer
         }
 
 
+
+
+
         /// <summary>
-        /// Creates a notification of type LEAVE, sent to all players notifying.
+        /// Creates a notification of type LEAVE for all players in the game.
+        /// Notifying them that a player has left the game.
         /// </summary>
-        /// <param name="gameID">The gameID of the game</param>
-        /// <param name="playerID">The playerID of who left the game.</param>
-        /// <returns>void</returns>
+        /// <param name="player">The player who left the game.</param>
         public void CreateLeaveNotification(Player player)
         {
             StoredProcedure = "usp_CreateLeaveNotification";
@@ -211,12 +235,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
         /// <summary>
-        /// Creates a notification of type AMMO, sent a specific player
+        /// Creates a notification of type AMMO, sent a specific player.
+        /// Notifying them that their ammo has been replenished from an empty state.
         /// </summary>
-        /// <param name="gameID">The gameID of the game</param>
-        /// <param name="playerID">The playerID of the receiver.</param>
-        /// <returns>void</returns>
+        /// <param name="player">The player who left the game.</param>
         public Response CreateAmmoNotification(Player player)
         {
             StoredProcedure = "usp_CreateAmmoNotification";
@@ -247,6 +273,17 @@ namespace INFT3970Backend.Data_Access_Layer
             }
         }
 
+
+
+
+
+        /// <summary>
+        /// Ends the game lobby after the host player left the game while the game
+        /// is InLobby state. This is because only the host player can start the game
+        /// so if the host leaves the lobby no player can start the game.
+        /// </summary>
+        /// <param name="game">The game being ended.</param>
+        /// <returns>Success or error.</returns>
         public Response EndLobby(Game game)
         {
             StoredProcedure = "usp_EndLobby";
@@ -279,12 +316,16 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
+
         /// <summary>
-        /// Creates a notification of type SUCCESS or FAIL, sent to specific player.
+        /// Creates a notification of type SUCCESS or FAIL for all players in the game.
+        /// Notifies all players that a tag was successful or unsuccessful. 
         /// </summary>
-        /// <param name="gameID">The gameID of the game</param>
-        /// <param name="playerID">The playerID of the receiver.</param>
-        /// <returns>void</returns>
+        /// <param name="photo">The photo which has now been completed.</param>
+        /// <param name="isBR">A flag which outlines if the request is for a BR game.</param>
         public void CreateTagResultNotification(Photo photo, bool isBR)
         {
             if(isBR)
@@ -325,10 +366,10 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Completes A Game in the Database.
+        /// Completes a game. Deactivating all records associated with the game.
         /// </summary>
         /// <param name="gameID">The ID of the Game to Complete</param>
-        /// <returns></returns>
+        /// <returns>Success or error.</returns>
         public Response CompleteGame(int gameID)
         {
             StoredProcedure = "usp_CompleteGame";
@@ -374,6 +415,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// ACTIVE = get all players in the game which arnt deleted and is active
         /// INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
         /// INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified(includes players who have left the game)
+        /// TAGGABLE = get all players in the game which arnt deleted, is active, have been verified, have not left game, have not been eliminated and is not the playerID making the request.
         ///
         /// ORDER by
         /// AZ = Order by name in alphabetical order
@@ -459,12 +501,12 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
         /// <summary>
-        /// Sets the Game State to starting in the database, updates the game start time to 10mins
-        /// in the future and sets the Game end time. After this method is run code will be scheduled
-        /// in the business logic to update the game to playing, then also update the game to be completed
+        /// Sets the Game State to starting in the database, updates the game start time to the
+        /// current time plus the start delay in the future and sets the Game end time. After this method is run code will be scheduled
+        /// in the business logic to update the game to playing, then also update the game to be completed.
         /// </summary>
-        /// <param name="playerID">The ID of the host player of the game. Only the host player can begin the game.</param>
-        /// <returns>The updated game object, NULL if an error occurred</returns>
+        /// <param name="player">The host player beginning the game.</param>
+        /// <returns>The updated game object.</returns>
         public Response<Game> BeginGame(Player player)
         {
             StoredProcedure = "usp_BeginGame";
@@ -506,12 +548,14 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
         /// <summary>
         /// Sets the GameState to the state passed in.
         /// </summary>
         /// <param name="gameID">The ID of the game to update</param>
         /// <param name="gameState">The new state to set.</param>
-        /// <returns></returns>
+        /// <returns>Success or error.</returns>
         public Response SetGameState(int gameID, string gameState)
         {
             StoredProcedure = "usp_SetGameState";
@@ -555,7 +599,7 @@ namespace INFT3970Backend.Data_Access_Layer
         /// back to the web application in order to the front end to be updated with the current
         /// game / application state so the front end can redirect the user accordingly.
         /// </summary>
-        /// <param name="playerID">The ID of the player</param>
+        /// <param name="player">The player making the request.</param>
         /// <returns>
         /// A GameStatusResponse object which outlines the GameState, 
         /// if the player has votes to complete, if the player has any new notifications 

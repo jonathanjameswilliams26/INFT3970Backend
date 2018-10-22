@@ -287,7 +287,7 @@ namespace INFT3970Backend.Helpers
             Thread.Sleep(timeToWait);
 
             //Renable the player
-            var response = new BattleRoyaleDAL().BR_DisableOrRenablePlayer(player, 0);
+            var response = new PlayerDAL().BR_DisableOrRenablePlayer(player, 0);
             if (!response.IsSuccessful())
                 return;
 

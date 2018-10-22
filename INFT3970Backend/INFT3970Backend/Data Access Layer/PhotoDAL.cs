@@ -1,8 +1,21 @@
-﻿using System.Collections.Generic;
+﻿///-----------------------------------------------------------------
+///   Class:        PhotoDAL
+///   
+///   Description:  The DataAccessLayer for all Photo updates in the database.
+///                 Extends the base DataAccessLayer class.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using System.Collections.Generic;
 using INFT3970Backend.Models;
 using System.Data.SqlClient;
-using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace INFT3970Backend.Data_Access_Layer
 {
@@ -10,54 +23,14 @@ namespace INFT3970Backend.Data_Access_Layer
     {
         public PhotoDAL() { }
 
-        public Response<List<Photo>> GetPhotoLocation(int photoID)
-        {
-            StoredProcedure = "usp_GetPlayerPhotoLocation";
-            List<Photo> photos = new List<Photo>();
-            try
-            {
-                //Create the connection and command for the stored procedure
-                using (Connection = new SqlConnection(ConnectionString))
-                {
-                    using (Command = new SqlCommand(StoredProcedure, Connection))
-                    {
-                        //Add the procedure input and output params
-                        AddParam("photoID", photoID);
-                        AddDefaultParams();
-
-                        //Perform the procedure and get the result
-                        RunReader();
-                        while (Reader.Read())
-                        {
-                            ModelFactory factory = new ModelFactory(Reader);
-                            Photo photo = factory.PhotoFactory(false, false, false);
-                            if (photo == null)
-                                return new Response<List<Photo>>("An error occurred while trying to build the photo list.", ErrorCodes.BUILD_MODEL_ERROR);
-
-                            photos.Add(photo);
-                        }
-                        Reader.Close();
-                        
-                        //Format the results into a response object
-                        ReadDefaultParams();
-                        return new Response<List<Photo>>(photos, ErrorMSG, Result);
-                    } 
-                }
-            }
-            catch
-            {
-                return Response<List<Photo>>.DatabaseErrorResponse();
-            }
-        }
-
-
 
 
         /// <summary>
         /// Saves a photo to the database, creates all PlayerVotePhoto records and returns the created Photo record in the DB.
         /// </summary>
         /// <param name="photo">The photo object to save to the database.</param>
-        /// <returns></returns>
+        /// <param name="isBR">A flag value which outlines if the photo being uploaded is apart of a BR game.</param>
+        /// <returns>The created Photo object saved to the database.</returns>
         public Response<Photo> SavePhoto(Photo photoToSave, bool isBR)
         {
             if(isBR)
@@ -107,6 +80,12 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+        /// <summary>
+        /// Get the last photo taken by each player in order to retrieve each players last known location.
+        /// </summary>
+        /// <param name="player">The player making the request.</param>
+        /// <returns>A list of photos containing each other players in the game last taken photo.</returns>
         public Response<List<Photo>> GetLastKnownLocations(Player player)
         {
             StoredProcedure = "usp_GetLastKnownLocations";
@@ -154,10 +133,10 @@ namespace INFT3970Backend.Data_Access_Layer
 
         /// <summary>
         /// Gets a photo from the database matching the specified ID.
-        /// Returns the Photo matching the ID. NULL if the photo does not exist.
+        /// Returns the Photo matching the ID.
         /// </summary>
         /// <param name="id">The ID of the photo to get.</param>
-        /// <returns></returns>
+        /// <returns>The photo object matching the passed in ID</returns>
         public Photo GetPhotoByID(int id)
         {
             StoredProcedure = "usp_GetPhotoByID";
@@ -205,7 +184,8 @@ namespace INFT3970Backend.Data_Access_Layer
         /// Returns the updated photo record. NULL if error or ID does not exist.
         /// </summary>
         /// <param name="photoID">The ID of the photo to update.</param>
-        /// <returns></returns>
+        /// <param name="isBR">A flag value which outlines if the game is a BR game.</param>
+        /// <returns>The updated photo object.</returns>
         public Response<Photo> VotingTimeExpired(int photoID, bool isBR)
         {
             if (isBR)
@@ -249,11 +229,13 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
         /// <summary>
-        /// Gets the list of votes the player must complete / the PlayerVotePhoto records which have not been completed by the player.
+        /// Gets the list of votes the player must complete / the Vote records which have not been completed by the player.
         /// </summary>
-        /// <param name="playerID">The playerID which PlayerVotePhotoRecords to get</param>
-        /// <returns></returns>
+        /// <param name="player">The player who votes to complete are being obtained.</param>
+        /// <returns>The list of votes the player must complete before continuing to play the game.</returns>
         public Response<List<Vote>> GetVotesToComplete(Player player)
         {
             StoredProcedure = "usp_GetVotesToComplete";
@@ -273,7 +255,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         RunReader();
                         while (Reader.Read())
                         {
-                            Vote playerVotePhoto = new ModelFactory(Reader).PlayerVotePhotoFactory(true, true);
+                            Vote playerVotePhoto = new ModelFactory(Reader).VoteFactory(true, true);
                             if (playerVotePhoto == null)
                                 return new Response<List<Vote>>("An error occurred while trying to build the model.", ErrorCodes.BUILD_MODEL_ERROR);
                             else
@@ -296,6 +278,15 @@ namespace INFT3970Backend.Data_Access_Layer
 
 
 
+
+
+
+        /// <summary>
+        /// The player casts their vote on the photo, outlining if the photo is successful or not.
+        /// </summary>
+        /// <param name="playerVote">The vote being casted.</param>
+        /// <param name="isBR">A flag which outlines if the game is a BR game.</param>
+        /// <returns>The updated Vote object.</returns>
         public Response<Vote> VoteOnPhoto(Vote playerVote, bool isBR)
         {
             if (isBR)
@@ -320,7 +311,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         RunReader();
                         while (Reader.Read())
                         {
-                            playerVotePhoto = new ModelFactory(Reader).PlayerVotePhotoFactory(true, true);
+                            playerVotePhoto = new ModelFactory(Reader).VoteFactory(true, true);
                             if (playerVotePhoto == null)
                                 return new Response<Vote>("An error occurred while trying to build the model.", ErrorCodes.BUILD_MODEL_ERROR);
                         }
