@@ -146,6 +146,7 @@ namespace INFT3970Backend.Controllers
         /// INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
         /// INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified(includes players who have left the game)
         /// TAGGABLE = get all players in the game which arnt deleted, is active, have been verified, have not left game, have not been eliminated and is not the playerID making the request.
+        /// HOST = get all players in the game for the host lobby view, all players including unverified players, who have not left the game and not deleted
         ///
         /// ORDER by
         /// AZ = Order by name in alphabetical order
@@ -169,7 +170,7 @@ namespace INFT3970Backend.Controllers
 
                 //Confirm the filter value passed in is a valid value
                 var isFilterValid = false;
-                if (filter.ToUpper() == "ALL" || filter.ToUpper() == "ACTIVE" || filter.ToUpper() == "INGAME" || filter.ToUpper() == "INGAMEALL" || filter.ToUpper() == "TAGGABLE")
+                if (filter.ToUpper() == "ALL" || filter.ToUpper() == "ACTIVE" || filter.ToUpper() == "INGAME" || filter.ToUpper() == "INGAMEALL" || filter.ToUpper() == "TAGGABLE" || filter.ToUpper() == "HOST")
                     isFilterValid = true;
 
                 //Confirm the order by value passed in is a valid value

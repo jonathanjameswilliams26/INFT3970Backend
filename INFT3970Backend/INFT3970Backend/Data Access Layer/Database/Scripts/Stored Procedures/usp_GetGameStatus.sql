@@ -16,7 +16,6 @@ GO
 CREATE PROCEDURE [dbo].[usp_GetGameStatus] 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
-	@gameState VARCHAR(255) OUTPUT,
 	@hasVotesToComplete BIT OUTPUT,
 	@hasNotifications BIT OUTPUT,
 	@result INT OUTPUT,
@@ -53,43 +52,34 @@ BEGIN
 		DECLARE @gameID INT;
 		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
 
-		--Get the GameState of the game
-		SELECT @gameState = GameState FROM tbl_Game WHERE GameID = @gameID
-
 		--Setting the default values for the notification and votes
 		SET @hasNotifications = 0;
 		SET @hasVotesToComplete = 0;
 
-		--The game is currently playing, check to see if the player has any new votes / notifications
-		--If the game is in any other state they will not have any notifications / votes to complete
-		IF(@gameState LIKE 'PLAYING')
+		--Check to see if the player has any votes they need to complete
+		DECLARE @countVotes INT = 0;
+		SELECT @countVotes = COUNT(*)
+		FROM vw_Incomplete_Votes
+		WHERE 
+			PlayerID = @playerID
+		IF(@countVotes > 0)
 		BEGIN
-
-			--Check to see if the player has any votes they need to complete
-			DECLARE @countVotes INT = 0;
-			SELECT @countVotes = COUNT(*)
-			FROM vw_Incomplete_Votes
-			WHERE 
-				PlayerID = @playerID
-			IF(@countVotes > 0)
-			BEGIN
-				SET @hasVotesToComplete = 1;
-			END
-			
-			--Check to see if the player has any new notifications
-			DECLARE @countNotifs INT = 0;
-			SELECT @countNotifs = COUNT(*)
-			FROM vw_Unread_Notifications
-			WHERE
-				PlayerID = @playerID	
-			IF(@countNotifs > 0)
-			BEGIN
-				SET @hasNotifications = 1;
-			END
-			
-			--Get the player record
-			SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @playerID
+			SET @hasVotesToComplete = 1;
 		END
+			
+		--Check to see if the player has any new notifications
+		DECLARE @countNotifs INT = 0;
+		SELECT @countNotifs = COUNT(*)
+		FROM vw_Unread_Notifications
+		WHERE
+			PlayerID = @playerID	
+		IF(@countNotifs > 0)
+		BEGIN
+			SET @hasNotifications = 1;
+		END
+			
+		--Get the player record
+		SELECT * FROM vw_Join_PlayerGame WHERE PlayerID = @playerID
 		
 		SET @result = 1;
 		SET @errorMSG = '';

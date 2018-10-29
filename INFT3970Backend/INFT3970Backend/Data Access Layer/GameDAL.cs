@@ -618,7 +618,6 @@ namespace INFT3970Backend.Data_Access_Layer
                     {
                         //Add the procedure input and output params
                         AddParam("playerID", player.PlayerID);
-                        AddOutput("gameState", SqlDbType.VarChar);
                         AddOutput("hasVotesToComplete", SqlDbType.Bit);
                         AddOutput("hasNotifications", SqlDbType.Bit);
                         AddDefaultParams();
@@ -641,10 +640,9 @@ namespace INFT3970Backend.Data_Access_Layer
                         //If the result is not an error build the GameStatus object and assign it to the response
                         if(!IsError)
                         {
-                            string gameState = Convert.ToString(Command.Parameters["@gameState"].Value);
                             bool hasVotesToComplete = Convert.ToBoolean(Command.Parameters["@hasVotesToComplete"].Value);
                             bool hasNotifications = Convert.ToBoolean(Command.Parameters["@hasNotifications"].Value);
-                            GameStatusResponse gsr = new GameStatusResponse(gameState, hasVotesToComplete, hasNotifications, updatedPlayer);
+                            GameStatusResponse gsr = new GameStatusResponse(hasVotesToComplete, hasNotifications, updatedPlayer);
                             response.Data = gsr;
                         }
                         return response;

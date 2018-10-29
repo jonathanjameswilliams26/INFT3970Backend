@@ -1,4 +1,21 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿///-----------------------------------------------------------------
+///   Class:        ApplicationHub
+///   
+///   Description:  The SignalR hub class which clients connect to in order to
+///                 receive live updates. The clients connectionID is maintained in the
+///                 database as persistent storage.
+///                 
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;

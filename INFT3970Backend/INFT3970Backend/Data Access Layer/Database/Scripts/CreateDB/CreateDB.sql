@@ -2050,7 +2050,6 @@ GO
 
 
 
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -2202,6 +2201,22 @@ BEGIN
 				GameID = @id AND
 				(IsEliminated = 0 OR IsEliminated IS NULL) AND
 				PlayerID <> @playerID
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
+
+		--If filter = HOST get all the players in the game which arnt deleted, and have not left the game, include unverified players
+		IF(@filter LIKE 'HOST')
+		BEGIN
+			SELECT * 
+			FROM 
+				vw_All_Players
+			WHERE 
+				GameID = @id AND
+				HasLeftGame = 0 AND
+				PlayerIsActive = 1
 			ORDER BY
 				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
 				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,

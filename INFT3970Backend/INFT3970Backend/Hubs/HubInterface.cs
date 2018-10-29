@@ -1,13 +1,38 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿///-----------------------------------------------------------------
+///   Class:        HubInterface
+///   
+///   Description:  A class which provides an interface to the SignalR hub
+///                 in order to send live updates to clients connected to
+///                 the web application. Provides methods to update clients
+///                 for many different scenarios such as a player joining the game,
+///                 leaving the game, a photo has been uploaded etc.
+///                 
+///                 The live updates are methods being invoked on the client
+///                 to handle the different scenarios. So whenever a client
+///                 is updated by the command:
+///                 hubContext.Clients.Client(player.ConnectionID).SendAsync("methodName");
+///                 will invoke a method on the client.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;
-using System;
 
 namespace INFT3970Backend.Hubs
 {
     public class HubInterface
     {
+
+        //The application hub context, used to to invoke client methods anywhere in the code to send out live updates to clients via SignalR
         private readonly IHubContext<ApplicationHub> _hubContext;
         public HubInterface(IHubContext<ApplicationHub> hubContext)
         {
@@ -31,7 +56,7 @@ namespace INFT3970Backend.Hubs
         /// An out of game notification will be sent to the players contact (Email or phone) if the player is 
         /// not currently connected to the application hub when GameState = STARTING, PLAYING.
         /// </summary>
-        /// <param name="joinedPlayer"></param>
+        /// <param name="joinedPlayer">The player who joined the game.</param>
         public async void UpdatePlayerJoinedGame(Player joinedPlayer)
         {
             //Get the list of players currently in the game
@@ -121,7 +146,7 @@ namespace INFT3970Backend.Hubs
         /// Updates all the clients either via IN-GAME notifications or notificiations via text/email that
         /// a new photo has been uploaded to their game of CamTag and is ready to be voted on.
         /// </summary>
-        /// <param name="uploadedPhoto">The photo model which has been uploaded.</param>
+        /// <param name="uploadedPhoto">The photo which has been uploaded.</param>
         public async void UpdatePhotoUploaded(Photo uploadedPhoto)
         {
             //Get the list of players currently in the game
@@ -160,18 +185,6 @@ namespace INFT3970Backend.Hubs
 
 
 
-        
-
-
-
-
-
-        
-
-
-
-
-
         /// <summary>
         /// Sends a notification to the Players in the game that a player has left the game.
         /// If the game is currently in the Lobby (GameState = STARTING) then no notification will be sent, the lobby list will be updated.
@@ -179,7 +192,7 @@ namespace INFT3970Backend.Hubs
         /// A notification will be sent to the players contact (Email or phone) if the player is not currently connected to the application hub.
         /// Otherwise, if the player is currently in the app and connected to the hub an InGame notification will be sent to the client.
         /// </summary>
-        /// <param name="playerID">The playerID of the player who left the game</param>
+        /// <param name="leftPlayer">The player who left the game</param>
         public async void UpdatePlayerLeftGame(Player leftPlayer)
         {
             //Get all the players currently in the game
@@ -226,7 +239,7 @@ namespace INFT3970Backend.Hubs
             }
         }
 
-        
+
 
 
 
@@ -237,7 +250,8 @@ namespace INFT3970Backend.Hubs
         /// Will send a notification to Phone/Email if the players arnt connected to the hub.
         /// If the players are connected to the hub a hub method will be invoked.
         /// </summary>
-        /// <param name="gameID">The gameID which was completed</param>
+        /// <param name="game">The game which was completed</param>
+        /// <param name="isNotEnoughPlayers">A flag if the game ended because too many players left the game.</param>
         public async void UpdateGameCompleted(Game game, bool isNotEnoughPlayers)
         {
             //Get the list of players from the game
@@ -273,6 +287,13 @@ namespace INFT3970Backend.Hubs
 
 
 
+
+
+        /// <summary>
+        /// Sends out live updates to the all players currently in the lobby that the lobby is now ended 
+        /// because the host player left the lobby.
+        /// </summary>
+        /// <param name="game">The game being ended.</param>
         public async void UpdateLobbyEnded(Game game)
         {
             //Get the list of players from the game
@@ -332,6 +353,14 @@ namespace INFT3970Backend.Hubs
             }
         }
 
+
+
+
+
+        /// <summary>
+        /// Update a specific player for them to update their notification counter.
+        /// </summary>
+        /// <param name="playerID"></param>
         public async void UpdateNotificationsRead(int playerID)
         {
             //Get the player from the database
@@ -420,10 +449,15 @@ namespace INFT3970Backend.Hubs
 
 
 
-
-
-
         //BATTLE ROYALE HUB METHODS
+        //-------------------------------------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Update a specific player that they have now been disabled for taking a photo outside of the BR playing zone.
+        /// </summary>
+        /// <param name="player">The player being disabled.</param>
+        /// <param name="totalMinutesDisabled">The number of minutes being disabled.</param>
         public async void BR_UpdatePlayerDisabled(Player player, int totalMinutesDisabled)
         {
             //Update the player if they are connected to the application
@@ -438,6 +472,13 @@ namespace INFT3970Backend.Hubs
 
 
 
+
+
+
+        /// <summary>
+        /// Update a specific player that they have now been re-enabled and can take photos again.
+        /// </summary>
+        /// <param name="player">The player being re-enabled</param>
         public async void BR_UpdatePlayerReEnabled(Player player)
         {
             //Get the player from the database as this will run after a certain amount of time.
@@ -460,6 +501,13 @@ namespace INFT3970Backend.Hubs
 
 
 
+
+
+        /// <summary>
+        /// Update all players in the game that a photo's voting has now been completed.
+        /// Send out notifications to the tagged and tagging players and all other players.
+        /// </summary>
+        /// <param name="photo">The photo which has now been completed.</param>
         public async void UpdatePhotoVotingCompleted(Photo photo)
         {  
             //Generate the messages to be sent
@@ -512,6 +560,15 @@ namespace INFT3970Backend.Hubs
 
 
 
+
+
+        /// <summary>
+        /// Helper method for UpdateVotingCompleted which generates the notification messages
+        /// for the tagging and tagged player depending on if the game is BR game or not.
+        /// </summary>
+        /// <param name="completedPhoto">The photo which has been completed</param>
+        /// <param name="takenByMessage">The output param which is the message to send to the tagging player</param>
+        /// <param name="photoOfMessage">The output param which is the message to send to the tagged player</param>
         private void GenerateVotingCompleteMessages(Photo completedPhoto, ref string takenByMessage, ref string photoOfMessage)
         {
             //If the completed photo is apart of a BR game process the BR Eliminated message

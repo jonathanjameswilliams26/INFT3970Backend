@@ -1,4 +1,19 @@
-﻿using INFT3970Backend.Data_Access_Layer;
+﻿///-----------------------------------------------------------------
+///   Class:        EmailSender
+///   
+///   Description:  A helper class used to schedule code to run after a
+///                 certain period of time such as scheduling a game to be complete etc.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Hubs;
 using INFT3970Backend.Models;
 using System;
@@ -202,6 +217,8 @@ namespace INFT3970Backend.Helpers
 
 
 
+
+
         /// <summary>
         /// The code which will run in a new thread after the FinishVotingTime has passed.
         /// The method checks to see if all players have voted on the image and if not, will
@@ -209,7 +226,7 @@ namespace INFT3970Backend.Helpers
         /// to the affected players. 
         /// </summary>
         /// <param name="uploadedPhoto">The photo which was uploaded and being checked if voting has been completed.</param>
-        /// /// <param name="timeToWait">The number of milliseconds to wait for the thread to start.</param>
+        /// <param name="timeToWait">The number of milliseconds to wait for the thread to start.</param>
         /// <param name="hubInterface">The Hub interface which will be used to send notifications / updates</param>
         private static void Run_CheckPhotoVotingCompleted(Photo uploadedPhoto, int timeToWait, HubInterface hubContext)
         {
@@ -270,6 +287,15 @@ namespace INFT3970Backend.Helpers
 
 
 
+
+
+        /// <summary>
+        /// Schedules a player to be re-enabled after a certain period of time after they have been disabled
+        /// after being disabled for taking a photo outside of the playing zone in a BR game.
+        /// </summary>
+        /// <param name="player">The player being re-enabled</param>
+        /// <param name="totalMillisecondsDisabled">The number of milliseconds to wait for the thread to start.</param>
+        /// <param name="hubInterface">The Hub interface which will be used to send notifications / updates</param>
         public static void BR_SchedulePlayerReEnabled(Player player, HubInterface hubInterface, int totalMillisecondsDisabled)
         {
             int timeToWait = totalMillisecondsDisabled;
@@ -281,6 +307,14 @@ namespace INFT3970Backend.Helpers
             SchedulePlayerReEnabled.Start();
         }
 
+
+
+        /// <summary>
+        /// The code which will run after the disabled time has elapsed and the player will be re-enabled.
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="timeToWait"></param>
+        /// <param name="hubInterface"></param>
         private static void Run_RenablePlayer(Player player, int timeToWait, HubInterface hubInterface)
         {
             //Wait for the specified time
