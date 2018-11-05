@@ -84,7 +84,7 @@ BEGIN
 					DECLARE @gameID INT;
 					SELECT @gameID = GameID FROM tbl_Photo WHERE PhotoID = @photoID
 					SELECT @countPlayersLeft = COUNT(*) FROM vw_InGame_Players WHERE GameID = @gameID
-					IF(@countPlayersLeft < 3)
+					IF(@countPlayersLeft < 2)
 					BEGIN
 						--Complete the game because there is not enough players to play after the player was eliminated
 						--Call the end game stored procedure to end the game

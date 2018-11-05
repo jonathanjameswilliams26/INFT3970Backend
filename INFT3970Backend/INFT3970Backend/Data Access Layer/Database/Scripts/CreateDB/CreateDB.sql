@@ -2972,6 +2972,7 @@ GO
 
 
 
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -3043,9 +3044,12 @@ BEGIN
 			SET NumOfPlayers = NumOfPlayers - 1
 			WHERE GameID = @gameID
 
-			--If the player leaving the game is not verified then delete the player record because
-			--the player record was never valid in the first place.
-			IF EXISTS (SELECT * FROM vw_Active_Players WHERE PlayerID = @playerID AND IsVerified = 0)
+			--Get the game state
+			DECLARE @gameState VARCHAR(255);
+			SELECt @gameState = GameState FROM tbl_Game WHERE GameID = @gameID
+
+			--If the player is leaving a game which is currently in Lobby or Starting, delete the player record to allow other players to use nickname or contact info
+			IF (@gameState NOT LIKE 'PLAYING')
 			BEGIN
 				UPDATE tbl_Player
 				SET PlayerIsDeleted = 1
@@ -3054,12 +3058,10 @@ BEGIN
 				--There is nothing else to complete so return and commit the changes
 				SET @result = 1;
 				SET @errorMSG = '';
-				COMMIT;
-				RETURN;
 			END
 
 			--If the current game state is in lobby leave the stored procedure because there is nothing else to perform.
-			IF(SELECT GameState From vw_Active_Games WHERE GameID = @gameID) LIKE 'IN LOBBY'
+			IF(@gameState LIKE 'IN LOBBY')
 			BEGIN
 				SET @result = 1;
 				SET @errorMSG = '';
@@ -3086,7 +3088,7 @@ BEGIN
 
 
 			--If the current game state is STARTING leave the stored procedure because there is nothing else to perform.
-			IF(SELECT GameState From vw_Active_Games WHERE GameID = @gameID) LIKE 'STARTING'
+			IF(@gameState LIKE 'STARTING')
 			BEGIN
 				SET @result = 1;
 				SET @errorMSG = '';
@@ -4661,6 +4663,8 @@ GO
 
 
 
+
+
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON
@@ -4747,7 +4751,7 @@ BEGIN
 					DECLARE @gameID INT;
 					SELECT @gameID = GameID FROM tbl_Photo WHERE PhotoID = @photoID
 					SELECT @countPlayersLeft = COUNT(*) FROM vw_InGame_Players WHERE GameID = @gameID
-					IF(@countPlayersLeft < 3)
+					IF(@countPlayersLeft < 2)
 					BEGIN
 						--Complete the game because there is not enough players to play after the player was eliminated
 						--Call the end game stored procedure to end the game
@@ -4771,6 +4775,10 @@ BEGIN
 	END CATCH
 END
 GO
+
+
+
+
 
 
 
