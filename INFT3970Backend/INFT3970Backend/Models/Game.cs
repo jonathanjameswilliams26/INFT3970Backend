@@ -1,4 +1,22 @@
-﻿using INFT3970Backend.Models.Errors;
+﻿///-----------------------------------------------------------------
+///   Class:        Game
+///   
+///   Description:  A model which represents a CamTag game.
+///                 Maps to the data found in the Database and
+///                 provides business logic and functionality
+///                 such as calculating the current BR radius,
+///                 generating a GameCode etc.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using INFT3970Backend.Models.Errors;
 using System;
 using System.Collections.Generic;
 using System.Device.Location;
@@ -29,13 +47,19 @@ namespace INFT3970Backend.Models
         private double latitude;
         private int radius;
 
+
+
+        /// <summary>
+        /// The ID of the Game.
+        /// </summary>
         public int GameID
         {
             get { return gameID; }
             set
             {
-                var errorMSG = "GameID is invalid. Must be atleast 100000.";
+                string errorMSG = "GameID is invalid. Must be atleast 100000.";
 
+                //Confirm the gameID is within the valid range. Can be -1 when creating a game without and ID yet.
                 if (value == -1 || value >= 100000)
                     gameID = value;
                 else
@@ -45,17 +69,21 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The unique GameCode which players use to join the game
+        /// </summary>
         public string GameCode
         {
             get { return gameCode; }
             set
             {
-                var errorMSG = "GameCode is invalid. Must be 6 characters long and only contain letters and numbers.";
+                string errorMSG = "GameCode is invalid. Must be 6 characters long and only contain letters and numbers.";
 
+                //Confirm the GameCode is a valid value
                 if (value == null)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
 
-                var gameCodeRegex = new Regex(@"^[a-zA-Z0-9]{6,6}$");
+                Regex gameCodeRegex = new Regex(@"^[a-zA-Z0-9]{6,6}$");
                 if (!gameCodeRegex.IsMatch(value))
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
                 else
@@ -65,13 +93,17 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The number of players in the game.
+        /// </summary>
         public int NumOfPlayers
         {
             get { return numOfPlayers; }
             set
             {
-                var errorMSG = "Number of players is invalid, cannot be less than 0 or greater than 16.";
+                string errorMSG = "Number of players is invalid, cannot be less than 0 or greater than 16.";
 
+                //Confirm the value is within valid range
                 if (value < 0 || value > 16)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
                 else
@@ -81,17 +113,21 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The game mode, either CORE or BR
+        /// </summary>
         public string GameMode
         {
             get { return gameMode; }
             set
             {
-                var errorMSG = "Game mode is invalid.";
+                string errorMSG = "Game mode is invalid.";
 
+                //Confirm the GameMode is a valid value
                 if (value == null)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
 
-                var uppercaseValue = value.ToUpper();
+                string uppercaseValue = value.ToUpper();
 
                 if (uppercaseValue == "CORE" || uppercaseValue == "BR")
                     gameMode = uppercaseValue;
@@ -102,17 +138,22 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The State of the game, either IN LOBBY, STARTING, PLAYING or COMPLETED
+        /// </summary>
         public string GameState
         {
             get { return gameState; }
             set
             {
-                var errorMSG = "Game state is invalid.";
+                string errorMSG = "Game state is invalid.";
 
+
+                //Confirm the Gamestate is a valid value
                 if (value == null)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_GAME);
 
-                var uppercaseValue = value.ToUpper();
+                string uppercaseValue = value.ToUpper();
 
                 if (uppercaseValue == "IN LOBBY" || uppercaseValue == "STARTING" || uppercaseValue == "PLAYING" || uppercaseValue == "COMPLETED")
                     gameState = uppercaseValue;
@@ -124,13 +165,15 @@ namespace INFT3970Backend.Models
 
 
 
-
+        /// <summary>
+        /// The time limit of the game. Must be at least 10 minutes and not greater than 24 hours. Stored in milliseconds
+        /// </summary>
         public int TimeLimit
         {
             get { return timeLimit; }
             set
             {
-                var errorMSG = "Time limit is invalid, must be between 10 minutes and 24 hours.";
+                string errorMSG = "Time limit is invalid, must be between 10 minutes and 24 hours.";
 
                 //The time limit of the game can only be between 10 minutes and one day
                 if (value < TEN_MINUTES_MILLISECONDS || value > ONE_DAY_MILLISECONDS)
@@ -143,12 +186,15 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The ammo limit each player has, how many photos a player can take before having to wait to be replenished.
+        /// </summary>
         public int AmmoLimit
         {
             get { return ammoLimit; }
             set
             {
-                var errorMSG = "Ammo limit is invalid. Must be between 1 and 9.";
+                string errorMSG = "Ammo limit is invalid. Must be between 1 and 9.";
 
                 //confirm the ammo limit passed in is within the valid range
                 if (value < 1 || value > 9)
@@ -162,13 +208,16 @@ namespace INFT3970Backend.Models
 
 
 
-
+        /// <summary>
+        /// The time delay for ammo to replenish, so after a player takes a photo how long the ammo will replenish.
+        /// Stored as milliseconds.
+        /// </summary>
         public int ReplenishAmmoDelay
         {
             get { return replenishAmmoDelay; }
             set
             {
-                var errorMSG = "Reload ammo timer is invalid. Must be between 1 minute and 1 hour.";
+                string errorMSG = "Reload ammo timer is invalid. Must be between 1 minute and 1 hour.";
 
                 //confirm the replenish ammo deley passed in is within the valid range
                 //The valid range is between 1 minute and 1 hour
@@ -182,12 +231,17 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The time delay before the game moves to a playing state.
+        /// When the host player clicks start game how long it takes for the game to start playing.
+        /// Stored in milliseconds
+        /// </summary>
         public int StartDelay
         {
             get { return startDelay; }
             set
             {
-                var errorMSG = "Start delay is invalid. Must be between 1 minute and 10 minutes.";
+                string errorMSG = "Start delay is invalid. Must be between 1 minute and 10 minutes.";
 
                 //confirm the start deley passed in is within the valid range
                 //The valid range is between 1 minute and 10 minutes
@@ -201,31 +255,35 @@ namespace INFT3970Backend.Models
 
 
 
-        public DateTime? StartTime { get; set; }
-        public DateTime? EndTime { get; set; }
-        public bool IsJoinableAtAnytime { get; set; }
-        public bool IsActive { get; set; }
-        public bool IsDeleted { get; set; }
+        /// <summary>
+        /// The lat value of the center point for a Battle Royale game
+        /// </summary>
         public double Latitude
         {
             get { return latitude; }
             set
             {
-                var errorMessage = "Latitude is not within the valid range. Must be -90 to +90";
+                string errorMessage = "Latitude is not within the valid range. Must be -90 to +90";
 
+                //Confirm the lat is within the valid range
                 if (value >= -90 && value <= 90)
                     latitude = value;
-
                 else
                     throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_PHOTO);
             }
         }
+
+
+
+        /// <summary>
+        /// The long value of the center point for a Battle Royale game
+        /// </summary>
         public double Longitude
         {
             get { return longitude; }
             set
             {
-                var errorMessage = "Longitude is not within the valid range. Must be -180 to +180";
+                string errorMessage = "Longitude is not within the valid range. Must be -180 to +180";
 
                 if (value >= -180 && value <= 180)
                     longitude = value;
@@ -234,26 +292,63 @@ namespace INFT3970Backend.Models
                     throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_GAME);
             }
         }
+
+
+
+        /// <summary>
+        /// The radius of the starting zone for a Battle Royale game
+        /// </summary>
         public int Radius
         {
             get { return radius; }
             set
             {
+                //If the game is CORE disregard this value, does not need error checking
                 if(GameMode == "CORE")
                 {
                     radius = value;
                     return;
                 }
 
-                var errorMessage = "Radius is not within the valid range. Must be a minimum of 10 meters.";
+                string errorMessage = "Radius is not within the valid range. Must be a minimum of 20 meters.";
 
-                if (value >= 10)
+                //Confirm the radius is within the valid range
+                if (value >= 20)
                     radius = value;
-
                 else
                     throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_GAME);
             }
         }
+
+
+        /// <summary>
+        /// The DateTime of when the game will begin playing
+        /// </summary>
+        public DateTime? StartTime { get; set; }
+
+        /// <summary>
+        /// The DateTime when the game will end
+        /// </summary>
+        public DateTime? EndTime { get; set; }
+
+        /// <summary>
+        /// A flag which outlines if the game is joinable at anytime
+        /// </summary>
+        public bool IsJoinableAtAnytime { get; set; }
+
+        /// <summary>
+        /// A flag if the game is active
+        /// </summary>
+        public bool IsActive { get; set; }
+
+        /// <summary>
+        /// A flag if the game is deleted
+        /// </summary>
+        public bool IsDeleted { get; set; }
+
+        /// <summary>
+        /// The list of players within the game.
+        /// </summary>
         public List<Player> Players { get; set; }
 
 
@@ -288,9 +383,18 @@ namespace INFT3970Backend.Models
 
 
         /// <summary>
-        /// Creates a game with default values and sets the GameCode
+        /// Creates a game and sets all the passed in values
         /// </summary>
-        /// <param name="gameCode">The 6 digit game code of the game.</param>
+        /// <param name="gameCode">The game code</param>
+        /// <param name="timeLimit">The time limit</param>
+        /// <param name="ammoLimit">The ammo limit</param>
+        /// <param name="startDelay">The start delay</param>
+        /// <param name="replenishAmmoDelay">The ammo replenish delay</param>
+        /// <param name="gameMode">The game mode</param>
+        /// <param name="isJoinableAtAnyTime">A flag if the game is joinable at any time</param>
+        /// <param name="latitude">The lat value of the center point for BR</param>
+        /// <param name="longitude">The long value of the center point for BR</param>
+        /// <param name="radius">The starting radius for the zone for BR</param>
         public Game(string gameCode, int timeLimit, int ammoLimit, int startDelay, int replenishAmmoDelay, string gameMode, bool isJoinableAtAnyTime, double latitude, double longitude, int radius) : this()
         {
             GameCode = gameCode;
@@ -341,15 +445,25 @@ namespace INFT3970Backend.Models
             return gameCode;
         }
 
+
+
+
+        /// <summary>
+        /// Calculates the time the player will be disabled when attempting to take a photo
+        /// outside of the playing zone in a BR game. The time to be disbaled will be 5% of the
+        /// time limit, but the value will be adjusted if not within the valid range.
+        /// So the minimum time a player can be disabled is 2mins and the max it 30mins
+        /// </summary>
+        /// <returns>The number of minutes the player will be disabled for</returns>
         public int CalculateDisabledTime()
         {
-            var totalMilliseconds = EndTime.Value.Subtract(StartTime.Value).TotalMilliseconds;
+            double totalMilliseconds = EndTime.Value.Subtract(StartTime.Value).TotalMilliseconds;
 
             //Calculate 5% of the total milliseconds
-            var millisecondsDisabled = totalMilliseconds * 0.05;
+            double millisecondsDisabled = totalMilliseconds * 0.05;
 
             //Get the minutes of the disabled milliseconds
-            var minutesToBeDisabled = TimeSpan.FromMilliseconds(millisecondsDisabled).Minutes;
+            int minutesToBeDisabled = TimeSpan.FromMilliseconds(millisecondsDisabled).Minutes;
 
             //The floor of the disabled minutes is 2, the ceiling of the disabled minutes is 30
             if (minutesToBeDisabled < 2)
@@ -360,23 +474,34 @@ namespace INFT3970Backend.Models
             return minutesToBeDisabled;
         }
 
+
+
+        /// <summary>
+        /// Calculates the current BR radius of the game.
+        /// Uses the percentage of time remaining in the game.
+        /// So if there is 60% time remaining left in the game
+        /// the BR radius will be 60% of the original size.
+        /// However, the minimum radius is 20 meters, so if the
+        /// radius calculated is less than that it will be adjusted.
+        /// </summary>
+        /// <returns>The current radius of the BR game.</returns>
         public double CalculateRadius()
         {
             try
             {
                 //Get the number of milliseconds between the start and end time
                 TimeSpan span = EndTime.Value.Subtract(StartTime.Value);
-                var totalTime = span.TotalMilliseconds;
+                double totalTime = span.TotalMilliseconds;
 
                 //Get the time between the current time and the end time
                 span = EndTime.Value.Subtract(DateTime.Now);
-                var timeRemaining = span.TotalMilliseconds;
+                double timeRemaining = span.TotalMilliseconds;
 
                 //Calculate the percentage of time remaining
-                var percentage = timeRemaining / totalTime;
+                double percentage = timeRemaining / totalTime;
 
                 //get the current radius
-                var currentRadius = Radius * percentage;
+                double currentRadius = Radius * percentage;
 
                 //If the radius ratio/percentage is less than 20 meters, just return 20 meters
                 if (currentRadius < 20)
@@ -392,14 +517,22 @@ namespace INFT3970Backend.Models
 
 
 
-
+        /// <summary>
+        /// Confirms the latitude and longitude passed in is within the playing zone.
+        /// </summary>
+        /// <param name="latitude">The lat value to check</param>
+        /// <param name="longitude">The long value to check</param>
+        /// <returns>TRUE if the passed in values is within the zone, FALSE otherwise</returns>
         public bool IsInZone(double latitude, double longitude)
         {
-            var centerLocation = new GeoCoordinate(Latitude, Longitude);
-            var playerLocation = new GeoCoordinate(latitude, longitude);
+            //Get the center location of the BR game using the Lat and Long stored in the game
+            GeoCoordinate centerLocation = new GeoCoordinate(Latitude, Longitude);
+
+            //Get the location of the Lat and Long passed in
+            GeoCoordinate playerLocation = new GeoCoordinate(latitude, longitude);
 
             //Get the distance in meters
-            var distanceBetweenCoords = centerLocation.GetDistanceTo(playerLocation);
+            double distanceBetweenCoords = centerLocation.GetDistanceTo(playerLocation);
 
             //Get the current radius of the zone
             double currentRadius = CalculateRadius();
@@ -449,6 +582,10 @@ namespace INFT3970Backend.Models
             return GameState == "COMPLETED";
         }
 
+
+        /// <summary>
+        /// Check if the game is BR game.
+        /// </summary>
         public bool IsBR()
         {
             return GameMode == "BR";
@@ -456,6 +593,10 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// Compress the Game object when being sent over the network.
+        /// So if the game contains a list of players compress the player objects
+        /// </summary>
         public void Compress()
         {
             if (Players == null)

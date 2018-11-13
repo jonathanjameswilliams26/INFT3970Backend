@@ -1,4 +1,18 @@
-﻿using System;
+﻿///-----------------------------------------------------------------
+///   Class:        InvalidModelException
+///   
+///   Description:  Custom exception when a Model is invalid.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using System;
 
 namespace INFT3970Backend.Models.Errors
 {

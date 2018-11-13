@@ -36,7 +36,7 @@ namespace INFT3970Backend.Hubs
             try
             {
                 int playerID = int.Parse(Context.GetHttpContext().Request.Query["playerID"]);
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
                 player.ConnectionID = Context.ConnectionId;
                 PlayerDAL playerDAL = new PlayerDAL();
                 playerDAL.UpdateConnectionID(player);

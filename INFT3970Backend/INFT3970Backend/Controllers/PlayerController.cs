@@ -1,5 +1,5 @@
 ﻿///-----------------------------------------------------------------
-///   Class:        PhotoController
+///   Class:        PlayerController
 ///   
 ///   Description:  The API Endpoint for all Player requests such as
 ///                 joining a game, verifying a player, leaving a game etc.
@@ -55,24 +55,24 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Create the player object who will be joining the game
-                var playerToJoin = new Player(request.nickname, request.imgUrl, request.contact);
-                var gameToJoin = new Game(request.gameCode);
+                Player playerToJoin = new Player(request.nickname, request.imgUrl, request.contact);
+                Game gameToJoin = new Game(request.gameCode);
 
                 //Generate a verification code 
-                var verificationCode = Player.GenerateVerificationCode();
+                int verificationCode = Player.GenerateVerificationCode();
 
                 //Call the data access layer to add the player to the database
-                var response = new PlayerDAL().JoinGame(gameToJoin, playerToJoin, verificationCode);
+                Response<Player> response = new PlayerDAL().JoinGame(gameToJoin, playerToJoin, verificationCode);
 
                 //If the response was successful, send the verification code to the player and update the lobby list
                 if (response.IsSuccessful())
                 {
-                    var message = "Your CamTag verification code is: " + verificationCode;
-                    var subject = "CamTag Verification Code";
+                    string message = "Your CamTag verification code is: " + verificationCode;
+                    string subject = "CamTag Verification Code";
                     response.Data.ReceiveMessage(message, subject);
 
                     //Call the hub interface to invoke client methods to update the clients that another player has joined
-                    var hubInterface = new HubInterface(_hubContext);
+                    HubInterface hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePlayerJoinedGame(response.Data);
 
                     //Compress the player data before sending back over the network
@@ -112,20 +112,20 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var playerToVerify = new Player(playerID);
+                Player playerToVerify = new Player(playerID);
 
                 //Confirm the verification code is valid and return an error response if the verification code is invalid
-                var code = Player.ValidateVerificationCode(verificationCode);
+                int code = Player.ValidateVerificationCode(verificationCode);
                 if(code == -1)
                     return new Response("The verification code is invalid. Must be an INT between 10000 and 99999.", ErrorCodes.DATA_INVALID);
 
                 //Call the data access layer to confirm the verification code is correct.
-                var response = new PlayerDAL().ValidateVerificationCode(code, playerToVerify);
+                Response<Player> response = new PlayerDAL().ValidateVerificationCode(code, playerToVerify);
 
                 //If the player was successfully verified, updated all the clients about a joined player.
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new HubInterface(_hubContext);
+                    HubInterface hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePlayerJoinedGame(response.Data);
                 }
 
@@ -162,18 +162,18 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
 
                 //Generate a new code
-                var newCode = Player.GenerateVerificationCode();
+                int newCode = Player.GenerateVerificationCode();
 
                 //Call the Data Access Layer to update the verification code for the player and 
                 //get the contact information for the player
-                var response = new PlayerDAL().UpdateVerificationCode(player, newCode);
+                Response<Player> response = new PlayerDAL().UpdateVerificationCode(player, newCode);
 
                 //If the response is successful send the verification code to the player
-                var msgTxt = "Your CamTag verification code is: " + newCode;
-                var subject = "CamTag Verification Code";
+                string msgTxt = "Your CamTag verification code is: " + newCode;
+                string subject = "CamTag Verification Code";
                 if (response.IsSuccessful())
                     response.Data.ReceiveMessage(msgTxt, subject);
 
@@ -211,7 +211,7 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Call the data access layer to return the notifications for the player.
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
                 return new PlayerDAL().GetNotificationList(player, all);
             }
             //Catch any error associated with invalid model data
@@ -248,24 +248,24 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
 
                 //Get the player who is leaving the game
-                var playerDAL = new PlayerDAL();
-                var getPlayerResponse = playerDAL.GetPlayerByID(playerID);
+                PlayerDAL playerDAL = new PlayerDAL();
+                Response<Player> getPlayerResponse = playerDAL.GetPlayerByID(playerID);
                 if (!getPlayerResponse.IsSuccessful())
                     return new Response(getPlayerResponse.ErrorMessage, getPlayerResponse.ErrorCode);
 
                 player = getPlayerResponse.Data;
 
                 //Create the hub interface which will be used to send live updates to clients
-                var hubInterface = new HubInterface(_hubContext);
+                HubInterface hubInterface = new HubInterface(_hubContext);
 
                 //If the player leaving the game is the host and the game is currently in the lobby kick all other players from the game
                 //because only the host player can begin the game
                 if (player.IsHost && player.Game.IsInLobby())
                 {
-                    var endLobbyResponse = new GameDAL().EndLobby(player.Game);
+                    Response endLobbyResponse = new GameDAL().EndLobby(player.Game);
 
                     //If successfully kicked all players from the game send live updates to clients that they have been removed from the lobby
                     if(endLobbyResponse.IsSuccessful())
@@ -277,9 +277,9 @@ namespace INFT3970Backend.Controllers
 
 
                 //Call the data access layer to remove the player from the game.
-                var isGameComplete = false;
-                var isPhotosComplete = false;
-                var leaveGameResponse = playerDAL.LeaveGame(player, ref isGameComplete, ref isPhotosComplete);
+                bool isGameComplete = false;
+                bool isPhotosComplete = false;
+                Response<List<Photo>> leaveGameResponse = playerDAL.LeaveGame(player, ref isGameComplete, ref isPhotosComplete);
 
                 //Return the error response if an error occurred
                 if (!leaveGameResponse.IsSuccessful())
@@ -332,7 +332,7 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Call the data access layer to update the notification records
-                var response = new PlayerDAL().SetNotificationsRead(jsonNotificationIDs);
+                Response response = new PlayerDAL().SetNotificationsRead(jsonNotificationIDs);
 
                 //If the response was successful update the client's notifications list
                 if (response.IsSuccessful())
@@ -376,12 +376,12 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Call the DataAccessLayer to get the player object from the DB
-                var getPlayerResponse = new PlayerDAL().GetPlayerByID(playerID);
+                Response<Player> getPlayerResponse = new PlayerDAL().GetPlayerByID(playerID);
                 if (!getPlayerResponse.IsSuccessful())
                     return getPlayerResponse;
 
                 //If the player is a BR player process different, otherwise, process the CORE use ammo
-                var player = getPlayerResponse.Data;
+                Player player = getPlayerResponse.Data;
                 if (player.IsBRPlayer())
                     return BR_UseAmmoLogic(player, latitude, longitude);
 
@@ -415,12 +415,12 @@ namespace INFT3970Backend.Controllers
         /// <returns>The updated player object outlining the new ammo count.</returns>
         private Response<Player> CORE_UseAmmoLogic(Player player)
         {
-            var response = new PlayerDAL().UseAmmo(player);
+            Response<Player> response = new PlayerDAL().UseAmmo(player);
 
             //If the response was successful schedule code to run in order to replenish the players ammo
             if (response.IsSuccessful())
             {
-                var hubInterface = new HubInterface(_hubContext);
+                HubInterface hubInterface = new HubInterface(_hubContext);
                 ScheduledTasks.ScheduleReplenishAmmo(response.Data, hubInterface);
 
                 //Compress the player object before sending back over the network
@@ -446,19 +446,19 @@ namespace INFT3970Backend.Controllers
         private ActionResult<Response<Player>> BR_UseAmmoLogic(Player player, double latitude, double longitude)
         {
             //Decrement the players ammo
-            var response = new PlayerDAL().UseAmmo(player);
+            Response<Player> response = new PlayerDAL().UseAmmo(player);
             if (!response.IsSuccessful())
                 return response;
 
             player = response.Data;
-            var hubInterface = new HubInterface(_hubContext);
+            HubInterface hubInterface = new HubInterface(_hubContext);
 
             //If the player is not within the zone disable the player
             if (!player.Game.IsInZone(latitude, longitude))
             {
                 //Calculate the the number of minutes the player will be disabled for
-                var totalMinutesDisabled = player.Game.CalculateDisabledTime();
-                var totalMillisecondsDisabled = totalMinutesDisabled * 60 * 1000;
+                int totalMinutesDisabled = player.Game.CalculateDisabledTime();
+                int totalMillisecondsDisabled = totalMinutesDisabled * 60 * 1000;
 
                 //Disable the player
                 response = new PlayerDAL().BR_DisableOrRenablePlayer(player, totalMinutesDisabled);
@@ -503,7 +503,7 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
                 return new PlayerDAL().GetAmmoCount(player);
             }
             //Catch any error associated with invalid model data
@@ -535,7 +535,7 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
                 return new PlayerDAL().GetUnreadNotificationsCount(player);
             }
             //Catch any error associated with invalid model data
@@ -572,18 +572,18 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Create the player submitting the request
-                var playerMakingRequest = new Player(playerID);
+                Player playerMakingRequest = new Player(playerID);
 
                 //Create the player to remove
-                var playerToRemove = new Player(playerIDToRemove);
+                Player playerToRemove = new Player(playerIDToRemove);
 
                 //Remove the unverified player
-                var response = new PlayerDAL().RemoveUnverifiedPlayer(playerMakingRequest, playerToRemove);
+                Response<Player> response = new PlayerDAL().RemoveUnverifiedPlayer(playerMakingRequest, playerToRemove);
 
                 //if the response was successful call the hub interface to update the clients
                 if(response.IsSuccessful())
                 {
-                    var hubInterface = new HubInterface(_hubContext);
+                    HubInterface hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePlayerLeftGame(response.Data);
                 }
 

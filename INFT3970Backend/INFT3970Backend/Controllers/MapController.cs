@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 using INFT3970Backend.Models.Errors;
 using INFT3970Backend.Data_Access_Layer;
 using INFT3970Backend.Models.Responses;
+using System.Collections.Generic;
 
 namespace INFT3970Backend.Controllers
 {
@@ -37,15 +38,15 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
 
                 //Get the player from the database
-                var playerResponse = new PlayerDAL().GetPlayerByID(playerID);
+                Response<Player> playerResponse = new PlayerDAL().GetPlayerByID(playerID);
                 if (!playerResponse.IsSuccessful())
                     return new Response<MapResponse>(playerResponse.ErrorMessage, playerResponse.ErrorCode);
 
                 //Call the data access layer to get the last known locations
-                var getLastPhotoLocationsResponse = new PhotoDAL().GetLastKnownLocations(player);
+                Response<List<Photo>> getLastPhotoLocationsResponse = new PhotoDAL().GetLastKnownLocations(player);
                 if(!getLastPhotoLocationsResponse.IsSuccessful())
                     return new Response<MapResponse>(getLastPhotoLocationsResponse.ErrorMessage, getLastPhotoLocationsResponse.ErrorCode);
 

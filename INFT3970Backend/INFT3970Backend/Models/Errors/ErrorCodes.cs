@@ -1,4 +1,20 @@
-﻿namespace INFT3970Backend.Models
+﻿///-----------------------------------------------------------------
+///   Class:        HubInterface
+///   
+///   Description:  This class is all the error codes the application produces
+///                 and sends to the front end to handle when an error
+///                 occurs on the backend and database.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+namespace INFT3970Backend.Models
 {
     public class ErrorCodes
     {

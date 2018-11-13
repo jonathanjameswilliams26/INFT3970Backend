@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿///-----------------------------------------------------------------
+///   Class:        Program
+///   
+///   Description:  This is the main program which runs.
+///                 Edit the UseUrls to change your URL of the application
+///                 if wanting to test on a mobile etc.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace INFT3970Backend
 {

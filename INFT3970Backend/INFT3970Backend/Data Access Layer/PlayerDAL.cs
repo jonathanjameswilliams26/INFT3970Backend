@@ -343,7 +343,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         ModelFactory factory = new ModelFactory(Reader);
                         while (Reader.Read())
                         {
-                            var notification = factory.NotificationFactory();
+                            Notification notification = factory.NotificationFactory();
                             //If an error occurred while trying to build the notification list
                             if (notification == null)
                                 return new Response<List<Notification>>("An error occurred while trying to build the notification list.", ErrorCodes.BUILD_MODEL_ERROR);
@@ -400,7 +400,7 @@ namespace INFT3970Backend.Data_Access_Layer
                         ModelFactory factory = new ModelFactory(Reader);
                         while (Reader.Read())
                         {
-                            var photo = factory.PhotoFactory(true, true, true);
+                            Photo photo = factory.PhotoFactory(true, true, true);
                             if (photo == null)
                                 return new Response<List<Photo>>("An error occurred while trying to build the list photo model.", ErrorCodes.BUILD_MODEL_ERROR);
 

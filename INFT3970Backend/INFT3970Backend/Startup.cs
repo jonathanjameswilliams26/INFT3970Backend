@@ -1,4 +1,20 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿///-----------------------------------------------------------------
+///   Class:        Startup
+///   
+///   Description:  This class is an auto generated class which is used
+///                 to specify all the setup and services needed for the
+///                 application such as SignalR etc
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +49,7 @@ namespace INFT3970Backend
                     .AllowCredentials());
             });
 
+            //Adding SignalR to the project
             services.AddSignalR();
         }
 
@@ -51,6 +68,8 @@ namespace INFT3970Backend
             app.UseFileServer();
             app.UseHttpsRedirection();
             app.UseMvc();
+
+            //Adding the route to the SignalR hub
             app.UseSignalR(routes =>
             {
                 routes.MapHub<ApplicationHub>("/app");

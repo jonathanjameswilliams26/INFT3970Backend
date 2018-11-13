@@ -23,8 +23,8 @@ namespace INFT3970Backend.Data_Access_Layer
     public class DataAccessLayer
     {
         //The connection string to the database
-        protected const string ConnectionString = @"Server=.\SQLEXPRESS;Database=udb_CamTag;Trusted_Connection=True;";
-        //protected const string ConnectionString = @"Server=.\SQLEXPRESS;Database=udb_CamTag;User Id=DataAccessLayerLogin;Password=test";
+        //protected const string ConnectionString = @"Server=.\SQLEXPRESS;Database=udb_CamTag;Trusted_Connection=True;";
+        protected const string ConnectionString = @"Server=.\SQLEXPRESS;Database=udb_CamTag;User Id=DataAccessLayerLogin;Password=test";
 
         //The error message returned when an exception is thrown when tryig to connect to the DB and run a stored procedure
         protected const string DatabaseErrorMSG = "An error occurred while trying to connect to the database.";

@@ -1,5 +1,5 @@
 ﻿///-----------------------------------------------------------------
-///   Class:        EmailSender
+///   Class:        ScheduledTasks
 ///   
 ///   Description:  A helper class used to schedule code to run after a
 ///                 certain period of time such as scheduling a game to be complete etc.
@@ -59,7 +59,7 @@ namespace INFT3970Backend.Helpers
 
             //Get the updated game record
             GameDAL gameDAL = new GameDAL();
-            var gameResponse = gameDAL.GetGameByID(game.GameID);
+            Response<Game> gameResponse = gameDAL.GetGameByID(game.GameID);
             if (!gameResponse.IsSuccessful())
                 return;
 
@@ -321,7 +321,7 @@ namespace INFT3970Backend.Helpers
             Thread.Sleep(timeToWait);
 
             //Renable the player
-            var response = new PlayerDAL().BR_DisableOrRenablePlayer(player, 0);
+            Response<Player> response = new PlayerDAL().BR_DisableOrRenablePlayer(player, 0);
             if (!response.IsSuccessful())
                 return;
 

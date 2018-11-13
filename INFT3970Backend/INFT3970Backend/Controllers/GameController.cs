@@ -54,16 +54,16 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Create the host player who is joining, will perform data valiation inside Player Class
-                var hostPlayer = new Player(request.nickname, request.imgUrl, request.contact);
+                Player hostPlayer = new Player(request.nickname, request.imgUrl, request.contact);
                 hostPlayer.IsHost = true;
 
-                var gameDAL = new GameDAL();
+                GameDAL gameDAL = new GameDAL();
                 Response<Game> createdGame = null;
                 Response<Player> createdPlayer = null;
 
                 //Generate a game code and create a new game in the database
                 //Creating the game inside a while loop because there is a chance that the gamecode could be duplicated
-                var doRun = true;
+                bool doRun = true;
                 while(doRun)
                 {
                     Game newGame = null;
@@ -101,12 +101,12 @@ namespace INFT3970Backend.Controllers
                     return new Response<Player>(createdGame.ErrorMessage, createdGame.ErrorCode);
 
                 //Call the player data access layer to join the player to that game
-                var verificationCode = Player.GenerateVerificationCode();
+                int verificationCode = Player.GenerateVerificationCode();
                 createdPlayer = new PlayerDAL().JoinGame(createdGame.Data, hostPlayer, verificationCode);
 
                 //If the response was successful, send the verification code to the player
-                var message = "Your CamTag verification code is: " + verificationCode;
-                var subject = "CamTag Verification Code";
+                string message = "Your CamTag verification code is: " + verificationCode;
+                string subject = "CamTag Verification Code";
                 if (createdPlayer.IsSuccessful())
                     createdPlayer.Data.ReceiveMessage(message, subject);
 
@@ -169,12 +169,12 @@ namespace INFT3970Backend.Controllers
                     return new Response<Game>("The filter or orderBy value is null or empty.", ErrorCodes.DATA_INVALID);
 
                 //Confirm the filter value passed in is a valid value
-                var isFilterValid = false;
+                bool isFilterValid = false;
                 if (filter.ToUpper() == "ALL" || filter.ToUpper() == "ACTIVE" || filter.ToUpper() == "INGAME" || filter.ToUpper() == "INGAMEALL" || filter.ToUpper() == "TAGGABLE" || filter.ToUpper() == "HOST")
                     isFilterValid = true;
 
                 //Confirm the order by value passed in is a valid value
-                var isOrderByValid = false;
+                bool isOrderByValid = false;
                 if (orderBy.ToUpper() == "AZ" || orderBy.ToUpper() == "ZA" || orderBy.ToUpper() == "KILLS")
                     isOrderByValid = true;
 
@@ -184,7 +184,7 @@ namespace INFT3970Backend.Controllers
                 if (!isOrderByValid)
                     orderBy = "AZ";
 
-                var getAllPlayersRequest = new GameDAL().GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
+                Response<Game> getAllPlayersRequest = new GameDAL().GetAllPlayersInGame(id, isPlayerID, filter, orderBy);
 
                 //If the request was successful compress the game object by removing the players unneeded images to increase request times
                 if(getAllPlayersRequest.IsSuccessful())
@@ -223,13 +223,13 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Create the player object and begin the game.
-                var hostPlayer = new Player(playerID);
-                var response = new GameDAL().BeginGame(hostPlayer);
+                Player hostPlayer = new Player(playerID);
+                Response<Game> response = new GameDAL().BeginGame(hostPlayer);
 
                 //If the response is successful schedule code to run to update the GameState after the time periods have passed
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new HubInterface(_hubContext);
+                    HubInterface hubInterface = new HubInterface(_hubContext);
                     ScheduledTasks.ScheduleGameInPlayingState(response.Data, hubInterface);
                     ScheduledTasks.ScheduleCompleteGame(response.Data, hubInterface);
 
@@ -274,10 +274,10 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
                 
                 //Call the data access layer to get the status of the game / player
-                var gameStatusResponse = new GameDAL().GetGameStatus(player);
+                Response<GameStatusResponse> gameStatusResponse = new GameDAL().GetGameStatus(player);
 
                 //If the response was successful compress the data by removing the players unneeded images before sending over the network
                 if (gameStatusResponse.IsSuccessful())

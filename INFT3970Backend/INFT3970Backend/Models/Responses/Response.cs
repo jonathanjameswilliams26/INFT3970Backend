@@ -1,17 +1,27 @@
-﻿namespace INFT3970Backend.Models
+﻿///-----------------------------------------------------------------
+///   Class:        Response
+///   
+///   Description:  A Response is the response sent to the Frontend in 
+///                 order to outline if the request sent to the Backend 
+///                 was successfully executed or an error occurred. 
+///                 A response can be SUCCESS or ERROR.
+/// 
+///                 If the Response is SUCCESS - The ErrorCode will be 1, the ErrorMessage will be empty string.
+///                 If the Response is ERRROR - The ErrorCode will be anything but 1, and the ErrorMessage will outline the error.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+namespace INFT3970Backend.Models
 {
-    /// <summary>
-    /// A Response is the response sent to the Frontend in order to outline
-    /// if the request sent to the Backend was successfully executed or an error
-    /// occurred. A response can be SUCCESS or ERROR.
-    /// 
-    /// If the Response is SUCCESS - The ErrorCode will be 1, the ErrorMessage will be empty string.
-    /// If the Response is ERRROR - The ErrorCode will be anything but 1, and the ErrorMessage will outline the error.
-    /// </summary>
     public class Response
     {
-        //public object Data { get { return null; } }
-
         /// <summary>
         /// READONLY: The type of Response, SUCCESS or ERROR.
         /// </summary>
@@ -78,6 +88,10 @@
         }
 
 
+        /// <summary>
+        /// Create a response which is used when a database connection error occurred.
+        /// </summary>
+        /// <returns></returns>
         public static Response DatabaseErrorResponse()
         {
             return new Response("An error occurred while trying to connect to the database.", ErrorCodes.DATABASE_CONNECT_ERROR);

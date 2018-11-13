@@ -209,7 +209,6 @@ namespace INFT3970Backend.Data_Access_Layer
                 player.AmmoCount = GetInt("AmmoCount");
                 player.NumKills = GetInt("NumKills");
                 player.NumDeaths = GetInt("NumDeaths");
-                player.NumPhotosTaken = GetInt("NumPhotosTaken");
                 player.IsHost = GetBool("IsHost");
                 player.IsVerified = GetBool("IsVerified");
                 player.ConnectionID = SafeGetString("ConnectionID");
@@ -284,7 +283,6 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.AmmoCount = GetInt("TakenByPlayerAmmoCount");
                     player.NumKills = GetInt("TakenByPlayerNumKills");
                     player.NumDeaths = GetInt("TakenByPlayerNumDeaths");
-                    player.NumPhotosTaken = GetInt("TakenByPlayerNumPhotosTaken");
                     player.IsHost = GetBool("TakenByPlayerIsHost");
                     player.IsVerified = GetBool("TakenByPlayerIsVerified");
                     player.ConnectionID = SafeGetString("TakenByPlayerConnectionID");
@@ -311,7 +309,6 @@ namespace INFT3970Backend.Data_Access_Layer
                     player.AmmoCount = GetInt("PhotoOfPlayerAmmoCount");
                     player.NumKills = GetInt("PhotoOfPlayerNumKills");
                     player.NumDeaths = GetInt("PhotoOfPlayerNumDeaths");
-                    player.NumPhotosTaken = GetInt("PhotoOfPlayerNumPhotosTaken");
                     player.IsHost = GetBool("PhotoOfPlayerIsHost");
                     player.IsVerified = GetBool("PhotoOfPlayerIsVerified");
                     player.ConnectionID = SafeGetString("PhotoOfPlayerConnectionID");

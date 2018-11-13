@@ -57,10 +57,10 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Build the photo object
-                var uploadedPhoto = new Photo(request.latitude, request.longitude, request.imgUrl, request.takenByID, request.photoOfID);
+                Photo uploadedPhoto = new Photo(request.latitude, request.longitude, request.imgUrl, request.takenByID, request.photoOfID);
 
                 //Get the player object from the database
-                var getPlayerResponse = new PlayerDAL().GetPlayerByID(uploadedPhoto.TakenByPlayerID);
+                Response<Player> getPlayerResponse = new PlayerDAL().GetPlayerByID(uploadedPhoto.TakenByPlayerID);
                 if (!getPlayerResponse.IsSuccessful())
                     return new Response(getPlayerResponse.ErrorMessage, getPlayerResponse.ErrorCode);
 
@@ -78,7 +78,7 @@ namespace INFT3970Backend.Controllers
                 //email or text message notifications to not connected players
                 if (response.IsSuccessful())
                 {
-                    var hubInterface = new HubInterface(_hubContext);
+                    HubInterface hubInterface = new HubInterface(_hubContext);
                     hubInterface.UpdatePhotoUploaded(response.Data);
                     ScheduledTasks.ScheduleCheckPhotoVotingCompleted(response.Data, hubInterface);
                 }
@@ -115,9 +115,9 @@ namespace INFT3970Backend.Controllers
         {
             try
             {
-                var player = new Player(playerID);
+                Player player = new Player(playerID);
                 //Call the Data Access Layer to get the photos require voting to be completed
-                var response = new PhotoDAL().GetVotesToComplete(player);
+                Response<List<Vote>> response = new PhotoDAL().GetVotesToComplete(player);
 
                 //If the response was successful compress the response before sending the data over the network
                 if(response.IsSuccessful())
@@ -161,11 +161,11 @@ namespace INFT3970Backend.Controllers
             try
             {
                 //Get the player object from the database
-                var getPlayerResponse = new PlayerDAL().GetPlayerByID(playerID);
+                Response<Player> getPlayerResponse = new PlayerDAL().GetPlayerByID(playerID);
                 if (!getPlayerResponse.IsSuccessful())
                     return new Response(getPlayerResponse.ErrorMessage, getPlayerResponse.ErrorCode);
 
-                var vote = new Vote(voteID, decision, playerID);
+                Vote vote = new Vote(voteID, decision, playerID);
                 Response<Vote> response;
 
                 //Vote on the photo
@@ -175,14 +175,14 @@ namespace INFT3970Backend.Controllers
                     //If the response's data is NULL that means the game is now completed. Send live updates to complete the game
                     if(response.Data == null)
                     {
-                        var hubInterface = new HubInterface(_hubContext);
+                        HubInterface hubInterface = new HubInterface(_hubContext);
                         hubInterface.UpdateGameCompleted(getPlayerResponse.Data.Game, false);
                     }
 
                     //If the Photo's voting has now been completed send the notifications / updates
                     else if (response.Data.Photo.IsVotingComplete)
                     {
-                        var hubInterface = new HubInterface(_hubContext);
+                        HubInterface hubInterface = new HubInterface(_hubContext);
                         hubInterface.UpdatePhotoVotingCompleted(response.Data.Photo);
                     }
                 }

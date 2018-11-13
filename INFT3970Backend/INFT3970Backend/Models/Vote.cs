@@ -1,4 +1,20 @@
-﻿using INFT3970Backend.Models.Errors;
+﻿///-----------------------------------------------------------------
+///   Class:        Vote
+///   
+///   Description:  A model which represents a Vote in CamTag.
+///                 A vote is a players decision on a photo submitted
+///                 during a game, either successful or unsuccessful.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using INFT3970Backend.Models.Errors;
 using System;
 
 namespace INFT3970Backend.Models
@@ -10,16 +26,20 @@ namespace INFT3970Backend.Models
         private int playerID;
         private int photoID;
 
+
+        /// <summary>
+        /// The ID of the vote.
+        /// </summary>
         public int VoteID
         {
             get { return voteID; }
             set
             {
-                var errorMessage = "VoteID must be atleast 100000.";
+                string errorMessage = "VoteID must be atleast 100000.";
 
+                //Confirm within valid range
                 if (value == -1 || value >= 100000)
                     voteID = value;
-
                 else
                     throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_VOTE);
             }
@@ -27,16 +47,19 @@ namespace INFT3970Backend.Models
 
 
         
+        /// <summary>
+        /// The ID of the player who must vote.
+        /// </summary>
         public int PlayerID
         {
             get { return playerID; }
             set
             {
-                var errorMessage = "PlayerID must be atleast 100000.";
+                string errorMessage = "PlayerID must be atleast 100000.";
 
+                //Confirm within valid range
                 if (value == -1 || value >= 100000)
                     playerID = value;
-
                 else
                     throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_VOTE);
             }
@@ -44,27 +67,48 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The ID the photo the player is voting on.
+        /// </summary>
         public int PhotoID
         {
             get { return photoID; }
             set
             {
-                var errorMessage = "PhotoID must be atleast 100000.";
+                string errorMessage = "PhotoID must be atleast 100000.";
 
+                //Confirm the ID is within a valid range
                 if (value == -1 || value >= 100000)
                     photoID = value;
-
                 else
                     throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_VOTE);
             }
         }
 
 
-
+        /// <summary>
+        /// A flag outlining if the photo is successful or not
+        /// </summary>
         public bool? IsPhotoSuccessful { get; set; }
+
+        /// <summary>
+        /// A flag outlining if the vote is active
+        /// </summary>
         public bool IsActive { get; set; }
+
+        /// <summary>
+        /// A flag which outlines if the vote is deleted
+        /// </summary>
         public bool IsDeleted { get; set; }
+
+        /// <summary>
+        /// The player who must vote.
+        /// </summary>
         public Player Player { get; set; }
+
+        /// <summary>
+        /// The photo the player is voting on
+        /// </summary>
         public Photo Photo { get; set; }
 
 
@@ -119,15 +163,19 @@ namespace INFT3970Backend.Models
             }
             catch(FormatException)
             {
-                var errorMessage = "IsPhotoSuccessful can only be true or false, received " + isPhotoSuccessful;
+                string errorMessage = "IsPhotoSuccessful can only be true or false, received " + isPhotoSuccessful;
                 throw new InvalidModelException(errorMessage, ErrorCodes.MODELINVALID_VOTE);
             }
         }
 
 
 
+        /// <summary>
+        /// Compress the vote before sending over the network to improve performance.
+        /// </summary>
         public void Compress()
         {
+            //If the player is not null compress the entire player as no selfies of the player voting are needed.
             if (Player != null)
                 Player.Compress(true, true, true);
 

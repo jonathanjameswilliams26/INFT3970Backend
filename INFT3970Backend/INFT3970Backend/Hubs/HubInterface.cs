@@ -23,7 +23,6 @@
 ///-----------------------------------------------------------------
 
 using Microsoft.AspNetCore.SignalR;
-using System.Collections.Generic;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;
 
@@ -60,14 +59,14 @@ namespace INFT3970Backend.Hubs
         public async void UpdatePlayerJoinedGame(Player joinedPlayer)
         {
             //Get the list of players currently in the game
-            var gameDAL = new GameDAL();
-            var gameResponse = gameDAL.GetAllPlayersInGame(joinedPlayer.PlayerID, true, "INGAME", "AZ");
+            GameDAL gameDAL = new GameDAL();
+            Response<Game> gameResponse = gameDAL.GetAllPlayersInGame(joinedPlayer.PlayerID, true, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!gameResponse.IsSuccessful())
                 return;
 
-            var game = gameResponse.Data;
+            Game game = gameResponse.Data;
 
             //Create notifications of new player joining, if the game is playing and the player joining is verified
             if (game.IsPlaying() && joinedPlayer.IsVerified)
@@ -99,8 +98,8 @@ namespace INFT3970Backend.Hubs
                 else
                 {
                     //Only send a notification when the game is playing or starting
-                    var message = joinedPlayer.Nickname + " has joined your game of CamTag.";
-                    var subject = "New Player Joined Your Game";
+                    string message = joinedPlayer.Nickname + " has joined your game of CamTag.";
+                    string subject = "New Player Joined Your Game";
                     if ((game.IsPlaying() || game.IsStarting()) && joinedPlayer.IsVerified)
                         player.ReceiveMessage(message, subject);
                 }
@@ -110,32 +109,6 @@ namespace INFT3970Backend.Hubs
         
 
 
-
-
-
-        /// <summary>
-        /// Gets a Player object from the List of players which has the specified PlayerID.
-        /// NULL is returned if the specified playerID is not found within the list of players.
-        /// </summary>
-        /// <param name="playerID">The playerID searching for</param>
-        /// <param name="list">The list of players to be searched.</param>
-        /// <returns>The player object found matching the specified ID. NULL if not found.</returns>
-        private Player GetPlayerFromList(int playerID, List<Player> list)
-        {
-            bool isFound = false;
-            int i = 0;
-            while(!isFound && i < list.Count)
-            {
-                if (list[i].PlayerID == playerID)
-                    isFound = true;
-                else
-                    i++;
-            }
-            if (isFound)
-                return list[i];
-            else
-                return null;
-        }
 
 
 
@@ -150,7 +123,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdatePhotoUploaded(Photo uploadedPhoto)
         {
             //Get the list of players currently in the game
-            var response = new GameDAL().GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -173,7 +146,7 @@ namespace INFT3970Backend.Hubs
                 else
                 {
                     string message = "A new photo has been uploaded in your game of CamTag. Cast your vote before time runs out!";
-                    var subject = "New Photo Submitted";
+                    string subject = "New Photo Submitted";
                     player.ReceiveMessage(message, subject);
                 }
             }
@@ -197,13 +170,13 @@ namespace INFT3970Backend.Hubs
         {
             //Get all the players currently in the game
             GameDAL gameDAL = new GameDAL();
-            var gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.GameID, false, "INGAME", "AZ");
+            Response<Game> gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.GameID, false, "INGAME", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!gameResponse.IsSuccessful())
                 return;
 
-            var game = gameResponse.Data;
+            Game game = gameResponse.Data;
 
             //Create notifications of player leaving, if the game is playing
             if (game.IsPlaying())
@@ -231,8 +204,8 @@ namespace INFT3970Backend.Hubs
                 else
                 {
                     //Don't send a notification when the game is IN LOBBY or STARTING state
-                    var message = leftPlayer.Nickname + " has left your game of CamTag.";
-                    var subject = "A Player Left Your Game";
+                    string message = leftPlayer.Nickname + " has left your game of CamTag.";
+                    string subject = "A Player Left Your Game";
                     if (game.IsPlaying() || game.IsStarting())
                         player.ReceiveMessage(message, subject);
                 }
@@ -255,7 +228,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdateGameCompleted(Game game, bool isNotEnoughPlayers)
         {
             //Get the list of players from the game
-            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -275,8 +248,8 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send them a text message or email letting them know the game is completed
                 else
                 {
-                    var message = "Your game of CamTag has been completed. Thanks for playing!";
-                    var subject = "Game Completed";
+                    string message = "Your game of CamTag has been completed. Thanks for playing!";
+                    string subject = "Game Completed";
                     if (isNotEnoughPlayers)
                         message = "Your game of CamTag has been completed because there is no longer enough players in your game. Thanks for playing!";
                     player.ReceiveMessage(message, subject);
@@ -297,7 +270,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdateLobbyEnded(Game game)
         {
             //Get the list of players from the game
-            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
             if (!response.IsSuccessful())
                 return;
 
@@ -325,7 +298,7 @@ namespace INFT3970Backend.Hubs
             if (player.AmmoCount == 1)
             {
                 //Create an ammo notification
-                var response = new GameDAL().CreateAmmoNotification(player);
+                Response response = new GameDAL().CreateAmmoNotification(player);
 
                 //If the ammo notification was not successful leave the method
                 if (!response.IsSuccessful())
@@ -348,7 +321,7 @@ namespace INFT3970Backend.Hubs
             else if (player.AmmoCount == 1)
             {
                 string message = "Your ammo has now been replenished, go get em!";
-                var subject = "Ammo Replenished";
+                string subject = "Ammo Replenished";
                 player.ReceiveMessage(message, subject);
             }
         }
@@ -364,7 +337,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdateNotificationsRead(int playerID)
         {
             //Get the player from the database
-            var response = new PlayerDAL().GetPlayerByID(playerID);
+            Response<Player> response = new PlayerDAL().GetPlayerByID(playerID);
             if (!response.IsSuccessful())
                 return;
 
@@ -386,7 +359,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdateGameNowPlaying(Game game)
         {
             //Get the list of players from the game
-            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -401,8 +374,8 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send an email/text message notification
                 else
                 {
-                    var message = "Your game of CamTag is now playing. Go tag other players!";
-                    var subject = "Game Now Playing";
+                    string message = "Your game of CamTag is now playing. Go tag other players!";
+                    string subject = "Game Now Playing";
                     player.ReceiveMessage(message, subject);
                 }
             }
@@ -422,7 +395,7 @@ namespace INFT3970Backend.Hubs
         public async void UpdateGameInStartingState(Game game)
         {
             //Get the list of players from the game
-            var response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
             if (!response.IsSuccessful())
                 return;
@@ -437,8 +410,8 @@ namespace INFT3970Backend.Hubs
                 //Otherwise, send an email/text message notification
                 else
                 {
-                    var message = "Your game of CamTag will begin at: " + game.StartTime.Value.ToString("dd/MM/yyyy HH:mm:ss tt");
-                    var subject = "Game Starting Soon";
+                    string message = "Your game of CamTag will begin at: " + game.StartTime.Value.ToString("dd/MM/yyyy HH:mm:ss tt");
+                    string subject = "Game Starting Soon";
                     player.ReceiveMessage(message, subject);
                 }
             }
@@ -483,7 +456,7 @@ namespace INFT3970Backend.Hubs
         {
             //Get the player from the database as this will run after a certain amount of time.
             //Get the most updated player information
-            var response = new PlayerDAL().GetPlayerByID(player.PlayerID);
+            Response<Player> response = new PlayerDAL().GetPlayerByID(player.PlayerID);
             if (!response.IsSuccessful())
                 return;
 
@@ -511,14 +484,14 @@ namespace INFT3970Backend.Hubs
         public async void UpdatePhotoVotingCompleted(Photo photo)
         {  
             //Generate the messages to be sent
-            var takenByMsgTxt = "";
-            var photoOfMsgTxt = "";
-            var subject = "Voting Complete";
+            string takenByMsgTxt = "";
+            string photoOfMsgTxt = "";
+            string subject = "Voting Complete";
 
             GenerateVotingCompleteMessages(photo, ref takenByMsgTxt, ref photoOfMsgTxt);
 
             //Generate the notifications
-            var isBR = photo.Game.IsBR();
+            bool isBR = photo.Game.IsBR();
             if (isBR)
                 new GameDAL().CreateTagResultNotification(photo, true);
             else
@@ -534,7 +507,7 @@ namespace INFT3970Backend.Hubs
 
             //Live update all other clients connected to the application
             //Get the list of players from the game
-            var response = new GameDAL().GetAllPlayersInGame(photo.GameID, false, "INGAME", "AZ");
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(photo.GameID, false, "INGAME", "AZ");
             if (!response.IsSuccessful())
                 return;
 

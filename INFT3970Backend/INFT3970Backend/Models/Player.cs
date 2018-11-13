@@ -1,4 +1,22 @@
-﻿using System;
+﻿///-----------------------------------------------------------------
+///   Class:        Player
+///   
+///   Description:  A model which represents a Player in CamTag.
+///                 Maps to the data found inside the Database and
+///                 provides business logic validation and functionality
+///                 such as generating verification code and resizing
+///                 selfie images etc.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using INFT3970Backend.Helpers;
@@ -22,20 +40,22 @@ namespace INFT3970Backend.Models
         private int ammoCount;
         private int numKills;
         private int numDeaths;
-        private int numPhotosTaken;
         private int gameID;
 
 
+        /// <summary>
+        /// The ID of the player
+        /// </summary>
         public int PlayerID
         {
             get { return playerID; }
             set
             {
-                var errorMSG = "PlayerID is invalid. Must be atleast 100000.";
+                string errorMSG = "PlayerID is invalid. Must be atleast 100000.";
 
+                //Confirm the ID is within the valid range. Can be -1 if creating a player without an ID
                 if (value == -1 || value >= 100000)
                     playerID = value;
-
                 else
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
             }
@@ -43,18 +63,23 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The players nickname
+        /// </summary>
         public string Nickname
         {
             get { return nickname; }
             set
             {
-                var errorMSG = "The nickname you entered is invalid, please only enter letters and numbers (no spaces).";
+                string errorMSG = "The nickname you entered is invalid, please only enter letters and numbers (no spaces).";
 
+                //Confirm the nickname is not null or empty
                 if (string.IsNullOrWhiteSpace(value))
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
 
-                var nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
-                var isMatch = nicknameRegex.IsMatch(value);
+                //Confirm the nickname only contains numbers and letters, no special characters.
+                Regex nicknameRegex = new Regex(@"^[a-zA-Z0-9]{1,}$");
+                bool isMatch = nicknameRegex.IsMatch(value);
                 if (!isMatch)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
@@ -64,19 +89,24 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The player's contact phone number
+        /// </summary>
         public string Phone
         {
             get { return phone; }
             set
             {
-                var errorMSG = "Phone number is invalid format.";
+                string errorMSG = "Phone number is invalid format.";
 
+                //The phone number can be null, if it is null then return.
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     phone = null;
                     return;
                 }
-                    
+                   
+                //Otherwise, confirm the phone number is in a valid format
                 if (!IsPhone(value))
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
@@ -87,25 +117,30 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The players email address
+        /// </summary>
         public string Email
         {
             get { return email; }
             set
             {
-                var errorMSG = "Email is invalid format.";
+                string errorMSG = "Email is invalid format.";
 
+                //The email can be null, if it is null then return.
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     email = null;
                     return;
                 }
 
+                //Confirm the email address is in valid format
                 if (!IsEmail(value))
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
                 {
                     //If the address is a gmail address then remove the periods because they dont matter.
-                    var tempEmail = value;
+                    string tempEmail = value;
                     if (value.Contains("@gmail.com"))
                     {
                         string[] emailNoPeriods = value.Split('@');
@@ -119,12 +154,15 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The player's selfie taken when joining or creating a game. This is the large original size selfie.
+        /// </summary>
         public string Selfie
         {
             get { return selfie; }
             set
             {
-                var errorMSG = "Selfie DataURL is not a base64 string.";
+                string errorMSG = "Selfie DataURL is not a base64 string.";
 
                 //Allow the selfie to be set to null because of compression while sending over the network
                 if (value == null)
@@ -145,14 +183,17 @@ namespace INFT3970Backend.Models
         
 
 
-
+        /// <summary>
+        /// The player's current ammo count in the game.
+        /// </summary>
         public int AmmoCount
         {
             get { return ammoCount; }
             set
             {
-                var errorMSG = "Ammo count cannot be less than 0.";
+                string errorMSG = "Ammo count cannot be less than 0.";
 
+                //Confirm the ammo count is a valid value
                 if (value < 0)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
@@ -162,13 +203,17 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The number of kills or tags a player has. 
+        /// </summary>
         public int NumKills
         {
             get { return numKills; }
             set
             {
-                var errorMSG = "Number of kills cannot be less than 0.";
+                string errorMSG = "Number of kills cannot be less than 0.";
 
+                //Confirm the kills is a valid value
                 if (value < 0)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
@@ -178,13 +223,17 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The number of deaths/number of times this player has been successfully tagged by others
+        /// </summary>
         public int NumDeaths
         {
             get { return numDeaths; }
             set
             {
-                var errorMSG = "Number of deaths cannot be less than 0.";
+                string errorMSG = "Number of deaths cannot be less than 0.";
 
+                //Confirm the value is valid
                 if (value < 0)
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
                 else
@@ -193,23 +242,10 @@ namespace INFT3970Backend.Models
         }
 
 
-
-        public int NumPhotosTaken
-        {
-            get { return numPhotosTaken; }
-            set
-            {
-                var errorMSG = "Number of photos taken cannot be less than 0.";
-
-                if (value < 0)
-                    throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
-                else
-                    numPhotosTaken = value;
-            }
-        }
-
-
-
+        /// <summary>
+        /// A flag value which indicates if the player has the application open and is connected to the SignalR hub
+        /// and can receive live in game updates.
+        /// </summary>
         public bool IsConnected
         {
             get
@@ -223,28 +259,34 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// The gameID the player is apart of.
+        /// </summary>
         public int GameID
         {
             get { return gameID; }
             set
             {
-                var errorMSG = "GameID is invalid. Must be atleast 100000.";
+                string errorMSG = "GameID is invalid. Must be atleast 100000.";
 
+                //Confirm the value is valid, can be -1 if creating a player who is not in a game yet.
                 if (value == -1 || value >= 100000)
                     gameID = value;
-
                 else
                     throw new InvalidModelException(errorMSG, ErrorCodes.MODELINVALID_PLAYER);
             }
         }
 
 
+        /// <summary>
+        /// The selfie image which is sized at 128px x 128px. This image is used for display in the lobby page.
+        /// </summary>
         public string SmallSelfie
         {
             get { return smallSelfie; }
             set
             {
-                var errorMSG = "Selfie DataURL is not a base64 string.";
+                string errorMSG = "Selfie DataURL is not a base64 string.";
 
                 //Allow the selfie to be set to null because of compression while sending over the network
                 if (value == null)
@@ -261,12 +303,16 @@ namespace INFT3970Backend.Models
             }
         }
 
+
+        /// <summary>
+        /// The selfie image which is sized at 32px by 32px. This image is used for display on the map.
+        /// </summary>
         public string ExtraSmallSelfie
         {
             get { return extraSmallSelfie; }
             set
             {
-                var errorMSG = "Selfie DataURL is not a base64 string.";
+                string errorMSG = "Selfie DataURL is not a base64 string.";
 
                 //Allow the selfie to be set to null because of compression while sending over the network
                 if (value == null)
@@ -282,15 +328,55 @@ namespace INFT3970Backend.Models
                 extraSmallSelfie = value;
             }
         }
+
+        /// <summary>
+        /// A flag value to indicate if the player is the host of the game.
+        /// </summary>
         public bool IsHost { get; set; }
+
+        /// <summary>
+        /// A flag value to indicate if the player has verified their contact details.
+        /// </summary>
         public bool IsVerified { get; set; }
+
+        /// <summary>
+        /// A flag value to indicate if the player is active.
+        /// </summary>
         public bool IsActive { get; set; }
+
+        /// <summary>
+        /// A flag value to indicate if the player has been deleted
+        /// </summary>
         public bool IsDeleted { get; set; }
+
+        /// <summary>
+        /// The unique connectionID assigned to the player when connecting to the signalR hub.
+        /// </summary>
         public string ConnectionID { get; set; }
+
+        /// <summary>
+        /// A flag to indicate if the player has left the game.
+        /// </summary>
         public bool HasLeftGame { get; set; }
+
+        /// <summary>
+        /// A flag value to indicate if the player has been eliminated in a BR game.
+        /// </summary>
         public bool IsEliminated { get; set; }
+
+        /// <summary>
+        /// A flag value to indicate if the player is disabled in a BR game.
+        /// </summary>
         public bool IsDisabled { get; set; }
+
+        /// <summary>
+        /// Outlines if the player is a CORE player or BR player
+        /// </summary>
         public string PlayerType { get; set; }
+
+        /// <summary>
+        /// The game the player is apart of
+        /// </summary>
         public Game Game { get; set; }
         
 
@@ -339,6 +425,7 @@ namespace INFT3970Backend.Models
             if (!ResizeSelfieImages())
                 throw new InvalidModelException("Failed to resize selife images.", ErrorCodes.MODELINVALID_PLAYER);
 
+            //If the number passed in is a phone number replace the 0 with +61 as Twilio requires +61
             if (IsPhone(contact))
                 Phone = "+61" + contact.Substring(1);
 
@@ -361,6 +448,7 @@ namespace INFT3970Backend.Models
             //Add a footer to the message which includes a link back to the game.
             msg += "\n\nPlease visit theteam6.com to return to your game.";
 
+            //If the player has an email send them an email, otherwise, send to their phone number.
             if (HasEmail())
                 EmailSender.Send(Email, subject, msg, false);
             else
@@ -374,6 +462,7 @@ namespace INFT3970Backend.Models
         /// <summary>
         /// Checks if the player has an email address.
         /// </summary>
+        /// <returns>TRUE if email is not null or empty, FALSE otherwise</returns>
         public bool HasEmail()
         {
             if (string.IsNullOrWhiteSpace(Email))
@@ -388,6 +477,7 @@ namespace INFT3970Backend.Models
         /// <summary>
         /// Checks if the player has a phone number.
         /// </summary>
+        /// <returns>TRUE if phone number is not null or empty, FALSE otherwise</returns>
         public bool HasPhone()
         {
             if (string.IsNullOrWhiteSpace(Phone))
@@ -403,6 +493,7 @@ namespace INFT3970Backend.Models
         /// Checks if the contact passed in is a valid email address.
         /// </summary>
         /// <param name="contact">The possible email address.</param>
+        /// <returns>TRUE if the contact is an email address, FALSE otherwise</returns>
         public static bool IsEmail(string contact)
         {
             Regex emailRegex = new Regex(@"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$");
@@ -415,17 +506,18 @@ namespace INFT3970Backend.Models
         /// Checks if the contact passed in is a valid phone number.
         /// </summary>
         /// <param name="contact">The possible phone number.</param>
+        /// <returns>TRUE if contact is a valid phone number, FALSE otherwise</returns>
         public static bool IsPhone(string contact)
         {
-            var isNormalPhone = false;
-            var isTwilioPhone = false;
+            bool isNormalPhone = false;
+            bool isTwilioPhone = false;
 
             //Check to see if the phone number is a normal 04 number
-            var normalPhoneRegex = new Regex(@"^[0-9]{10,10}$");
+            Regex normalPhoneRegex = new Regex(@"^[0-9]{10,10}$");
             isNormalPhone = normalPhoneRegex.IsMatch(contact);
 
             //Check to see if the phone number is a Twilio +61 number
-            var twilioPhoneRegex = new Regex(@"^\+61[0-9]{9,9}$");
+            Regex twilioPhoneRegex = new Regex(@"^\+61[0-9]{9,9}$");
             isTwilioPhone = twilioPhoneRegex.IsMatch(contact);
 
             return isNormalPhone || isTwilioPhone;
@@ -438,7 +530,7 @@ namespace INFT3970Backend.Models
         /// Will return the email address if the player has an email,
         /// otherwise, phone number is returned.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The email or phone number</returns>
         public string GetContact()
         {
             if (HasEmail())
@@ -461,7 +553,7 @@ namespace INFT3970Backend.Models
             if (string.IsNullOrWhiteSpace(strCode))
                 return -1;
 
-            var code = 0;
+            int code = 0;
             try
             {
                 //Confirm the code is within the valid range
@@ -480,7 +572,7 @@ namespace INFT3970Backend.Models
         /// <summary>
         /// Generates a 5 digit verification code between 10000 and 99999
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The 5 digit code</returns>
         public static int GenerateVerificationCode()
         {
             Random rand = new Random();
@@ -488,6 +580,10 @@ namespace INFT3970Backend.Models
         }
 
 
+        /// <summary>
+        /// Checks to see if thr player is a BR player
+        /// </summary>
+        /// <returns>TRUE if player is a BR player, FALSE otherwise</returns>
         public bool IsBRPlayer()
         {
             return PlayerType.ToUpper() == "BR";
@@ -495,13 +591,19 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// Resizes the original selfie image to 2 different sizes, small and extra small.
+        /// The small is 128x128 and the extra small is 32x32. The images are then assigned to
+        /// the corresponding properities of the player.
+        /// </summary>
+        /// <returns>TRUE if successful, false otherwise</returns>
         public bool ResizeSelfieImages()
         {
             try
             {
-                var dataUrlString = "data:image/jpeg;base64,";
-                var largeImageBase64Data = Selfie.Replace(dataUrlString, "");
-                var largeImageByteData = Convert.FromBase64String(largeImageBase64Data);
+                string dataUrlString = "data:image/jpeg;base64,";
+                string largeImageBase64Data = Selfie.Replace(dataUrlString, "");
+                byte[] largeImageByteData = Convert.FromBase64String(largeImageBase64Data);
 
                 //Reszie the large selfie data to the the smaller versions
                 using (Image<Rgba32> image = Image.Load(largeImageByteData))
@@ -512,10 +614,10 @@ namespace INFT3970Backend.Models
                     {
                         //Get the byte data from the image
                         image.Save<Rgba32>(stream, ImageFormats.Jpeg);
-                        var smallImageByteArray = stream.ToArray();
+                        byte[] smallImageByteArray = stream.ToArray();
 
                         //Convert it to a base 64 string
-                        var smallImageBase64String = Convert.ToBase64String(smallImageByteArray);
+                        string smallImageBase64String = Convert.ToBase64String(smallImageByteArray);
                         SmallSelfie = dataUrlString + smallImageBase64String;
                     }
 
@@ -525,10 +627,10 @@ namespace INFT3970Backend.Models
                     {
                         //Get the byte data from the image
                         image.Save<Rgba32>(stream, ImageFormats.Jpeg);
-                        var extraSmallImageByteArray = stream.ToArray();
+                        byte[] extraSmallImageByteArray = stream.ToArray();
 
                         //Convert it to a base 64 string
-                        var extraSmallImageBase64String = Convert.ToBase64String(extraSmallImageByteArray);
+                        string extraSmallImageBase64String = Convert.ToBase64String(extraSmallImageByteArray);
                         ExtraSmallSelfie = dataUrlString + extraSmallImageBase64String;
                     }
                 }
@@ -542,8 +644,17 @@ namespace INFT3970Backend.Models
         }
 
 
+
+        /// <summary>
+        /// Compress the player for transport over the network. The data to be compressed will the the different selfie images.
+        /// The method gives the option to compress certain images as different requests require certain images or non at all.
+        /// </summary>
+        /// <param name="doCompressLarge">Flag to outline if want to compress the large selfie</param>
+        /// <param name="doCompressSmall">Flag to outline if want to compress the small selfie</param>
+        /// <param name="doCompressExtraSmall">Flag to outline if want to compress the extra small selfie</param>
         public void Compress(bool doCompressLarge, bool doCompressSmall, bool doCompressExtraSmall)
         {
+            //Set the Image DataURL to null if specified to compress
             if(doCompressLarge)
                 Selfie = null;
 
@@ -556,6 +667,11 @@ namespace INFT3970Backend.Models
 
 
 
+        /// <summary>
+        /// Confirm the passed in DataURL is a valid DataURL and can be converted to a base64 image.
+        /// </summary>
+        /// <param name="dataURL">The dataURL to validate</param>
+        /// <returns>TRUE if valid, FALSE otherwise</returns>
         private bool IsValidDataURL(string dataURL)
         {
             //Confirm the dataURL is a base64 string
@@ -565,9 +681,9 @@ namespace INFT3970Backend.Models
                     return false;
 
                 //Get the byte data from the dataURL, will thrown an exception if in the incorrect format
-                var dataUrlString = "data:image/jpeg;base64,";
-                var base64Data = dataURL.Replace(dataUrlString, "");
-                var byteData = Convert.FromBase64String(base64Data);
+                string dataUrlString = "data:image/jpeg;base64,";
+                string base64Data = dataURL.Replace(dataUrlString, "");
+                byte[] byteData = Convert.FromBase64String(base64Data);
 
                 //If reaching this point the image is a valid dataURL
                 return true;

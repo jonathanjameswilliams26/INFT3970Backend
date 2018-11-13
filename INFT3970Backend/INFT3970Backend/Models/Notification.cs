@@ -1,4 +1,19 @@
-﻿namespace INFT3970Backend.Models
+﻿///-----------------------------------------------------------------
+///   Class:        Notification
+///   
+///   Description:  A model which represents a Notification in CamTag.
+///                 Maps to the data found in the Database.
+///   
+///   Authors:      Team 6
+///                 Jonathan Williams
+///                 Dylan Levin
+///                 Mathew Herbert
+///                 David Low
+///                 Harry Pallet
+///                 Sheridan Gomes
+///-----------------------------------------------------------------
+
+namespace INFT3970Backend.Models
 {
     public class Notification
     {
@@ -12,7 +27,5 @@
         public int PlayerID { get; set; }
         public Game Game { get; set; }
         public Player Player { get; set; }
-
-        public Notification() { }
     }
 }
