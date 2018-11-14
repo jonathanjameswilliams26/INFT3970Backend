@@ -14,6 +14,8 @@ GO
 --ACTIVE = get all players in the game which arnt deleted and is active
 --INGAME = get all players in the game which arnt deleted, is active, have not left the game and have been verified
 --INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified (includes players who have left the game)
+--TAGGABLE = Get all player in the game who are taggable, so players who arnt deleted, is active, verified, have not left game and is not the playerID passed in
+--HOST = Get all players in the game for the Host lobby view, includes unverified players
 
 --ORDER by
 --AZ = Order by name in alphabetical order

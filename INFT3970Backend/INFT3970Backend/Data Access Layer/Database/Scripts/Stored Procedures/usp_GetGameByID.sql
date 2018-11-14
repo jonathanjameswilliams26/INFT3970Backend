@@ -20,6 +20,7 @@ BEGIN
 	EXEC [dbo].[usp_ConfirmGameExists] @id = @gameID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
 
+	--Select the game record
 	SELECT *
 	FROM tbl_Game
 	WHERE GameID = @gameID

@@ -8,13 +8,9 @@ GO
 -- Author:		Jonathan Williams
 -- Create date: 05/09/18
 -- Description:	Completes a game and sets all references to the game to not active.
+--				All players, photos, votes etc associated with the game will be set to inactive
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. EC_GAMENOTEXISTS - The GameID passed in dows not exist.
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CompleteGame] 
 	-- Add the parameters for the stored procedure here

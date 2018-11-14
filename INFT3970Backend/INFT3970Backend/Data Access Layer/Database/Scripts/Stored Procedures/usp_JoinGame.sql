@@ -133,6 +133,7 @@ BEGIN
 			DECLARE @gameMode VARCHAR(255);
 			SELECT @gameMode = GameMode FROM tbl_Game WHERE GameID = @gameIDToJoin
 
+			--Insert a player record with a Phone or email address only
 			IF(@isPhone = 1)
 			BEGIN
 				INSERT INTO tbl_Player(Nickname, Phone, Selfie, SmallSelfie, ExtraSmallSelfie, GameID, VerificationCode, IsHost, AmmoCount, PlayerType) VALUES (@nickname, @contact, @selfie, @smallSelfie, @extraSmallSelfie, @gameIDToJoin, @verificationCode, @isHost, @ammoCount, @gameMode);

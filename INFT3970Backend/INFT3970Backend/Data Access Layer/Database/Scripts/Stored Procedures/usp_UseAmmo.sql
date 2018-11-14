@@ -67,7 +67,7 @@ BEGIN
 		SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 		BEGIN TRANSACTION
 			UPDATE tbl_Player
-			SET AmmoCount = AmmoCount - 1, NumPhotosTaken = NumPhotosTaken + 1
+			SET AmmoCount = AmmoCount - 1
 			WHERE PlayerID = @playerID
 		COMMIT
 

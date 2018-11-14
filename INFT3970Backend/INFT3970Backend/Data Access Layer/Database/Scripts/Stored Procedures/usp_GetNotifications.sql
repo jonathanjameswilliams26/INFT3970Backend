@@ -53,7 +53,7 @@ BEGIN
 		EXEC [dbo].[usp_ConfirmGameStateCorrect] @gameID = @gameID, @correctGameState = 'PLAYING', @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 		EXEC [dbo].[usp_DoRaiseError] @result = @result
 
-		--The playerID exists, get the notifications associated with that player
+		--The playerID exists, get the notifications associated with that player, If ALL =1 get all notifications including ones already read, otherwise, just get unread
 		IF (@all = 1)
 			SELECT * FROM vw_Active_Notifications WHERE PlayerID = @playerID ORDER BY NotificationID DESC
 		ELSE

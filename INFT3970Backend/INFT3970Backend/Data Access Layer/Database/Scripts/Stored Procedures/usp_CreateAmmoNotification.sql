@@ -10,12 +10,6 @@ GO
 -- Description:	Adds a notification informing the user that their ammo has refilled
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. EC_PLAYERNOTACTIVE - The playerID passed in is not active
---		2. EC_PLAYERDOESNOTEXIST - The playerID passed in does not exist
---		3. EC_INSERTERROR - When performing the update in the DB an error occurred
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateAmmoNotification] 
 	-- Add the parameters for the stored procedure here

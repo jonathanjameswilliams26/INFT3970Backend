@@ -103,7 +103,7 @@ BEGIN
 				StartTime = DATEADD(MILLISECOND, @delay, GETDATE())
 			WHERE GameID = @gameID
 
-
+			--Set the end time, use the start time + the time limit to calculate the end time
 			DECLARE @startTime DATETIME2;
 			SELECT @startTime = StartTime
 			FROM tbl_Game
@@ -112,6 +112,7 @@ BEGIN
 			SET EndTime = DATEADD(MILLISECOND, @timeLimit, @startTime)
 		COMMIT
 
+		--Return the updated game record
 		SET @result = 1
 		SET @errorMSG = '';
 		SELECT * FROM tbl_Game WHERE GameID = @gameID
@@ -124,7 +125,7 @@ BEGIN
 		BEGIN
 			ROLLBACK;
 			SET @result = @INSERT_ERROR;
-			SET @errorMSG = 'The an error occurred while trying to create the game record';
+			SET @errorMSG = 'The an error occurred while trying to begin the game.';
 		END
 	END CATCH
 END

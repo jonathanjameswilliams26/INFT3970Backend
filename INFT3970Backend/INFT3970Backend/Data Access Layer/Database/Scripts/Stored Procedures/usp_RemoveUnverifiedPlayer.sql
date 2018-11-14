@@ -1,13 +1,3 @@
---Check the playerID and playerTo remove in game
-
---Confirm the game state is IN LOBBY
-
---confirm the playerID is the Host player
-
---confirm the playerID to remove is NOT VERIFIED
-
-
-
 USE [udb_CamTag]
 GO
 SET ANSI_NULLS ON

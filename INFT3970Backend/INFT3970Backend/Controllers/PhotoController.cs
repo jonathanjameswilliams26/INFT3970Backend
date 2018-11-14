@@ -172,7 +172,7 @@ namespace INFT3970Backend.Controllers
                 response = new PhotoDAL().VoteOnPhoto(vote, getPlayerResponse.Data.IsBRPlayer());
                 if (response.IsSuccessful())
                 {
-                    //If the response's data is NULL that means the game is now completed. Send live updates to complete the game
+                    //If the response's data is NULL that means the game is now completed for a BR game. Send live updates to complete the game
                     if(response.Data == null)
                     {
                         HubInterface hubInterface = new HubInterface(_hubContext);

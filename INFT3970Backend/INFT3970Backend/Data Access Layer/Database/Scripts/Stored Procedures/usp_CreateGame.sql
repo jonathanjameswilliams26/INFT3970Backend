@@ -10,11 +10,6 @@ GO
 -- Description:	Creates a new game in the database.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
-
--- Possible Errors Returned:
---		1. EC_INSERTERROR - An error occurred while trying to insert the game record
---		2. EC_ITEMALREADYEXISTS - An active game already exists with that game code.
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateGame] 
 	-- Add the parameters for the stored procedure here

@@ -10,6 +10,8 @@ GO
 -- Description:	Gets the current status of the game / application.
 --				Used by the front end to get the current state of the application
 --				when a user returns to the web application.
+--				Will check if the game state and confirm if there is anything the player
+--				must complete or reload such as votes or notificiations etc.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
 -- =============================================

@@ -7,8 +7,9 @@ GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 30/10/18
--- Description:	Decreases the number of lives the player has after
--- attempting to take a photo outside of the battle royale playing zone.
+-- Description:	Disables the player for a certain amount of time
+--				after attempting to take a photo when outside of the
+--				playing zone in a battle royale game.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
 -- =============================================

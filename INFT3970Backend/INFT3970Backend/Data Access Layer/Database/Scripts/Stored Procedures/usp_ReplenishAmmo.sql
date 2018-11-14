@@ -10,10 +10,6 @@ GO
 -- Description:	Replenishes a players ammo by one.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. @EC_INSERTERROR - An error occurred while trying to update the player record.
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_ReplenishAmmo] 
 	-- Add the parameters for the stored procedure here

@@ -7,15 +7,9 @@ GO
 -- =============================================
 -- Author:		Dylan Levin
 -- Create date: 06/09/18
--- Description:	Adds a notification to the DB to then be used.
+-- Description:	Adds a player left notification for all players in the game.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The playerID of the recipient does not exist
---		2. The gameID does not exist
---		3. When performing the update in the DB an error occurred
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateLeaveNotification] 
 	-- Add the parameters for the stored procedure here
@@ -81,7 +75,7 @@ BEGIN
 		BEGIN
 			ROLLBACK;
 			SET @result = @INSERT_ERROR;
-			SET @errorMSG = 'An error occurred while trying to create the join notification.'
+			SET @errorMSG = 'An error occurred while trying to create the leave notification.'
 		END
 	END CATCH
 END

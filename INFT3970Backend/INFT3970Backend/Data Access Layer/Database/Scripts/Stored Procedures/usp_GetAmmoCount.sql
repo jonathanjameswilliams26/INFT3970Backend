@@ -23,6 +23,7 @@ BEGIN
 	EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
 
+	--Get the players ammo count
 	SELECT @ammoCount = AmmoCount
 	FROM vw_InGame_Players
 	WHERE PlayerID = @playerID

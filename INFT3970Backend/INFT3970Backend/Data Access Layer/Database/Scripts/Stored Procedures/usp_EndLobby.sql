@@ -8,8 +8,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
 -- Author:		Jonathan Williams
--- Create date: 13/09/18
--- Description:	Removes a player to a game.
+-- Create date: 25/10/18
+-- Description:	Ends the lobby after the host player leaves the lobby before starting the game.
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
 -- =============================================

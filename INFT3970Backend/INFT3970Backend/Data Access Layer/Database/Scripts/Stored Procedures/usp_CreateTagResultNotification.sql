@@ -10,12 +10,6 @@ GO
 -- Description:	Creates a tag notification for each player depending on the result of a tag.
 
 -- Returns: 1 = Successful, or 0 = An error occurred
-
--- Possible Errors Returned:
---		1. The playerID of the recipient does not exist
---		2. The gameID does not exist
---		3. When performing the update in the DB an error occurred
-
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_CreateTagResultNotification] 
 	-- Add the parameters for the stored procedure here
@@ -132,7 +126,7 @@ BEGIN
 		BEGIN
 			ROLLBACK;
 			SET @result = @INSERT_ERROR;
-			SET @errorMSG = 'An error occurred while trying to create the join notification.'
+			SET @errorMSG = 'An error occurred while trying to create the tag notification.'
 		END
 	END CATCH
 END
