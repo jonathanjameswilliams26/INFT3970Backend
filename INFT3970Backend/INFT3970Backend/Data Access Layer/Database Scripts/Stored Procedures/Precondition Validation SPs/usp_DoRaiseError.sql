@@ -1,10 +1,4 @@
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[usp_DoRaiseError] 
+CREATE PROCEDURE usp_DoRaiseError 
 	@result INT
 AS
 BEGIN

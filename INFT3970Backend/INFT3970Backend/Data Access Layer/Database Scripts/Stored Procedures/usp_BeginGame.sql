@@ -1,9 +1,3 @@
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 05/09/18
@@ -12,7 +6,7 @@ GO
 
 -- Returns: The result (1 = successful, anything else = error), and the error message associated with it
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_BeginGame] 
+CREATE PROCEDURE usp_BeginGame 
 	-- Add the parameters for the stored procedure here
 	@playerID INT,
 	@result INT OUTPUT,

@@ -1,9 +1,3 @@
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 19/09/18

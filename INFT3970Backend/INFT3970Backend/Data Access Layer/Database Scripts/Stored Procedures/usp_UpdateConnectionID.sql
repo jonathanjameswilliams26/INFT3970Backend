@@ -1,10 +1,4 @@
-﻿USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
+﻿-- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 30/08/18
 -- Description:	Updates a Player's ConnectionID and sets them as CONNECTED to the SignalR Hub

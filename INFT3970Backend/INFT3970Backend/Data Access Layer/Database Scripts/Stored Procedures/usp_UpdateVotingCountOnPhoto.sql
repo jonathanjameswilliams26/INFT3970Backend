@@ -1,16 +1,9 @@
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 11/09/18
 -- Description:	Updates the Yes/No vote count on the photo,
 --				checks if the voting has been completed, if so,
 --				the kills and deaths are updated etc.
-
 -- Returns: 1 = Successful, or Anything else = An error occurred
 -- =============================================
 CREATE PROCEDURE [dbo].[usp_UpdateVotingCountOnPhoto] 

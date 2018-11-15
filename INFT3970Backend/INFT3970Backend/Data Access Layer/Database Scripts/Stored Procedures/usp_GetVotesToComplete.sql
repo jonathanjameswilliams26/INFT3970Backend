@@ -1,5 +1,3 @@
-USE udb_CamTag
-GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 10/09/18

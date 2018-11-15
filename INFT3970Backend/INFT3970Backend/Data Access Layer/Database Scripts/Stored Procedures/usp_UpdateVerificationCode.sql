@@ -1,9 +1,3 @@
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 CREATE PROCEDURE [dbo].[usp_UpdateVerificationCode] 
 	-- Add the parameters for the stored procedure here
 	@verificationCode INT,
@@ -31,8 +25,7 @@ BEGIN
     DECLARE @MODELINVALID_PLAYER INT = 12;
     DECLARE @MODELINVALID_GAME INT = 13;
     DECLARE @MODELINVALID_PHOTO INT = 14;
-    DECLARE @MODELINVALID_VOTE INT = 15;
-	
+    DECLARE @MODELINVALID_VOTE INT = 15;	
 
 	BEGIN TRY
 		

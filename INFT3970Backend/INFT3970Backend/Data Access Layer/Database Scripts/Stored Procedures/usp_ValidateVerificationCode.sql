@@ -1,9 +1,3 @@
-USE [udb_CamTag]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 CREATE PROCEDURE [dbo].[usp_ValidateVerificationCode] 
 	-- Add the parameters for the stored procedure here
 	@verificationCode INT,

@@ -1,15 +1,9 @@
-USE udb_CamTag
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 15/09/18
 -- Description:	Confirm the GameState of the GameID passed in is as expected.
 -- =============================================
-CREATE PROCEDURE [dbo].[usp_ConfirmGameStateCorrect]
+CREATE PROCEDURE usp_ConfirmGameStateCorrect
 	@gameID INT,
 	@correctGameState VARCHAR(255),
 	@result INT OUTPUT,
