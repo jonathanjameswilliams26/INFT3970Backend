@@ -25,6 +25,7 @@
 using Microsoft.AspNetCore.SignalR;
 using INFT3970Backend.Models;
 using INFT3970Backend.Data_Access_Layer;
+using System;
 
 namespace INFT3970Backend.Hubs
 {
@@ -58,9 +59,11 @@ namespace INFT3970Backend.Hubs
         /// <param name="joinedPlayer">The player who joined the game.</param>
         public async void UpdatePlayerJoinedGame(Player joinedPlayer)
         {
-            //Get the list of players currently in the game
+            Console.WriteLine("HubInterface - UpdatePlayerJoinedGame");
+
+            //Get all the players currently in the game which are updateable
             GameDAL gameDAL = new GameDAL();
-            Response<Game> gameResponse = gameDAL.GetAllPlayersInGame(joinedPlayer.PlayerID, true, "INGAME", "AZ");
+            Response<Game> gameResponse = gameDAL.GetAllPlayersInGame(joinedPlayer.PlayerID, true, "UPDATEABLE", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!gameResponse.IsSuccessful())
@@ -85,23 +88,31 @@ namespace INFT3970Backend.Hubs
                 {
                     //If the game is IN LOBBY or STARTING update the lobby list for both verfied and unverified players joining
                     if(game.IsInLobby() || game.IsStarting())
+                    {
+                        Console.WriteLine("Invoking UpdateGameLobbyList on :" + player.Nickname);
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
+                    }
+                        
 
                     //Otherwise, update the players notifications and the scoreboard because they are currently playing the game
                     else if(game.IsPlaying() && joinedPlayer.IsVerified)
                     {
+                        Console.WriteLine("Invoking UpdateNotifications and UpdateScoreboard on :" + player.Nickname);
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateScoreboard");
                     }
                 }
-                //Otherwise, the player is out of the app.
-                else
+                //Otherwise, the player is out of the app and not a BR player who is eliminated, send them a text message or email.
+                else if(!player.IsEliminated)
                 {
                     //Only send a notification when the game is playing or starting
                     string message = joinedPlayer.Nickname + " has joined your game of CamTag.";
                     string subject = "New Player Joined Your Game";
                     if ((game.IsPlaying() || game.IsStarting()) && joinedPlayer.IsVerified)
+                    {
+                        Console.WriteLine("Sending new player joined SMS or Email to:" + player.Nickname);
                         player.ReceiveMessage(message, subject);
+                    }
                 }
             }
         }
@@ -122,8 +133,10 @@ namespace INFT3970Backend.Hubs
         /// <param name="uploadedPhoto">The photo which has been uploaded.</param>
         public async void UpdatePhotoUploaded(Photo uploadedPhoto)
         {
-            //Get the list of players currently in the game
-            Response<Game> response = new GameDAL().GetAllPlayersInGame(uploadedPhoto.GameID, false, "INGAME", "AZ");
+            Console.WriteLine("HubInterface - UpdatePhotoUploaded");
+
+            //Get all the players currently in the game which are updateable
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(uploadedPhoto.GameID, false, "UPDATEABLE", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!response.IsSuccessful())
@@ -140,11 +153,15 @@ namespace INFT3970Backend.Hubs
 
                 //The player is connected to the Hub, call a live update method
                 if(player.IsConnected)
+                {
+                    Console.WriteLine("Invoking UpdatePhotoUploaded on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdatePhotoUploaded");
+                }
 
                 //Otherwise, the player is not currently in the WebApp, send a notification to their contact details.
                 else
                 {
+                    Console.WriteLine("Sending new photo uploaded SMS or Email to:" + player.Nickname);
                     string message = "A new photo has been uploaded in your game of CamTag. Cast your vote before time runs out!";
                     string subject = "New Photo Submitted";
                     player.ReceiveMessage(message, subject);
@@ -168,9 +185,11 @@ namespace INFT3970Backend.Hubs
         /// <param name="leftPlayer">The player who left the game</param>
         public async void UpdatePlayerLeftGame(Player leftPlayer)
         {
-            //Get all the players currently in the game
+            Console.WriteLine("HubInterface - UpdatePlayerLeftGame");
+
+            //Get all the players currently in the game which are updateable
             GameDAL gameDAL = new GameDAL();
-            Response<Game> gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.GameID, false, "INGAME", "AZ");
+            Response<Game> gameResponse = gameDAL.GetAllPlayersInGame(leftPlayer.GameID, false, "UPDATEABLE", "AZ");
 
             //If an error occurred while trying to get the list of players exit the method
             if (!gameResponse.IsSuccessful())
@@ -190,24 +209,32 @@ namespace INFT3970Backend.Hubs
                 {
                     //If the game state is IN LOBBY or STARTING then the players are in the Lobby, update the lobby list
                     if (game.IsInLobby() || game.IsStarting())
+                    {
+                        Console.WriteLine("Invoking UpdateGameLobbyList on :" + player.Nickname);
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateGameLobbyList");
+                    }
 
                     //If the game state is PLAYING - Send a notification to the players in the game.
                     else
                     {
+                        Console.WriteLine("Invoking UpdateNotifications and UpdateScoreboard on :" + player.Nickname);
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                         await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateScoreboard");
                     }
                 }
 
                 //Otherwise, the player is not connected to the Hub, send a notification via the contact information
-                else
+                //only if the player is not a BR player which is eliminated
+                else if (!player.IsEliminated)
                 {
                     //Don't send a notification when the game is IN LOBBY or STARTING state
                     string message = leftPlayer.Nickname + " has left your game of CamTag.";
                     string subject = "A Player Left Your Game";
                     if (game.IsPlaying() || game.IsStarting())
+                    {
+                        Console.WriteLine("Sending player left game SMS or Email to :" + player.Nickname);
                         player.ReceiveMessage(message, subject);
+                    }
                 }
             }
         }
@@ -227,6 +254,8 @@ namespace INFT3970Backend.Hubs
         /// <param name="isNotEnoughPlayers">A flag if the game ended because too many players left the game.</param>
         public async void UpdateGameCompleted(Game game, bool isNotEnoughPlayers)
         {
+            Console.WriteLine("HubInterface - UpdateGameCompleted");
+
             //Get the list of players from the game
             Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
 
@@ -242,12 +271,16 @@ namespace INFT3970Backend.Hubs
                     continue;
 
                 //If the player is currently connected to the application send them a live update
-                if(player.IsConnected)
+                if (player.IsConnected)
+                {
+                    Console.WriteLine("Invoking GameCompleted on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameCompleted");
+                }
 
                 //Otherwise, send them a text message or email letting them know the game is completed
                 else
                 {
+                    Console.WriteLine("Sending game completed SMS or Email to :" + player.Nickname);
                     string message = "Your game of CamTag has been completed. Thanks for playing!";
                     string subject = "Game Completed";
                     if (isNotEnoughPlayers)
@@ -269,6 +302,8 @@ namespace INFT3970Backend.Hubs
         /// <param name="game">The game being ended.</param>
         public async void UpdateLobbyEnded(Game game)
         {
+            Console.WriteLine("HubInterface - UpdateLobbyEnded");
+
             //Get the list of players from the game
             Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "ALL", "AZ");
             if (!response.IsSuccessful())
@@ -277,8 +312,11 @@ namespace INFT3970Backend.Hubs
             //Loop through each of the players and send out the live update
             foreach(var player in response.Data.Players)
             {
-                if(player.IsConnected)
+                if (player.IsConnected)
+                {
+                    Console.WriteLine("Invoking LobbyEnded on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("LobbyEnded");
+                }
             }
         }
 
@@ -294,6 +332,8 @@ namespace INFT3970Backend.Hubs
         /// <param name="player">The player being updated.</param>
         public async void UpdateAmmoReplenished(Player player)
         {
+            Console.WriteLine("HubInterface - UpdateAmmoReplenished");
+
             //If the players ammo has gone from 0-1 create a notification for the player
             if (player.AmmoCount == 1)
             {
@@ -309,17 +349,23 @@ namespace INFT3970Backend.Hubs
             //If the player is connected to the hub call the UpdateNotifications and the AmmoReplenished client methods
             if (player.IsConnected)
             {
+                Console.WriteLine("Invoking AmmoReplenished on :" + player.Nickname);
+
                 //To indcate to the client that the ammo has increased to update the UI
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("AmmoReplenished");
 
                 //If the ammo count is now 1, there will be an ammo notificaiton
                 if (player.AmmoCount == 1)
+                {
+                    Console.WriteLine("Invoking UpdateNotifications on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                }
             }
 
             //Otherwise if ammo has gone from empty to not, send out a text message or email
             else if (player.AmmoCount == 1)
             {
+                Console.WriteLine("Sending ammo replenished SMS or Email to :" + player.Nickname);
                 string message = "Your ammo has now been replenished, go get em!";
                 string subject = "Ammo Replenished";
                 player.ReceiveMessage(message, subject);
@@ -336,14 +382,19 @@ namespace INFT3970Backend.Hubs
         /// <param name="playerID"></param>
         public async void UpdateNotificationsRead(int playerID)
         {
+            Console.WriteLine("HubInterface - UpdateNotificationsRead");
+
             //Get the player from the database
             Response<Player> response = new PlayerDAL().GetPlayerByID(playerID);
             if (!response.IsSuccessful())
                 return;
 
             //If the player is connected to the hub update the notifications list
-            if(response.Data.IsConnected)
+            if (response.Data.IsConnected)
+            {
+                Console.WriteLine("Invoking UpdateNotifications on :" + response.Data.Nickname);
                 await _hubContext.Clients.Client(response.Data.ConnectionID).SendAsync("UpdateNotifications");
+            }
         }
 
 
@@ -358,6 +409,8 @@ namespace INFT3970Backend.Hubs
         /// <param name="game">The Game which is now playing</param>
         public async void UpdateGameNowPlaying(Game game)
         {
+            Console.WriteLine("HubInterface - UpdateGameNowPlaying");
+
             //Get the list of players from the game
             Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
@@ -369,11 +422,15 @@ namespace INFT3970Backend.Hubs
             {
                 //If the player is connected invoke the hub method
                 if (player.IsConnected)
+                {
+                    Console.WriteLine("Invoking GameNowPlaying on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameNowPlaying");
+                }
 
                 //Otherwise, send an email/text message notification
                 else
                 {
+                    Console.WriteLine("Sending game now playing SMS or Email to :" + player.Nickname);
                     string message = "Your game of CamTag is now playing. Go tag other players!";
                     string subject = "Game Now Playing";
                     player.ReceiveMessage(message, subject);
@@ -394,6 +451,8 @@ namespace INFT3970Backend.Hubs
         /// <param name="game">The Game which has now started.</param>
         public async void UpdateGameInStartingState(Game game)
         {
+            Console.WriteLine("HubInterface - UpdateGameInStartingState");
+
             //Get the list of players from the game
             Response<Game> response = new GameDAL().GetAllPlayersInGame(game.GameID, false, "INGAME", "AZ");
 
@@ -405,11 +464,15 @@ namespace INFT3970Backend.Hubs
             {
                 //If the player is connected invoke the hub method
                 if (player.IsConnected)
+                {
+                    Console.WriteLine("Invoking GameStarting on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("GameStarting");
+                }
 
                 //Otherwise, send an email/text message notification
                 else
                 {
+                    Console.WriteLine("Sending game starting SMS or Email to :" + player.Nickname);
                     string message = "Your game of CamTag will begin at: " + game.StartTime.Value.ToString("dd/MM/yyyy HH:mm:ss tt");
                     string subject = "Game Starting Soon";
                     player.ReceiveMessage(message, subject);
@@ -433,14 +496,20 @@ namespace INFT3970Backend.Hubs
         /// <param name="totalMinutesDisabled">The number of minutes being disabled.</param>
         public async void BR_UpdatePlayerDisabled(Player player, int totalMinutesDisabled)
         {
+            Console.WriteLine("HubInterface - BR_UpdatePlayerDisabled");
+
             //Update the player if they are connected to the application
             if (player.IsConnected)
             {
+                Console.WriteLine("Invoking UpdateNotifications and PlayerDisabled on :" + player.Nickname);
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerDisabled", totalMinutesDisabled);
             }
             else
+            {
+                Console.WriteLine("Sending player disabled SMS or Email to :" + player.Nickname);
                 player.ReceiveMessage("You have been disabled for " + totalMinutesDisabled + " minutes for taking a photo outside of the zone.", "You Have Been Disabled");
+            }
         }
 
 
@@ -454,6 +523,8 @@ namespace INFT3970Backend.Hubs
         /// <param name="player">The player being re-enabled</param>
         public async void BR_UpdatePlayerReEnabled(Player player)
         {
+            Console.WriteLine("HubInterface - BR_UpdatePlayerReEnabled");
+
             //Get the player from the database as this will run after a certain amount of time.
             //Get the most updated player information
             Response<Player> response = new PlayerDAL().GetPlayerByID(player.PlayerID);
@@ -465,11 +536,15 @@ namespace INFT3970Backend.Hubs
             //Update the player if they are connected to the application
             if (player.IsConnected)
             {
+                Console.WriteLine("Invoking UpdateNotifications and PlayerReEnabled on :" + player.Nickname);
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerReEnabled");
             }
             else
+            {
+                Console.WriteLine("Sending player re-enabled SMS or Email to :" + player.Nickname);
                 player.ReceiveMessage("You have been re-enabled, go get em!", "You Have Been Re-enabled");
+            }
         }
 
 
@@ -482,7 +557,9 @@ namespace INFT3970Backend.Hubs
         /// </summary>
         /// <param name="photo">The photo which has now been completed.</param>
         public async void UpdatePhotoVotingCompleted(Photo photo)
-        {  
+        {
+            Console.WriteLine("HubInterface - UpdatePhotoVotingCompleted");
+
             //Generate the messages to be sent
             string takenByMsgTxt = "";
             string photoOfMsgTxt = "";
@@ -506,8 +583,8 @@ namespace INFT3970Backend.Hubs
                 photo.PhotoOfPlayer.ReceiveMessage(photoOfMsgTxt, subject);
 
             //Live update all other clients connected to the application
-            //Get the list of players from the game
-            Response<Game> response = new GameDAL().GetAllPlayersInGame(photo.GameID, false, "INGAME", "AZ");
+            //Get all the players currently in the game which are updateable
+            Response<Game> response = new GameDAL().GetAllPlayersInGame(photo.GameID, false, "UPDATEABLE", "AZ");
             if (!response.IsSuccessful())
                 return;
 
@@ -519,14 +596,21 @@ namespace INFT3970Backend.Hubs
                     continue;
 
                 //If the player is the PhotoOfPlayer and the Photo was successful and it is a BR game, send out eliminated updated
-                if(player.PlayerID == photo.PhotoOfPlayerID && photo.IsSuccessful && isBR)
+                if (player.PlayerID == photo.PhotoOfPlayerID && photo.IsSuccessful && isBR)
+                {
+                    Console.WriteLine("Invoking PlayerEliminated on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("PlayerEliminated");
+                }
 
                 //Otherwise, just update the notifications
                 else
+                {
+                    Console.WriteLine("Invoking UpdateNotifications on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateNotifications");
+                }
 
                 //Update the scoreboard
+                Console.WriteLine("Invoking UpdateScoreboard on :" + player.Nickname);
                 await _hubContext.Clients.Client(player.ConnectionID).SendAsync("UpdateScoreboard");
             }
         }

@@ -1739,7 +1739,6 @@ BEGIN
 
 END
 GO
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 18/09/18
@@ -1752,6 +1751,7 @@ GO
 --INGAMEALL = get all players in the game which arnt deleted, is active, and have been verified (includes players who have left the game)
 --TAGGABLE = Get all player in the game who are taggable, so players who arnt deleted, is active, verified, have not left game and is not the playerID passed in
 --HOST = Get all players in the game for the Host lobby view, includes unverified players
+--UPDATEABLE = Get all players in the game which are not deleted, is active, is verified. Also includes BR players who have been eliminated.
 
 --ORDER by
 --AZ = Order by name in alphabetical order
@@ -1909,6 +1909,25 @@ BEGIN
 				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
 		END
 
+
+		--If filter is UPDATEABLE get all players in the game which are updateable.
+		--Players who have not left the game, is active, not deleted. Updateable also includes Eliminated BR players. 
+		IF(@filter LIKE 'UPDATEABLE')
+		BEGIN
+			SELECT * 
+			FROM 
+				vw_All_Players
+			WHERE 
+				GameID = @id AND
+				HasLeftGame = 0 AND
+				PlayerIsActive = 1 AND
+				IsVerified = 1
+			ORDER BY
+				CASE WHEN @orderBy LIKE 'AZ' THEN Nickname END ASC,
+				CASE WHEN @orderBy LIKE 'ZA' THEN Nickname END DESC,
+				CASE WHEN @orderBy LIKE 'KILLS' THEN NumKills END DESC
+		END
+
 		--Set the return variables
 		SET @result = 1;
 		SET @errorMSG = ''
@@ -1918,7 +1937,6 @@ BEGIN
 	END CATCH
 END
 GO
-
 -- =============================================
 -- Author:		Jonathan Williams
 -- Create date: 18/09/18

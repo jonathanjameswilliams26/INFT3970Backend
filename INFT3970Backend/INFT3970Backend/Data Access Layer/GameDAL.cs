@@ -229,6 +229,7 @@ namespace INFT3970Backend.Data_Access_Layer
             //A database exception was thrown, return an error response
             catch
             {
+                Console.WriteLine("Leave Game Failed");
                 //Do Nothing
             }
         }
