@@ -34,7 +34,7 @@ BEGIN
 	BEGIN TRY
 
 	--Validate the playerID
-	EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
+	EXEC [dbo].[usp_ConfirmPlayerIsActive] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
 	EXEC [dbo].[usp_DoRaiseError] @result = @result
 		
 	--Get the GameID from the playerID
