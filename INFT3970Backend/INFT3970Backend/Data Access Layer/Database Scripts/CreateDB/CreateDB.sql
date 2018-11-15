@@ -1543,10 +1543,6 @@ BEGIN
 	DECLARE @MODELINVALID_VOTE INT = 15;
 
 	BEGIN TRY  
-		--Validate the playerID
-		EXEC [dbo].[usp_ConfirmPlayerInGame] @id = @playerID, @result = @result OUTPUT, @errorMSG = @errorMSG OUTPUT
-		EXEC [dbo].[usp_DoRaiseError] @result = @result
-		
 		--Get the GameID from the playerID
 		DECLARE @gameID INT;
 		EXEC [dbo].[usp_GetGameIDFromPlayer] @id = @playerID, @gameID = @gameID OUTPUT
