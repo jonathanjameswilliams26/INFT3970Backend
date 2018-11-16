@@ -312,7 +312,7 @@ namespace INFT3970Backend.Hubs
             //Loop through each of the players and send out the live update
             foreach(var player in response.Data.Players)
             {
-                if (player.IsConnected)
+                if (player.IsConnected && !player.IsHost)
                 {
                     Console.WriteLine("Invoking LobbyEnded on :" + player.Nickname);
                     await _hubContext.Clients.Client(player.ConnectionID).SendAsync("LobbyEnded");
